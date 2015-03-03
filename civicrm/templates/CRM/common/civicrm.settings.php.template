@@ -81,9 +81,6 @@ if (!empty($_SERVER['PRESSFLOW_SETTINGS'])) {
 
     $civicrm_root = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/%%modulePath%%';
     define('CIVICRM_TEMPLATE_COMPILEDIR', '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/templates_c/');
-    $civicrm_setting['Directory Preferences']['uploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/upload/';
-    $civicrm_setting['Directory Preferences']['customFileUploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/custom/';
-    $civicrm_setting['Directory Preferences']['imageUploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/persist/contribute/';
 
     // Use Drupal base url and path
     global $base_url, $base_path;
@@ -100,8 +97,11 @@ if (!empty($_SERVER['PRESSFLOW_SETTINGS'])) {
 
     // Add this line only once above any settings overrides
     global $civicrm_setting;
+    $civicrm_setting['Directory Preferences']['uploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/upload/';
+    $civicrm_setting['Directory Preferences']['customFileUploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/custom/';
+    $civicrm_setting['Directory Preferences']['imageUploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/persist/contribute/';
     $civicrm_setting['Directory Preferences']['extensionsDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/all/extensions/';
-    $civicrm_setting['URL Preferences']['userFrameworkResourceURL'] = $base_url . 'sites/all/extensions';
+    $civicrm_setting['URL Preferences']['extensionsURL'] = $base_url . '/sites/all/extensions';
 
   }
 } else {
@@ -115,7 +115,7 @@ if (!empty($_SERVER['PRESSFLOW_SETTINGS'])) {
  */
 
 // PANTHEON USERS - These settings are overridden above when running on Pantheon.
-// These settings are ONLY included here to remain compatible all other hosts.
+// These settings are ONLY included here to remain compatible with other hosts.
 
 define( 'CIVICRM_UF_DSN'           , 'mysql://%%CMSdbUser%%:%%CMSdbPass%%@%%CMSdbHost%%/%%CMSdbName%%?new_link=true' );
 
@@ -140,7 +140,7 @@ define( 'CIVICRM_UF_DSN'           , 'mysql://%%CMSdbUser%%:%%CMSdbPass%%@%%CMSd
  */
 
 // PANTHEON USERS - These settings are overridden above when running on Pantheon.
-// These settings are ONLY included here to remain compatible all other hosts.
+// These settings are ONLY included here to remain compatible with other hosts.
 
 define( 'CIVICRM_DSN'          , 'mysql://%%dbUser%%:%%dbPass%%@%%dbHost%%/%%dbName%%?new_link=true' );
 
