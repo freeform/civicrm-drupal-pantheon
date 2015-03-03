@@ -17,7 +17,7 @@ libraries[civicrm][directory_name] = civicrm
 ; Move civicrm files to sites/default/files/private/civicrm
 ; https://civicrm.org/advisory/civi-sa-2014-001-risk-information-disclosure
 ; http://forum.civicrm.org/index.php?topic=31570.0
-libraries[civicrm][patch][2195947] = https://www.drupal.org/files/issues/2195947-pantheon-settings-4-4-12-files-security.patch
+libraries[civicrm][patch][2195947] = https://www.drupal.org/files/issues/2195947-pantheon-settings-4-4-files-security-2.patch
 
 ; Required for install
 libraries[civicrm][patch][1978796] = http://drupal.org/files/1978796-session.save-as_file.patch
