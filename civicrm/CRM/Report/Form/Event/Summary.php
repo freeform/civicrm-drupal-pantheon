@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -49,6 +49,12 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
     'Event');
   public $_drilldownReport = array('event/income' => 'Link to Detail Report');
 
+  /**
+   *
+   */
+  /**
+   *
+   */
   function __construct() {
 
     $this->_columns = array(
@@ -77,9 +83,11 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
         ),
         'filters' =>
         array(
-          'id' => array('title' => ts('Event Title'),
-            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'options' => $this->getEventFilterOptions(),
+          'id' => array(
+            'title' => ts('Event'),
+            'operatorType' => CRM_Report_Form::OP_ENTITYREF,
+            'type' => CRM_Utils_Type::T_INT,
+            'attributes' => array('select' => array('minimumInputLength' => 0)),
           ),
           'event_type_id' => array(
             'name' => 'event_type_id',
@@ -111,9 +119,7 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
     foreach ($this->_columns as $tableName => $table) {
       if (array_key_exists('fields', $table)) {
         foreach ($table['fields'] as $fieldName => $field) {
-          if (CRM_Utils_Array::value('required', $field) ||
-            CRM_Utils_Array::value($fieldName, $this->_params['fields'])
-          ) {
+          if (!empty($field['required']) || !empty($this->_params['fields'][$fieldName])) {
             $select[] = "{$field['dbAlias']} as {$tableName}_{$fieldName}";
           }
         }
@@ -155,8 +161,7 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
             }
           }
           if (!empty($this->_params['id_value'])) {
-            $participant = implode(', ', $this->_params['id_value']);
-            $this->_participantWhere = " AND civicrm_participant.event_id IN ( {$participant} ) ";
+            $this->_participantWhere = " AND civicrm_participant.event_id IN ( {$this->_params['id_value']} ) ";
           }
 
           if (!empty($clause)) {
@@ -165,7 +170,7 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
         }
       }
     }
-    $clauses[] = "({$this->_aliases['civicrm_event']}.is_template IS NULL OR {$this->_aliases['civicrm_event']}.is_template = 0)";
+    $clauses[] = "{$this->_aliases['civicrm_event']}.is_template = 0";
     $this->_where = 'WHERE  ' . implode(' AND ', $clauses);
   }
 
@@ -175,6 +180,9 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
   }
 
   //get participants information for events
+  /**
+   * @return array
+   */
   function participantInfo() {
 
     $statusType1 = CRM_Event_PseudoConstant::participantStatus(NULL, 'is_counted = 1');
@@ -240,9 +248,7 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
     foreach ($this->_columns as $tableName => $table) {
       if (array_key_exists('fields', $table)) {
         foreach ($table['fields'] as $fieldName => $field) {
-          if (CRM_Utils_Array::value('required', $field) ||
-            CRM_Utils_Array::value($fieldName, $this->_params['fields'])
-          ) {
+          if (!empty($field['required']) || !empty($this->_params['fields'][$fieldName])) {
 
             $this->_columnHeaders["{$tableName}_{$fieldName}"]['type'] = CRM_Utils_Array::value('type', $field);
             $this->_columnHeaders["{$tableName}_{$fieldName}"]['title'] = CRM_Utils_Array::value('title', $field);
@@ -323,10 +329,13 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
     $this->endPostProcess($rows);
   }
 
+  /**
+   * @param $rows
+   */
   function buildChart(&$rows) {
     $this->_interval = 'events';
     $countEvent = NULL;
-    if (CRM_Utils_Array::value('charts', $this->_params)) {
+    if (!empty($this->_params['charts'])) {
       foreach ($rows as $key => $value) {
         $graphRows['totalAmount'][] = $graphRows['value'][] = CRM_Utils_Array::value('totalAmount', $rows[$key]);
         $graphRows[$this->_interval][] = substr($rows[$key]['civicrm_event_title'], 0, 12) . "..(" . $rows[$key]['civicrm_event_id'] . ") ";
@@ -358,6 +367,9 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
     }
   }
 
+  /**
+   * @param $rows
+   */
   function alterDisplay(&$rows) {
 
     if (is_array($rows)) {

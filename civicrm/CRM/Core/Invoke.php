@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -31,7 +31,7 @@
  * Serves as a wrapper between the UserFrameWork and Core CRM
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -57,9 +57,16 @@ class CRM_Core_Invoke {
     }
   }
 
+  /**
+   * @param $args
+   */
   protected static function _invoke($args) {
     if ($args[0] !== 'civicrm') {
       return;
+    }
+    // CRM-15901: Turn off PHP errors display for all ajax calls
+    if (CRM_Utils_Array::value(1, $args) == 'ajax' || CRM_Utils_Array::value('snippet', $_REQUEST)) {
+      ini_set('display_errors', 0);
     }
 
     if (!defined('CIVICRM_SYMFONY_PATH')) {
@@ -117,8 +124,13 @@ class CRM_Core_Invoke {
       $kernel = new AppKernel('dev', true);
       $kernel->loadClassCache();
       $response = $kernel->handle(Symfony\Component\HttpFoundation\Request::createFromGlobals());
-      // $response->send();
-      return $response->getContent();
+      if (preg_match(':^text/html:', $response->headers->get('Content-Type'))) {
+        // let the CMS handle the trappings
+        return $response->getContent();
+      } else {
+        $response->send();
+        exit();
+      }
     }
   }
   /**
@@ -246,7 +258,7 @@ class CRM_Core_Invoke {
       }
 
       // check if ssl is set
-      if (CRM_Utils_Array::value('is_ssl', $item)) {
+      if (!empty($item['is_ssl'])) {
         CRM_Utils_System::redirectToSSL();
       }
 
@@ -259,7 +271,7 @@ class CRM_Core_Invoke {
       }
 
       $pageArgs = NULL;
-      if (CRM_Utils_Array::value('page_arguments', $item)) {
+      if (!empty($item['page_arguments'])) {
         $pageArgs = CRM_Core_Menu::getArrayForPathArgs($item['page_arguments']);
       }
 
@@ -284,9 +296,8 @@ class CRM_Core_Invoke {
 
       $result = NULL;
       if (is_array($item['page_callback'])) {
-        $newArgs = explode('/', $_GET[$config->userFrameworkURLVar]);
         require_once (str_replace('_', DIRECTORY_SEPARATOR, $item['page_callback'][0]) . '.php');
-        $result = call_user_func($item['page_callback'], $newArgs);
+        $result = call_user_func($item['page_callback']);
       }
       elseif (strstr($item['page_callback'], '_Form')) {
         $wrapper = new CRM_Utils_Wrapper();
@@ -307,6 +318,7 @@ class CRM_Core_Invoke {
         $title = CRM_Utils_Array::value('title', $item);
         if (strstr($item['page_callback'], '_Page')) {
           $object = new $item['page_callback'] ($title, $mode );
+          $object->urlPath = explode('/', $_GET[$config->userFrameworkURLVar]);
         }
         elseif (strstr($item['page_callback'], '_Controller')) {
           $addSequence = 'false';
@@ -337,6 +349,9 @@ class CRM_Core_Invoke {
    *
    * @param $action
    *
+   * @param $contact_type
+   * @param $contact_sub_type
+   *
    * @static
    * @access public
    */
@@ -354,102 +369,6 @@ class CRM_Core_Invoke {
   }
 
   /**
-   * This function contains the actions for profile arguments
-   *
-   * @param $args array this array contains the arguments of the url
-   *
-   * @static
-   * @access public
-   */
-  static function profile($args) {
-    if ($args[1] !== 'profile') {
-      return;
-    }
-
-    $secondArg = CRM_Utils_Array::value(2, $args, '');
-
-    if ($secondArg == 'map') {
-      $controller = new CRM_Core_Controller_Simple(
-        'CRM_Contact_Form_Task_Map',
-        ts('Map Contact'),
-        NULL, FALSE, FALSE, TRUE
-      );
-
-      $gids = explode(',', CRM_Utils_Request::retrieve('gid', 'String', CRM_Core_DAO::$_nullObject, FALSE, 0, 'GET'));
-
-      if (count($gids) > 1) {
-        foreach ($gids as $pfId) {
-          $profileIds[] = CRM_Utils_Type::escape($pfId, 'Positive');
-        }
-        $controller->set('gid', $profileIds[0]);
-        $profileGID = $profileIds[0];
-      }
-      else {
-        $profileGID = CRM_Utils_Request::retrieve('gid', 'Integer', $controller, TRUE);
-      }
-
-
-      // make sure that this profile enables mapping
-      // CRM-8609
-      $isMap =
-        CRM_Core_DAO::getFieldValue('CRM_Core_DAO_UFGroup', $profileGID, 'is_map');
-      if (!$isMap) {
-        CRM_Core_Error::statusBounce(ts('This profile does not have the map feature turned on.'));
-      }
-
-      $profileView = CRM_Utils_Request::retrieve('pv', 'Integer', $controller, FALSE);
-
-      // set the userContext stack
-      $session = CRM_Core_Session::singleton();
-      if ($profileView) {
-        $session->pushUserContext(CRM_Utils_System::url('civicrm/profile/view'));
-      }
-      else {
-        $session->pushUserContext(CRM_Utils_System::url('civicrm/profile', 'force=1'));
-      }
-
-      $controller->set('profileGID', $profileGID);
-      $controller->process();
-      return $controller->run();
-    }
-
-    if ($secondArg == 'edit' || $secondArg == 'create') {
-      // set the userContext stack
-      $session = CRM_Core_Session::singleton();
-      $session->pushUserContext(CRM_Utils_System::url('civicrm/profile', 'reset=1'));
-
-      if ($secondArg == 'edit') {
-        $controller = new CRM_Core_Controller_Simple('CRM_Profile_Form_Edit',
-          ts('Create Profile'),
-          CRM_Core_Action::UPDATE,
-          FALSE, FALSE, TRUE
-        );
-        $controller->set('edit', 1);
-        $controller->process();
-        return $controller->run();
-      }
-      else {
-        $wrapper = new CRM_Utils_Wrapper();
-        return $wrapper->run('CRM_Profile_Form_Edit',
-          ts('Create Profile'),
-          array(
-            'mode' => CRM_Core_Action::ADD,
-            'ignoreKey' => TRUE,
-          )
-        );
-      }
-    }
-
-    if ($secondArg == 'view' || empty($secondArg)) {
-      $page = new CRM_Profile_Page_Listings();
-      return $page->run();
-    }
-
-    CRM_Utils_System::permissionDenied();
-    return;
-  }
-
-  /**
    * Show the message about CiviCRM versions
    *
    * @param obj: $template (reference)
@@ -463,6 +382,12 @@ class CRM_Core_Invoke {
     $template->assign('newer_civicrm_version', $newerVersion);
   }
 
+  /**
+   * @param bool $triggerRebuild
+   * @param bool $sessionReset
+   *
+   * @throws Exception
+   */
   static function rebuildMenuAndCaches($triggerRebuild = FALSE, $sessionReset = FALSE) {
     $config = CRM_Core_Config::singleton();
     $config->clearModuleList();
@@ -478,11 +403,13 @@ class CRM_Core_Invoke {
     // also cleanup module permissions
     $config->cleanupPermissions();
 
-    // also rebuild word replacement cache
-    CRM_Core_BAO_WordReplacement::rebuild();
+    // rebuild word replacement cache - pass false to prevent operations redundant with this fn
+    CRM_Core_BAO_WordReplacement::rebuild(FALSE);
 
     CRM_Core_BAO_Setting::updateSettingsFromMetaData();
-    CRM_Core_Resources::singleton()->resetCacheCode();
+    // Clear js caches
+    CRM_Core_Resources::singleton()->flushStrings()->resetCacheCode();
+    CRM_Case_XMLRepository::singleton(TRUE);
 
     // also rebuild triggers if requested explicitly
     if (
@@ -495,4 +422,3 @@ class CRM_Core_Invoke {
     CRM_Core_ManagedEntities::singleton(TRUE)->reconcile();
   }
 }
-

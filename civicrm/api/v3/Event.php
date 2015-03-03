@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -33,7 +33,7 @@
  * @package CiviCRM_APIv3
  * @subpackage API_Event
  *
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * @version $Id: Event.php 30964 2010-11-29 09:41:54Z shot $
  *
  */
@@ -62,22 +62,10 @@ function civicrm_api3_event_create($params) {
     $copy = CRM_Event_BAO_Event::copy($params['template_id']);
     $params['id'] = $copy->id;
     unset($params['template_id']);
-    if (empty($params['is_template'])) {
-      $params['is_template'] = 0;
-    }
   }
 
   _civicrm_api3_event_create_legacy_support_42($params);
-
-  //format custom fields so they can be added
-  $values = array();
-  _civicrm_api3_custom_format_params($params, $values, 'Event');
-  $params = array_merge($values, $params);
-
-  $eventBAO = CRM_Event_BAO_Event::create($params);
-  $event = array();
-  _civicrm_api3_object_to_array($eventBAO, $event[$eventBAO->id]);
-  return civicrm_api3_create_success($event, $params);
+  return _civicrm_api3_basic_create(_civicrm_api3_get_BAO(__FUNCTION__), $params, 'Event');
 }
 
 /**
@@ -119,19 +107,19 @@ function _civicrm_api3_event_create_legacy_support_42(&$params){
 function civicrm_api3_event_get($params) {
 
   //legacy support for $params['return.sort']
-  if (CRM_Utils_Array::value('return.sort', $params)) {
+  if (!empty($params['return.sort'])) {
     $params['options']['sort'] = $params['return.sort'];
     unset($params['return.sort']);
   }
 
   //legacy support for $params['return.offset']
-  if (CRM_Utils_Array::value('return.offset', $params)) {
+  if (!empty($params['return.offset'])) {
     $params['options']['offset'] = $params['return.offset'];
     unset($params['return.offset']);
   }
 
   //legacy support for $params['return.max_results']
-  if (CRM_Utils_Array::value('return.max_results', $params)) {
+  if (!empty($params['return.max_results'])) {
     $params['options']['limit'] = $params['return.max_results'];
     unset($params['return.max_results']);
   }
@@ -139,14 +127,14 @@ function civicrm_api3_event_get($params) {
   $eventDAO = new CRM_Event_BAO_Event();
   _civicrm_api3_dao_set_filter($eventDAO, $params, TRUE, 'Event');
 
-  if (CRM_Utils_Array::value('is_template', $params)) {
+  if (!empty($params['is_template'])) {
     $eventDAO->whereAdd( '( is_template = 1 )' );
   }
   elseif(empty($eventDAO->id)){
     $eventDAO->whereAdd('( is_template IS NULL ) OR ( is_template = 0 )');
   }
 
-  if (CRM_Utils_Array::value('isCurrent', $params)) {
+  if (!empty($params['isCurrent'])) {
     $eventDAO->whereAdd('(start_date >= CURDATE() || end_date >= CURDATE())');
   }
 
@@ -154,15 +142,20 @@ function civicrm_api3_event_get($params) {
   // the return.is_full to deal with.
   // NB the std dao_to_array function should only return custom if required.
   $event = array();
+  $options = _civicrm_api3_get_options_from_params($params);
+
   $eventDAO->find();
   while ($eventDAO->fetch()) {
     $event[$eventDAO->id] = array();
     CRM_Core_DAO::storeValues($eventDAO, $event[$eventDAO->id]);
-    if (CRM_Utils_Array::value('return.is_full', $params)) {
+    if (!empty($params['return.is_full'])) {
       _civicrm_api3_event_getisfull($event, $eventDAO->id);
     }
     _civicrm_api3_event_get_legacy_support_42($event, $eventDAO->id);
     _civicrm_api3_custom_data_get($event[$eventDAO->id], 'Event', $eventDAO->id, NULL, $eventDAO->event_type_id);
+    if(!empty($options['return'])) {
+      $event[$eventDAO->id]['price_set_id'] = CRM_Price_BAO_PriceSet::getFor('civicrm_event', $eventDAO->id);
+    }
   }
   //end of the loop
 
@@ -220,6 +213,10 @@ function civicrm_api3_event_delete($params) {
  * @param int $event_id Id of the event to be updated
  *
  */
+/**
+ * @param $event
+ * @param $event_id
+ */
 function _civicrm_api3_event_getisfull(&$event, $event_id) {
   $eventFullResult = CRM_Event_BAO_Participant::eventFull($event_id, 1);
   if (!empty($eventFullResult) && is_int($eventFullResult)) {
@@ -231,3 +228,50 @@ function _civicrm_api3_event_getisfull(&$event, $event_id) {
   $event[$event_id]['is_full'] = $event[$event_id]['available_places'] == 0 ? 1 : 0;
 }
 
+
+/**
+ * @see _civicrm_api3_generic_getlist_params.
+ *
+ * @param $request array
+ */
+function _civicrm_api3_event_getlist_params(&$request) {
+  $fieldsToReturn = array('start_date', 'event_type_id', 'title', 'summary');
+  $request['params']['return'] = array_unique(array_merge($fieldsToReturn, $request['extra']));
+  $request['params']['options']['sort'] = 'start_date DESC';
+  $request['params'] += array(
+    'is_template' => 0,
+    'is_active' => 1,
+  );
+}
+
+/**
+ * @see _civicrm_api3_generic_getlist_output
+ *
+ * @param $result array
+ * @param $request array
+ *
+ * @return array
+ */
+function _civicrm_api3_event_getlist_output($result, $request) {
+  $output = array();
+  if (!empty($result['values'])) {
+    foreach ($result['values'] as $row) {
+      $data = array(
+        'id' => $row[$request['id_field']],
+        'label' => $row[$request['label_field']],
+        'description' => array(CRM_Core_Pseudoconstant::getLabel('CRM_Event_BAO_Event', 'event_type_id', $row['event_type_id'])),
+      );
+      if (!empty($row['start_date'])) {
+        $data['description'][0] .= ': ' . CRM_Utils_Date::customFormat($row['start_date']);
+      }
+      if (!empty($row['summary'])) {
+        $data['description'][] = $row['summary'];
+      }
+      foreach ($request['extra'] as $field) {
+        $data['extra'][$field] = isset($row[$field]) ? $row[$field] : NULL;
+      }
+      $output[] = $data;
+    }
+  }
+  return $output;
+}

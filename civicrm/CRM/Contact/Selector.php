@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -134,9 +134,16 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
   /**
    * Class constructor
    *
+   * @param $customSearchClass
    * @param array $formValues array of form values imported
-   * @param array $params     array of parameters for query
-   * @param int   $action - action of search basic or advanced.
+   * @param array $params array of parameters for query
+   * @param null $returnProperties
+   * @param \const|int $action - action of search basic or advanced.
+   *
+   * @param bool $includeContactIds
+   * @param bool $searchDescendentGroups
+   * @param string $searchContext
+   * @param null $contextMenu
    *
    * @return CRM_Contact_Selector
    * @access public
@@ -236,6 +243,7 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
         CRM_Core_Action::VIEW => array(
           'name' => ts('View'),
           'url' => 'civicrm/contact/view',
+          'class' => 'no-popup',
           'qs' => "reset=1&cid=%%id%%{$searchContext}{$extraParams}",
           'title' => ts('View Contact Details'),
           'ref' => 'view-contact',
@@ -243,6 +251,7 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
         CRM_Core_Action::UPDATE => array(
           'name' => ts('Edit'),
           'url' => 'civicrm/contact/add',
+          'class' => 'no-popup',
           'qs' => "reset=1&action=update&cid=%%id%%{$searchContext}{$extraParams}",
           'title' => ts('Edit Contact Details'),
           'ref' => 'edit-contact',
@@ -267,7 +276,6 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
           if ($value['key'] == 'delete') {
             $contextVal = $searchContext;
           }
-
           $url = "civicrm/contact/view/{$value['key']}";
           $qs = "reset=1&action=add&cid=%%id%%{$contextVal}{$extraParams}";
           if ($value['key'] == 'activity') {
@@ -284,6 +292,7 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
             'qs' => $qs,
             'title' => $value['title'],
             'ref' => $value['ref'],
+            'class' => CRM_Utils_Array::value('class', $value),
           );
         }
       }
@@ -295,7 +304,10 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
   /**
    * getter for array of the parameters required for creating pager.
    *
-   * @param
+   * @param $action
+   * @param $params
+   *
+   * @internal param $
    * @access public
    */
   function getPagerParams($action, &$params) {
@@ -308,6 +320,12 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
   }
   //end of function
 
+  /**
+   * @param null $action
+   * @param null $output
+   *
+   * @return array
+   */
   function &getColHeads($action = NULL, $output = NULL) {
     $colHeads = self::_getColumnHeaders();
     $colHeads[] = array('desc' => ts('Actions'), 'name' => ts('Action'));
@@ -340,7 +358,7 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
     }
 
     if ($output == CRM_Core_Selector_Controller::EXPORT) {
-      $csvHeaders = array(ts('Contact Id'), ts('Contact Type'));
+      $csvHeaders = array(ts('Contact ID'), ts('Contact Type'));
       foreach ($this->getColHeads($action, $output) as $column) {
         if (array_key_exists('name', $column)) {
           $csvHeaders[] = $column['name'];
@@ -378,7 +396,7 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
         $locationTypes = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id');
 
         foreach ($this->_fields as $name => $field) {
-          if (CRM_Utils_Array::value('in_selector', $field) &&
+          if (!empty($field['in_selector']) &&
             !in_array($name, $skipFields)
           ) {
             if (strpos($name, '-') !== FALSE) {
@@ -545,8 +563,7 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
       $names = array();
       static $skipFields = array('group', 'tag');
       foreach ($this->_fields as $key => $field) {
-        if (
-          CRM_Utils_Array::value('in_selector', $field) &&
+        if (!empty($field['in_selector']) &&
           !in_array($key, $skipFields)
         ) {
           if (strpos($key, '-') !== FALSE) {
@@ -713,14 +730,14 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
       if ($output != CRM_Core_Selector_Controller::EXPORT) {
         $row['checkbox'] = CRM_Core_Form::CB_PREFIX . $result->contact_id;
 
-        if (CRM_Utils_Array::value('deleted_contacts', $this->_formValues)
-          && CRM_Core_Permission::check('access deleted contacts')
+        if (!empty($this->_formValues['deleted_contacts']) && CRM_Core_Permission::check('access deleted contacts')
         ) {
           $links = array(
             array(
               'name' => ts('View'),
               'url' => 'civicrm/contact/view',
               'qs' => 'reset=1&cid=%%id%%',
+              'class' => 'no-popup',
               'title' => ts('View Contact Details'),
             ),
             array(
@@ -738,18 +755,44 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
               'title' => ts('Permanently Delete Contact'),
             );
           }
-          $row['action'] = CRM_Core_Action::formLink($links, NULL, array('id' => $result->contact_id));
+          $row['action'] = CRM_Core_Action::formLink(
+            $links,
+            NULL,
+            array('id' => $result->contact_id),
+            ts('more'),
+            FALSE,
+            'contact.selector.row',
+            'Contact',
+            $result->contact_id
+          );
         }
         elseif ((is_numeric(CRM_Utils_Array::value('geo_code_1', $row))) ||
-          ($config->mapGeoCoding &&
-            CRM_Utils_Array::value('city', $row) &&
+          ($config->mapGeoCoding && !empty($row['city']) &&
             CRM_Utils_Array::value('state_province', $row)
           )
         ) {
-          $row['action'] = CRM_Core_Action::formLink($links, $mask, array('id' => $result->contact_id));
+          $row['action'] = CRM_Core_Action::formLink(
+            $links,
+            $mask,
+            array('id' => $result->contact_id),
+            ts('more'),
+            FALSE,
+            'contact.selector.row',
+            'Contact',
+            $result->contact_id
+          );
         }
         else {
-          $row['action'] = CRM_Core_Action::formLink($links, $mapMask, array('id' => $result->contact_id));
+          $row['action'] = CRM_Core_Action::formLink(
+            $links,
+            $mapMask,
+            array('id' => $result->contact_id),
+            ts('more'),
+            FALSE,
+            'contact.selector.row',
+            'Contact',
+            $result->contact_id
+          );
         }
 
         // allow components to add more actions
@@ -781,15 +824,42 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
     return $rows;
   }
 
+  /**
+   * @param $sort
+   *
+   * @return string
+   */
   function buildPrevNextCache($sort) {
     $cacheKey = 'civicrm search ' . $this->_key;
 
-    // Get current page requested
+    // We should clear the cache in following conditions:
+    // 1. when starting from scratch, i.e new search
+    // 2. if records are sorted
+
+    // get current page requested
     $pageNum = CRM_Utils_Request::retrieve('crmPID', 'Integer', CRM_Core_DAO::$_nullObject);
-    // When starting from scratch, clear any old cache
-    if (!$pageNum) {
+
+    // get the current sort order
+    $currentSortID = CRM_Utils_Request::retrieve('crmSID', 'String', CRM_Core_DAO::$_nullObject);
+
+    $session = CRM_Core_Session::singleton();
+
+    // get previous sort id
+    $previousSortID = $session->get('previousSortID');
+
+    // check for current != previous to ensure cache is not reset if paging is done without changing
+    // sort criteria
+    if (!$pageNum || (!empty($currentSortID) && $currentSortID != $previousSortID) ) {
       CRM_Core_BAO_PrevNextCache::deleteItem(NULL, $cacheKey, 'civicrm_contact');
-      $pageNum = 1;
+      // this means it's fresh search, so set pageNum=1
+      if (!$pageNum) {
+        $pageNum = 1;
+      }
+    }
+
+    // set the current sort as previous sort
+    if (!empty($currentSortID)) {
+      $session->set('previousSortID', $currentSortID);
     }
 
     $pageSize = CRM_Utils_Request::retrieve('crmRowCount', 'Integer', CRM_Core_DAO::$_nullObject, FALSE, 50);
@@ -812,6 +882,9 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
     return $cacheKey;
   }
 
+  /**
+   * @param $rows
+   */
   function addActions(&$rows) {
     $config = CRM_Core_Config::singleton();
 
@@ -830,8 +903,7 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
 
 
     foreach ($rows as $id => & $row) {
-      if (CRM_Utils_Array::value('deleted_contacts', $this->_formValues)
-        && CRM_Core_Permission::check('access deleted contacts')
+      if (!empty($this->_formValues['deleted_contacts']) && CRM_Core_Permission::check('access deleted contacts')
       ) {
         $links = array(
           array(
@@ -856,18 +928,44 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
             'title' => ts('Permanently Delete Contact'),
           );
         }
-        $row['action'] = CRM_Core_Action::formLink($links, NULL, array('id' => $row['contact_id']));
+        $row['action'] = CRM_Core_Action::formLink(
+          $links,
+          null,
+          array('id' => $row['contact_id']),
+          ts('more'),
+          FALSE,
+          'contact.selector.actions',
+          'Contact',
+          $row['contact_id']
+        );
       }
       elseif ((is_numeric(CRM_Utils_Array::value('geo_code_1', $row))) ||
-        ($config->mapGeoCoding &&
-          CRM_Utils_Array::value('city', $row) &&
+        ($config->mapGeoCoding && !empty($row['city']) &&
           CRM_Utils_Array::value('state_province', $row)
         )
       ) {
-        $row['action'] = CRM_Core_Action::formLink($links, $mask, array('id' => $row['contact_id']));
+        $row['action'] = CRM_Core_Action::formLink(
+          $links,
+          $mask,
+          array('id' => $row['contact_id']),
+          ts('more'),
+          FALSE,
+          'contact.selector.actions',
+          'Contact',
+          $row['contact_id']
+        );
       }
       else {
-        $row['action'] = CRM_Core_Action::formLink($links, $mapMask, array('id' => $row['contact_id']));
+        $row['action'] = CRM_Core_Action::formLink(
+          $links,
+          $mapMask,
+          array('id' => $row['contact_id']),
+          ts('more'),
+          FALSE,
+          'contact.selector.actions',
+          'Contact',
+          $row['contact_id']
+        );
       }
 
       // allow components to add more actions
@@ -880,6 +978,9 @@ class CRM_Contact_Selector extends CRM_Core_Selector_Base implements CRM_Core_Se
     }
   }
 
+  /**
+   * @param $rows
+   */
   function removeActions(&$rows) {
     foreach ($rows as $rid => & $rValue) {
       unset($rValue['contact_type']);
@@ -924,9 +1025,9 @@ SELECT DISTINCT 'civicrm_contact', contact_a.id, contact_a.id, '$cacheKey', cont
 
     $sql = str_replace($replaceSQL, $insertSQL, $sql);
 
-    CRM_Core_Error::ignoreException();
+    $errorScope = CRM_Core_TemporaryErrorScope::ignoreException();
     $result = CRM_Core_DAO::executeQuery($sql);
-    CRM_Core_Error::setCallback();
+    unset($errorScope);
 
     if (is_a($result, 'DB_Error')) {
       // check if we get error during core search
@@ -950,9 +1051,10 @@ SELECT DISTINCT 'civicrm_contact', contact_a.id, contact_a.id, '$cacheKey', cont
    *
    * @param int $start start for limit clause
    * @param int $end end for limit clause
-   * @param $object $sort sort object
+   * @param $sort
    * @param string $cacheKey cache key
    *
+   * @internal param $object $sort sort object
    * @return void
    */
   function rebuildPreNextCache($start, $end, $sort, $cacheKey) {
@@ -1052,7 +1154,7 @@ SELECT DISTINCT 'civicrm_contact', contact_a.id, contact_a.id, '$cacheKey', cont
       );
 
       foreach ($defaultAddress as $columnName => $column) {
-        if (CRM_Utils_Array::value($columnName, $addressOptions)) {
+        if (!empty($addressOptions[$columnName])) {
           self::$_columnHeaders[$columnName] = $column;
         }
       }
@@ -1068,14 +1170,29 @@ SELECT DISTINCT 'civicrm_contact', contact_a.id, contact_a.id, '$cacheKey', cont
     return self::$_columnHeaders;
   }
 
+  /**
+   * @return CRM_Contact_BAO_Query
+   */
   function &getQuery() {
     return $this->_query;
   }
 
+  /**
+   * @return CRM_Contact_DAO_Contact
+   */
   function alphabetQuery() {
     return $this->_query->searchQuery(NULL, NULL, NULL, FALSE, FALSE, TRUE);
   }
 
+  /**
+   * @param $params
+   * @param $action
+   * @param $sortID
+   * @param null $displayRelationshipType
+   * @param string $queryOperator
+   *
+   * @return CRM_Contact_DAO_Contact
+   */
   function contactIDQuery($params, $action, $sortID, $displayRelationshipType = NULL, $queryOperator = 'AND') {
     $sortOrder = &$this->getSortOrder($this->_action);
     $sort = new CRM_Utils_Sort($sortOrder, $sortID);
@@ -1108,6 +1225,11 @@ SELECT DISTINCT 'civicrm_contact', contact_a.id, contact_a.id, '$cacheKey', cont
     return $value;
   }
 
+  /**
+   * @param $returnProperties
+   *
+   * @return array
+   */
   function &makeProperties(&$returnProperties) {
     $properties = array();
     foreach ($returnProperties as $name => $value) {

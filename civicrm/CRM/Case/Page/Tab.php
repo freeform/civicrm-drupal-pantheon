@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -81,9 +81,6 @@ class CRM_Case_Page_Tab extends CRM_Core_Page {
       else {
         CRM_Contact_Page_View::checkUserPermission($this);
       }
-
-      // set page title
-      CRM_Contact_Page_View::setTitle($this->_contactId);
     }
     else {
       if ($this->_action & CRM_Core_Action::VIEW) {
@@ -163,6 +160,7 @@ class CRM_Case_Page_Tab extends CRM_Core_Page {
     if ($this->_contactId) {
       $displayName = CRM_Contact_BAO_Contact::displayName($this->_contactId);
       $this->assign('displayName', $displayName);
+      $this->ajaxResponse['tabCount'] = CRM_Contact_BAO_Contact::getCountComponent('case', $this->_contactId);
     }
   }
 
@@ -245,6 +243,7 @@ class CRM_Case_Page_Tab extends CRM_Core_Page {
           'name' => ts('Manage'),
           'url' => 'civicrm/contact/view/case',
           'qs' => 'action=view&reset=1&cid=%%cid%%&id=%%id%%',
+          'class' => 'no-popup',
           'title' => ts('Manage Case'),
         ),
         CRM_Core_Action::DELETE => array(

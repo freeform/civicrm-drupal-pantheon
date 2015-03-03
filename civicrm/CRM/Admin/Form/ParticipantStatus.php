@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -50,11 +50,13 @@ class CRM_Admin_Form_ParticipantStatus extends CRM_Admin_Form {
 
     $this->add('text', 'label', ts('Label'), $attributes['label'], TRUE);
 
-    $classes = array();
-    foreach (array(
-      'Positive', 'Pending', 'Waiting', 'Negative') as $class) {
-      $classes[$class] = CRM_Event_DAO_ParticipantStatusType::tsEnum('class', $class);
-    }
+    $classes = array(
+      'Positive' => ts('Positive'),
+      'Pending' => ts('Pending'),
+      'Waiting' => ts('Waiting'),
+      'Negative' => ts('Negative'),
+    );
+
     $this->add('select', 'class', ts('Class'), $classes, TRUE);
 
     $this->add('checkbox', 'is_active', ts('Active?'));
@@ -65,9 +67,12 @@ class CRM_Admin_Form_ParticipantStatus extends CRM_Admin_Form {
     $this->add('select', 'visibility_id', ts('Visibility'), CRM_Core_PseudoConstant::visibility(), TRUE);
   }
 
+  /**
+   * @return array
+   */
   function setDefaultValues() {
     $defaults = parent::setDefaultValues();
-    if (!CRM_Utils_Array::value('weight', $defaults)) {
+    if (empty($defaults['weight'])) {
       $defaults['weight'] = CRM_Utils_Weight::getDefaultWeight('CRM_Event_DAO_ParticipantStatusType');
     }
     $this->_isReserved = CRM_Utils_Array::value('is_reserved', $defaults);

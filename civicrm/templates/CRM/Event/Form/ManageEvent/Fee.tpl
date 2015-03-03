@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -33,14 +33,9 @@
         </div>
     {/if}
 <div class="crm-block crm-form-block crm-event-manage-fee-form-block">
-{if $isQuick}
-    <div id="popupContainer">
-    {ts}Once you switch to using a Price Set, you won't be able to switch back to your existing settings below except by re-entering them. Are you sure you want to switch to a Price Set?{/ts}
-    </div>
-{/if}
-<div class="crm-submit-buttons">
+  <div class="crm-submit-buttons">
    {include file="CRM/common/formButtons.tpl" location="top"}
-</div>
+  </div>
 
     <table class="form-layout">
        <tr class="crm-event-manage-fee-form-block-title">
@@ -154,7 +149,7 @@
         {ts}Use the table below to enter descriptive labels and amounts for up to ten event fee levels. These will be presented as a list of radio button options. Both the label and dollar amount will be displayed. You can also configure one or more sets of discounted fees by checking "Discounts by Signup Date" below.{/ts}<br />
   {if $isQuick}{ts}Click <a id='quickconfig' href='#'>here</a> if you want to configure the Regular Fees below as part of a Price Set, with the added flexibility and complexity that entails.{/ts}{/if}
         <table id="map-field-table">
-        <tr class="columnheader"><td scope="column">{ts}Fee Label{/ts}</td><td scope="column">{ts}Amount{/ts}</td><td scope="column">{ts}Default?{/ts}<br /><span class="crm-clear-link">(<a href="#" title="unselect" onclick="unselectRadio('default', 'Fee'); return false;" >{ts}clear{/ts}</a>)</span></td></tr>
+        <tr class="columnheader"><td scope="column">{ts}Fee Label{/ts}</td><td scope="column">{ts}Amount{/ts}</td><td scope="column">{ts}Default?{/ts}<br />{$form.default.0.html}</td></tr>
         {section name=loop start=1 loop=11}
            {assign var=idx value=$smarty.section.loop.index}
            <tr><td class="even-row crm-event-manage-fee-form-block-label_{$idx}">{$form.label.$idx.html}</td><td class="crm-event-manage-fee-form-block-value_{$idx}">{$form.value.$idx.html|crmMoney}</td><td class="even-row crm-event-manage-fee-form-block-default_{$idx}">{$form.default.$idx.html}</td></tr>
@@ -230,8 +225,8 @@
             {if $discountSection eq 2}
                 <script type="text/javascript">
                 {literal}
-                    cj( function() {
-                        cj('#discounted_label_1').focus( );
+                    CRM.$(function($) {
+                        $('#discounted_label_1').focus( );
                     });
                 {/literal}
                 </script>
@@ -342,47 +337,23 @@
     invert              = 0
 }
 
-{* include jscript to warn if unsaved form field changes *}
-{include file="CRM/common/formNavigate.tpl"}
 {if $isQuick}
 {literal}
 <script type="text/javascript">
-cj( document ).ready( function( ) {
-    cj("#popupContainer").hide();
-});
-cj("#quickconfig").click(function(){
-cj("#popupContainer").dialog({
-  title: "Selected Price Set",
-  width:400,
-  height:220,
-  modal: true,
-  overlay: {
-                 opacity: 0.5,
-                  background: "black"
-        },
-        buttons: {
-                   "Ok": function() {
-        var dataUrl  = {/literal}'{crmURL p="civicrm/ajax/rest" h=0 q="className=CRM_Core_Page_AJAX&fnName=setIsQuickConfig&context=civicrm_event&id=$eventId" }';
-        var redirectUrl = '{crmURL p="civicrm/admin/price/field" h=0 q="reset=1&action=browse&sid=" }';
-        {literal}
-       cj.ajax({
-      url: dataUrl,
-      async: false,
-      global: false,
-      success: function ( result ) {
-        if (result) {
-          window.location= redirectUrl+eval(result);
-        }
-      }
-       });
-                   },
-       "Close": function() {
-                     cj(this).dialog("close");
-                   }
-  }
-});
-return false;
-});
+  CRM.$(function($) {
+    $("#quickconfig").click(function(e) {
+      e.preventDefault();
+      CRM.confirm({
+        width: 400,
+        message: {/literal}"{ts escape='js'}Once you switch to using a Price Set, you won't be able to switch back to your existing settings below except by re-entering them. Are you sure you want to switch to a Price Set?{/ts}"{literal}
+      }).on('crmConfirm:yes', function() {
+          {/literal}
+          var dataUrl  = '{crmURL p="civicrm/ajax/rest" h=0 q="className=CRM_Core_Page_AJAX&fnName=setIsQuickConfig&context=civicrm_event&id=$eventId" }';
+          {literal}
+        $.getJSON(dataUrl).done(function(result) {window.location = CRM.url("civicrm/admin/price/field", {reset: 1, action: 'browse', sid: result});});
+        });
+      });
+    });
 </script>
 {/literal}
 {/if}

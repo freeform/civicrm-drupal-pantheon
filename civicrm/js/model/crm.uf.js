@@ -1,5 +1,4 @@
-(function($) {
-  var CRM = (window.CRM) ? (window.CRM) : (window.CRM = {});
+(function($, _) {
   if (!CRM.UF) CRM.UF = {};
 
   var YESNO = [
@@ -55,13 +54,27 @@
       });
     }
 
+    //CRM-15427 Allow Multiple subtype filtering
     if (subTypesExpr && subTypesExpr != '') {
-      var subTypes = subTypesExpr.split(':');
-      var subTypeKey = subTypes.shift();
-      typeList.subTypes[subTypeKey] = {};
-      _.each(subTypes, function(subTypeId){
-        typeList.subTypes[subTypeKey][subTypeId] = true;
-      });
+      if (subTypesExpr.indexOf(';;') !== -1) {
+        var subTypeparts = subTypesExpr.replace(/;;/g,'\0').split('\0');
+        _.each(subTypeparts, function(subTypepart) {
+          var subTypes = subTypepart.split(':');
+          var subTypeKey = subTypes.shift();
+          typeList.subTypes[subTypeKey] = {};
+          _.each(subTypes, function(subTypeId) {
+            typeList.subTypes[subTypeKey][subTypeId] = true;
+          });
+        });
+      }
+      else {
+        var subTypes = subTypesExpr.split(':');
+        var subTypeKey = subTypes.shift();
+        typeList.subTypes[subTypeKey] = {};
+        _.each(subTypes, function(subTypeId) {
+          typeList.subTypes[subTypeKey][subTypeId] = true;
+        });
+      }
     }
     return typeList;
   };
@@ -78,6 +91,7 @@
       case 'Contact':
       case 'Individual':
       case 'Organization':
+      case 'Household':
         return 'contact_1';
       case 'Activity':
         return 'activity_1';
@@ -87,8 +101,15 @@
         return 'membership_1';
       case 'Participant':
         return 'participant_1';
+      case 'Case':
+        return 'case_1';
       default:
-        throw "Cannot guess entity name for field_type=" + field_type;
+        if (!$.isEmptyObject(CRM.contactSubTypes) && ($.inArray(field_type,CRM.contactSubTypes) > -1)) {
+          return 'contact_1';
+        }
+        else {
+          throw "Cannot guess entity name for field_type=" + field_type;
+        }
     }
   }
 
@@ -207,7 +228,12 @@
     },
     isInSelectorAllowed: function() {
       var visibility = _.first(_.where(VISIBILITY, {val: this.get('visibility')}));
-      return visibility.isInSelectorAllowed;
+      if (visibility) {
+        return visibility.isInSelectorAllowed;
+      }
+      else {
+        return false;
+      }
     },
     getFieldSchema: function() {
       return this.getRel('ufGroupModel').getFieldSchema(this.get('entity_name'), this.get('field_name'));
@@ -372,7 +398,8 @@
       return result;
     },
     isSectionEnabled: function(section) {
-      return (!section || !section.extends_entity_column_value || _.contains(section.extends_entity_column_value, this.get('entity_sub_type')));
+      //CRM-15427
+      return (!section || !section.extends_entity_column_value || _.contains(section.extends_entity_column_value, this.get('entity_sub_type')) || this.get('entity_sub_type') == '*');
     },
     getSections: function() {
       var ufEntityModel = this;
@@ -640,10 +667,13 @@
      * Check that the group_type contains *only* the types listed in validTypes
      *
      * @param string validTypesExpr
+     * @param bool allowAllSubtypes
      * @return {Boolean}
      */
-    checkGroupType: function(validTypesExpr) {
+    //CRM-15427
+    checkGroupType: function(validTypesExpr, allowAllSubtypes) {
       var allMatched = true;
+      allowAllSubtypes = allowAllSubtypes || false;
       if (! this.get('group_type') || this.get('group_type') == '') {
         return true;
       }
@@ -658,35 +688,83 @@
         }
       });
 
-      // Every actual.subType is a valid.subType
-      _.each(actualTypes.subTypes, function(actualSubTypeIds, actualSubTypeKey) {
-        if (!validTypes.subTypes[actualSubTypeKey]) {
-          allMatched = false;
-          return;
-        }
-        // actualSubTypeIds is a list of all subtypes which can be used by group,
-        // so it's sufficient to match any one of them
-        var subTypeMatched = false;
-        _.each(actualSubTypeIds, function(ignore, actualSubTypeId) {
-          if (validTypes.subTypes[actualSubTypeKey][actualSubTypeId]) {
-            subTypeMatched = true;
+      //CRM-15427 allow all subtypes
+      if (!$.isEmptyObject(validTypes.subTypes) && !allowAllSubtypes) {
+        // Every actual.subType is a valid.subType
+        _.each(actualTypes.subTypes, function(actualSubTypeIds, actualSubTypeKey) {
+          if (!validTypes.subTypes[actualSubTypeKey]) {
+            allMatched = false;
+            return;
           }
+          // actualSubTypeIds is a list of all subtypes which can be used by group,
+          // so it's sufficient to match any one of them
+          var subTypeMatched = false;
+          _.each(actualSubTypeIds, function(ignore, actualSubTypeId) {
+            if (validTypes.subTypes[actualSubTypeKey][actualSubTypeId]) {
+              subTypeMatched = true;
+            }
+          });
+          allMatched = allMatched && subTypeMatched;
         });
-        allMatched = allMatched && subTypeMatched;
-      });
+      }
       return allMatched;
+    },
+    calculateContactEntityType: function() {
+      var ufGroupModel = this;
+
+      // set proper entity model based on selected profile
+      var contactTypes = ['Individual', 'Household', 'Organization'];
+      var profileType = ufGroupModel.get('group_type') || '';
+
+      // check if selected profile have subtype defined eg: ["Individual,Contact,Case", "caseType:7"]
+      if (_.isArray(profileType) && profileType[0]) {
+        profileType = profileType[0];
+      }
+      profileType = profileType.split(',');
+
+      var ufEntityModel;
+      _.each(profileType, function (ptype) {
+        if ($.inArray(ptype, contactTypes) > -1) {
+          ufEntityModel = ptype + 'Model';
+          return true;
+        }
+      });
+
+      return ufEntityModel;
+    },
+    setUFGroupModel: function(entityType, allEntityModels) {
+      var ufGroupModel = this;
+
+      var newUfEntityModels = [];
+      _.each(allEntityModels, function (values) {
+        if (entityType && values.entity_name == 'contact_1') {
+          values.entity_type = entityType;
+        }
+        newUfEntityModels.push(new CRM.UF.UFEntityModel(values));
+      });
+
+      ufGroupModel.getRel('ufEntityCollection').reset(newUfEntityModels);
     },
     resetEntities: function() {
       var ufGroupModel = this;
+      var deleteFieldList = [];
       ufGroupModel.getRel('ufFieldCollection').each(function(ufFieldModel){
         if (!ufFieldModel.getFieldSchema()) {
-          CRM.alert(ts('The data model no longer includes field "%1"! All references to the field have been removed.', {
-            1: ufFieldModel.get('entity_name') + "." + ufFieldModel.get('field_name')
+          CRM.alert(ts('This profile no longer includes field "%1"! All references to the field have been removed.', {
+            1: ufFieldModel.get('label')
           }), '', 'alert', {expires: false});
-          ufFieldModel.destroyLocal();
+          deleteFieldList.push(ufFieldModel);
         }
       });
+
+      _.each(deleteFieldList, function(ufFieldModel) {
+        ufFieldModel.destroyLocal();
+      });
+
       this.getRel('paletteFieldCollection').reset(this.buildPaletteFields());
+
+      // reset to redraw the cancel after entity type is updated.
+      ufGroupModel.getRel('ufFieldCollection').reset(ufGroupModel.getRel('ufFieldCollection').toJSON());
     },
     /**
      *
@@ -731,4 +809,4 @@
   CRM.UF.UFGroupCollection = CRM.Backbone.Collection.extend({
     model: CRM.UF.UFGroupModel
   });
-})(cj);
+})(CRM.$, CRM._);

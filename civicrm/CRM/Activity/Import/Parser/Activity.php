@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -268,12 +268,15 @@ class CRM_Activity_Import_Parser_Activity extends CRM_Activity_Import_Parser {
         if ($key == 'activity_date_time' && $val) {
           $params[$key] = CRM_Utils_Date::formatDate($val, $dateType);
         }
-        elseif ($customFields[$customFieldID]['data_type'] == 'Date') {
+        elseif (!empty($customFields[$customFieldID]) && $customFields[$customFieldID]['data_type'] == 'Date') {
           CRM_Contact_Import_Parser_Contact::formatCustomDate($params, $params, $dateType, $key);
         }
-        elseif ($customFields[$customFieldID]['data_type'] == 'Boolean') {
+        elseif (!empty($customFields[$customFieldID]) && $customFields[$customFieldID]['data_type'] == 'Boolean') {
           $params[$key] = CRM_Utils_String::strtoboolstr($val);
         }
+      }
+      elseif ($key == 'activity_date_time') {
+        $params[$key] = CRM_Utils_Date::formatDate($val, $dateType);
       }
       elseif ($key == 'activity_subject') {
         $params['subject'] = $val;
@@ -313,7 +316,7 @@ class CRM_Activity_Import_Parser_Activity extends CRM_Activity_Import_Parser {
           $params['target_contact_id'] = $cid;
           $params['version'] = 3;
           $newActivity = civicrm_api('activity', 'create', $params);
-          if (CRM_Utils_Array::value('is_error', $newActivity)) {
+          if (!empty($newActivity['is_error'])) {
             array_unshift($values, $newActivity['error_message']);
             return CRM_Import_Parser::ERROR;
           }
@@ -343,7 +346,7 @@ class CRM_Activity_Import_Parser_Activity extends CRM_Activity_Import_Parser {
           }
         }
 
-        if (CRM_Utils_Array::value('external_identifier', $params)) {
+        if (!empty($params['external_identifier'])) {
           if ($disp) {
             $disp .= "AND {$params['external_identifier']}";
           }
@@ -357,12 +360,12 @@ class CRM_Activity_Import_Parser_Activity extends CRM_Activity_Import_Parser {
       }
     }
     else {
-      if (CRM_Utils_Array::value('external_identifier', $params)) {
+      if (!empty($params['external_identifier'])) {
         $targetContactId = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact',
           $params['external_identifier'], 'id', 'external_identifier'
         );
 
-        if (CRM_Utils_Array::value('target_contact_id', $params) &&
+        if (!empty($params['target_contact_id']) &&
           $params['target_contact_id'] != $targetContactId
         ) {
           array_unshift($values, 'Mismatch of External identifier :' . $params['external_identifier'] . ' and Contact Id:' . $params['target_contact_id']);
@@ -379,7 +382,7 @@ class CRM_Activity_Import_Parser_Activity extends CRM_Activity_Import_Parser {
 
       $params['version'] = 3;
       $newActivity = civicrm_api('activity', 'create', $params);
-      if (CRM_Utils_Array::value('is_error', $newActivity)) {
+      if (!empty($newActivity['is_error'])) {
         array_unshift($values, $newActivity['error_message']);
         return CRM_Import_Parser::ERROR;
       }

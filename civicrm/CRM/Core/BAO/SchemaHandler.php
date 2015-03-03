@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -64,8 +64,10 @@ class CRM_Core_BAO_SchemaHandler {
   /**
    * Function for creating a civiCRM-table
    *
-   * @param  String  $tableName        name of the table to be created.
-   * @param  Array   $tableAttributes  array containing atrributes for the table that needs to be created
+   * @param $params
+   *
+   * @internal param String $tableName name of the table to be created.
+   * @internal param Array $tableAttributes array containing atrributes for the table that needs to be created
    *
    * @return true if successfully created, false otherwise
    *
@@ -91,6 +93,11 @@ class CRM_Core_BAO_SchemaHandler {
     return TRUE;
   }
 
+  /**
+   * @param $params
+   *
+   * @return string
+   */
   static function buildTableSQL(&$params) {
     $sql = "CREATE TABLE {$params['name']} (";
     if (isset($params['fields']) &&
@@ -121,6 +128,13 @@ class CRM_Core_BAO_SchemaHandler {
     return $sql;
   }
 
+  /**
+   * @param $params
+   * @param $separator
+   * @param $prefix
+   *
+   * @return string
+   */
   static function buildFieldSQL(&$params, $separator, $prefix) {
     $sql = '';
     $sql .= $separator;
@@ -128,30 +142,37 @@ class CRM_Core_BAO_SchemaHandler {
     $sql .= $prefix;
     $sql .= "`{$params['name']}` {$params['type']}";
 
-    if (CRM_Utils_Array::value('required', $params)) {
+    if (!empty($params['required'])) {
       $sql .= " NOT NULL";
     }
 
-    if (CRM_Utils_Array::value('attributes', $params)) {
+    if (!empty($params['attributes'])) {
       $sql .= " {$params['attributes']}";
     }
 
-    if (CRM_Utils_Array::value('default', $params) &&
+    if (!empty($params['default']) &&
       $params['type'] != 'text'
     ) {
       $sql .= " DEFAULT {$params['default']}";
     }
 
-    if (CRM_Utils_Array::value('comment', $params)) {
+    if (!empty($params['comment'])) {
       $sql .= " COMMENT '{$params['comment']}'";
     }
 
     return $sql;
   }
 
+  /**
+   * @param $params
+   * @param $separator
+   * @param $prefix
+   *
+   * @return null|string
+   */
   static function buildPrimaryKeySQL(&$params, $separator, $prefix) {
     $sql = NULL;
-    if (CRM_Utils_Array::value('primary', $params)) {
+    if (!empty($params['primary'])) {
       $sql .= $separator;
       $sql .= str_repeat(' ', 8);
       $sql .= $prefix;
@@ -160,6 +181,14 @@ class CRM_Core_BAO_SchemaHandler {
     return $sql;
   }
 
+  /**
+   * @param $params
+   * @param $separator
+   * @param $prefix
+   * @param bool $indexExist
+   *
+   * @return null|string
+   */
   static function buildSearchIndexSQL(&$params, $separator, $prefix, $indexExist = FALSE) {
     $sql = NULL;
 
@@ -171,13 +200,13 @@ class CRM_Core_BAO_SchemaHandler {
     //create index only for searchable fields during ADD,
     //create index only if field is become searchable during MODIFY,
     //drop index only if field is no more searchable and index was exist.
-    if (CRM_Utils_Array::value('searchable', $params) && !$indexExist) {
+    if (!empty($params['searchable']) && !$indexExist) {
       $sql .= $separator;
       $sql .= str_repeat(' ', 8);
       $sql .= $prefix;
       $sql .= "INDEX_{$params['name']} ( {$params['name']} )";
     }
-    elseif (!CRM_Utils_Array::value('searchable', $params) && $indexExist) {
+    elseif (empty($params['searchable']) && $indexExist) {
       $sql .= $separator;
       $sql .= str_repeat(' ', 8);
       $sql .= "DROP INDEX INDEX_{$params['name']}";
@@ -185,6 +214,13 @@ class CRM_Core_BAO_SchemaHandler {
     return $sql;
   }
 
+  /**
+   * @param $params
+   * @param $separator
+   * @param $prefix
+   *
+   * @return string
+   */
   static function buildIndexSQL(&$params, $separator, $prefix) {
     $sql = '';
     $sql .= $separator;
@@ -211,6 +247,12 @@ class CRM_Core_BAO_SchemaHandler {
     return $sql;
   }
 
+  /**
+   * @param $tableName
+   * @param $fkTableName
+   *
+   * @return bool
+   */
   static function changeFKConstraint($tableName, $fkTableName) {
     $fkName = "{$tableName}_entity_id";
     if (strlen($fkName) >= 48) {
@@ -233,11 +275,17 @@ ALTER TABLE {$tableName}
     return TRUE;
   }
 
+  /**
+   * @param $params
+   * @param $separator
+   * @param $prefix
+   * @param $tableName
+   *
+   * @return null|string
+   */
   static function buildForeignKeySQL(&$params, $separator, $prefix, $tableName) {
     $sql = NULL;
-    if (CRM_Utils_Array::value('fk_table_name', $params) &&
-      CRM_Utils_Array::value('fk_field_name', $params)
-    ) {
+    if (!empty($params['fk_table_name']) && !empty($params['fk_field_name'])) {
       $sql .= $separator;
       $sql .= str_repeat(' ', 8);
       $sql .= $prefix;
@@ -252,6 +300,13 @@ ALTER TABLE {$tableName}
     return $sql;
   }
 
+  /**
+   * @param $params
+   * @param bool $indexExist
+   * @param bool $triggerRebuild
+   *
+   * @return bool
+   */
   static function alterFieldSQL(&$params, $indexExist = FALSE, $triggerRebuild = TRUE) {
     $sql = str_repeat(' ', 8);
     $sql .= "ALTER TABLE {$params['table_name']}";
@@ -280,10 +335,10 @@ ALTER TABLE {$tableName}
 
       case 'delete':
         $sql .= " DROP COLUMN `{$params['name']}`";
-        if (CRM_Utils_Array::value('primary', $params)) {
+        if (!empty($params['primary'])) {
           $sql .= ", DROP PRIMARY KEY";
         }
-        if (CRM_Utils_Array::value('fk_table_name', $params)) {
+        if (!empty($params['fk_table_name'])) {
           $sql .= ", DROP FOREIGN KEY FK_{$params['fkName']}";
         }
         break;
@@ -324,11 +379,19 @@ ALTER TABLE {$tableName}
     $dao = CRM_Core_DAO::executeQuery($sql);
   }
 
+  /**
+   * @param $tableName
+   * @param $columnName
+   */
   static function dropColumn($tableName, $columnName) {
     $sql = "ALTER TABLE $tableName DROP COLUMN $columnName";
     $dao = CRM_Core_DAO::executeQuery($sql);
   }
 
+  /**
+   * @param $tableName
+   * @param bool $dropUnique
+   */
   static function changeUniqueToIndex($tableName, $dropUnique = TRUE) {
     if ($dropUnique) {
       $sql = "ALTER TABLE $tableName
@@ -343,6 +406,11 @@ ADD UNIQUE INDEX `unique_entity_id` ( `entity_id` )";
     $dao = CRM_Core_DAO::executeQuery($sql);
   }
 
+  /**
+   * @param $tables
+   * @param string $createIndexPrefix
+   * @param array $substrLenghts
+   */
   static function createIndexes(&$tables, $createIndexPrefix = 'index', $substrLenghts = array(
     )) {
     $queries = array();
@@ -404,6 +472,14 @@ ADD UNIQUE INDEX `unique_entity_id` ( `entity_id` )";
     }
   }
 
+  /**
+   * @param $customFieldID
+   * @param $tableName
+   * @param $columnName
+   * @param $length
+   *
+   * @throws Exception
+   */
   static function alterFieldLength($customFieldID, $tableName, $columnName, $length) {
     // first update the custom field tables
     $sql = "

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -70,8 +70,11 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
 
   /**
    * function exists to get the values from the rp_invoice_id string
+   *
    * @param string $name e.g. i, values are stored in the string with letter codes
    * @param boolean $abort fatal if not found?
+   *
+   * @throws CRM_Core_Exception
    * @return unknown
    */
   function getValue($name, $abort = TRUE) {
@@ -126,6 +129,8 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
    *   - Integer
    * @param string $location - deprecated
    * @param boolean $abort abort if empty
+   *
+   * @throws CRM_Core_Exception
    * @return Ambigous <mixed, NULL, value, unknown, array, number>
    */
   function retrieve($name, $type, $location = 'POST', $abort = TRUE) {
@@ -290,8 +295,6 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
       $contribution->currency = $objects['contribution']->currency;
       $contribution->payment_instrument_id = $objects['contribution']->payment_instrument_id;
       $contribution->amount_level = $objects['contribution']->amount_level;
-      $contribution->honor_contact_id = $objects['contribution']->honor_contact_id;
-      $contribution->honor_type_id = $objects['contribution']->honor_type_id;
       $contribution->campaign_id = $objects['contribution']->campaign_id;
       $objects['contribution'] = &$contribution;
     }
@@ -303,6 +306,13 @@ class CRM_Core_Payment_PayPalProIPN extends CRM_Core_Payment_BaseIPN {
     );
   }
 
+  /**
+   * @param $input
+   * @param $ids
+   * @param $objects
+   * @param bool $recur
+   * @param bool $first
+   */
   function single(&$input, &$ids, &$objects, $recur = FALSE, $first = FALSE) {
     $contribution = &$objects['contribution'];
 
@@ -443,6 +453,12 @@ INNER JOIN civicrm_membership_payment mp ON m.id = mp.membership_id AND mp.contr
     }
   }
 
+  /**
+   * @param $input
+   * @param $ids
+   *
+   * @throws CRM_Core_Exception
+   */
   function getInput(&$input, &$ids) {
 
     if (!$this->getBillingID($ids)) {
@@ -523,7 +539,7 @@ INNER JOIN civicrm_membership_payment mp ON m.id = mp.membership_id AND mp.contr
     // & suspec main function may be a victom of copy & paste
     // membership would be an easy add - but not relevant to my customer...
     $this->_component  = $input['component'] = 'contribute';
-    $input['trxn_date'] = date('Y-m-d', strtotime(self::retrieve('time_created', 'String')));
+    $input['trxn_date'] = date('Y-m-d-H-i-s', strtotime(self::retrieve('time_created', 'String')));
     $paymentProcessorID = CRM_Core_DAO::getFieldValue('CRM_Financial_DAO_PaymentProcessorType',
       'PayPal', 'id', 'name'
     );

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -274,7 +274,6 @@ class CRM_UF_Form_Group extends CRM_Core_Form {
       $defaults['is_map'] = 0;
       $defaults['is_update_dupe'] = 0;
       $defaults['is_proximity_search'] = 0;
-      $defaults['uf_group_type[Profile]'] = 1;
     }
     // Don't assign showHide elements to template in DELETE mode (fields to be shown and hidden don't exist)
     if (!($this->_action & CRM_Core_Action::DELETE) && !($this->_action & CRM_Core_Action::DISABLE)) {
@@ -354,7 +353,7 @@ class CRM_UF_Form_Group extends CRM_Core_Form {
       // create uf group
       $ufGroup = CRM_Core_BAO_UFGroup::add($params, $ids);
 
-      if (CRM_Utils_Array::value('is_active', $params)) {
+      if (!empty($params['is_active'])) {
         //make entry in uf join table
         CRM_Core_BAO_UFGroup::createUFJoin($params, $ufGroup->id);
       }
@@ -369,7 +368,9 @@ class CRM_UF_Form_Group extends CRM_Core_Form {
         CRM_Core_Session::setStatus(ts("Your CiviCRM Profile '%1' has been saved.", array(1 => $ufGroup->title)), ts('Profile Saved'), 'success');
       }
       else {
-        $url = CRM_Utils_System::url('civicrm/admin/uf/group/field/add', 'reset=1&action=add&gid=' . $ufGroup->id);
+        // Jump directly to adding a field if popups are disabled
+        $action = CRM_Core_Resources::singleton()->ajaxPopupsEnabled ? '' : '/add';
+        $url = CRM_Utils_System::url("civicrm/admin/uf/group/field$action", 'reset=1&new=1&gid=' . $ufGroup->id . '&action=' . ($action ? 'add' : 'browse'));
         CRM_Core_Session::setStatus(ts('Your CiviCRM Profile \'%1\' has been added. You can add fields to this profile now.',
             array(1 => $ufGroup->title)
           ), ts('Profile Added'), 'success');

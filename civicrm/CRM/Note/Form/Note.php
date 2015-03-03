@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -83,11 +83,7 @@ class CRM_Note_Form_Note extends CRM_Core_Form {
     if ($this->_id && CRM_Core_BAO_Note::getNotePrivacyHidden($this->_id)) {
       CRM_Core_Error::statusBounce(ts('You do not have access to this note.'));
     }
-
-    // set title to "Note - " + Contact Name
-    $displayName = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $this->_entityId, 'display_name');
-    $pageTitle = 'Note - ' . $displayName;
-    $this->assign('pageTitle', $pageTitle);
+    $this->setPageTitle($this->_parentId ? ts('Comment') : ts('Note'));
   }
 
   /**
@@ -96,7 +92,7 @@ class CRM_Note_Form_Note extends CRM_Core_Form {
    *
    * @access public
    *
-   * @return None
+   * @return void
    */
   function setDefaultValues() {
     $defaults = array();
@@ -120,7 +116,7 @@ class CRM_Note_Form_Note extends CRM_Core_Form {
   /**
    * Function to actually build the form
    *
-   * @return None
+   * @return void
    * @access public
    */
   public function buildQuickForm() {
@@ -167,7 +163,7 @@ class CRM_Note_Form_Note extends CRM_Core_Form {
    *
    * @access public
    *
-   * @return None
+   * @return void
    */
   public function postProcess() {
     // store the submitted values in an array

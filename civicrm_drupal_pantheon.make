@@ -8,7 +8,7 @@ core = 7.34
 ; ====== CIVICRM RELATED =========
 
 libraries[civicrm][download][type] = get
-libraries[civicrm][download][url] = "https://download.civicrm.org/civicrm-4.4.12-drupal.tar.gz"
+libraries[civicrm][download][url] = "https://download.civicrm.org/civicrm-4.5.6-drupal.tar.gz"
 libraries[civicrm][destination] = modules
 libraries[civicrm][directory_name] = civicrm
 
@@ -17,7 +17,7 @@ libraries[civicrm][directory_name] = civicrm
 ; Move civicrm files to sites/default/files/private/civicrm
 ; https://civicrm.org/advisory/civi-sa-2014-001-risk-information-disclosure
 ; http://forum.civicrm.org/index.php?topic=31570.0
-libraries[civicrm][patch][2195947] = https://www.drupal.org/files/issues/2195947-pantheon-settings-4-4-files-security-2.patch
+libraries[civicrm][patch][2195947] = https://gist.githubusercontent.com/herbdool/1658b00a9291f24fa7df/raw/eb813969b29f45d93781af8aefb821a463f3882b/pantheon-settings-civicrm-4-5.patch
 
 ; Required for install
 libraries[civicrm][patch][1978796] = http://drupal.org/files/1978796-session.save-as_file.patch

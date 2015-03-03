@@ -2,9 +2,9 @@
 /*
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -87,7 +87,7 @@ function civicrm_api3_line_item_get($params) {
  * @param array $params array containing id of the group
  *  to be deleted
  *
- * @return array  returns flag true if successfull, error message otherwise
+ * @return array API result array
  * {@getfields line_item_delete}
  * @access public
  */

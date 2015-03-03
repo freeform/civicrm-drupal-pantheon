@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -37,14 +37,26 @@
  * WordPress specific stuff goes here
  */
 class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
+  /**
+   *
+   */
   function __construct() {
+    /**
+     * deprecated property to check if this is a drupal install. The correct method is to have functions on the UF classes for all UF specific
+     * functions and leave the codebase oblivious to the type of CMS
+     * @deprecated
+     * @var bool
+     */
     $this->is_drupal = FALSE;
+    $this->is_wordpress = TRUE;
   }
 
   /**
    * sets the title of the page
    *
    * @param string $title
+   * @param null $pageTitle
+   *
    * @paqram string $pageTitle
    *
    * @return void
@@ -65,8 +77,10 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
   /**
    * Append an additional breadcrumb tag to the existing breadcrumb
    *
-   * @param string $title
-   * @param string $url
+   * @param $breadCrumbs
+   *
+   * @internal param string $title
+   * @internal param string $url
    *
    * @return void
    * @access public
@@ -245,9 +259,10 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
    * @param $htmlize  boolean  whether to convert to html eqivalant
    * @param $frontend boolean  a gross joomla hack
    *
+   * @param bool $forceBackend
+   *
    * @return string            an HTML string containing a link to the given path.
    * @access public
-   *
    */
   function url(
     $path = NULL,
@@ -321,6 +336,13 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
     return $base . '?' . implode($separator, $queryParts) . $fragment;
   }
 
+  /**
+   * @param $absolute
+   * @param $frontend
+   * @param $forceBackend
+   *
+   * @return mixed|null|string
+   */
   private function getBaseUrl($absolute, $frontend, $forceBackend) {
     $config    = CRM_Core_Config::singleton();
 
@@ -349,12 +371,15 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
   /**
    * Authenticate the user against the wordpress db
    *
-   * @param string $name     the user name
+   * @param string $name the user name
    * @param string $password the password for the above user name
+   *
+   * @param bool $loadCMSBootstrap
+   * @param null $realPath
    *
    * @return mixed false if no auth
    *               array(
-      contactID, ufID, unique string ) if success
+   * contactID, ufID, unique string ) if success
    * @access public
    * @static
    */
@@ -391,6 +416,11 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
   function setMessage($message) {
   }
 
+  /**
+   * @param $user
+   *
+   * @return bool
+   */
   function loadUser( $user ) {
     return true;
   }
@@ -435,6 +465,8 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
    *
    * @param $name string  optional username for login
    * @param $pass string  optional password for login
+   *
+   * @return bool
    */
   function loadBootStrap($name = NULL, $pass = NULL) {
     global $wp, $wp_rewrite, $wp_the_query, $wp_query, $wpdb;
@@ -450,9 +482,24 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
       date_default_timezone_set($wpUserTimezone);
       CRM_Core_Config::singleton()->userSystem->setMySQLTimeZone();
     }
+    require_once ($cmsRootPath . DIRECTORY_SEPARATOR . 'wp-includes/pluggable.php');
+    $uid = CRM_Utils_Array::value('uid', $name);
+    if ($uid) {
+      $account = wp_set_current_user($uid);
+      if ($account && $account->data->ID) {
+        global $user;
+        $user = $account;
+        return TRUE;
+      }
+    }
     return true;
   }
 
+  /**
+   * @param $dir
+   *
+   * @return bool
+   */
   function validInstallDir($dir) {
     $includePath = "$dir/wp-includes";
     if (
@@ -464,6 +511,14 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
     return FALSE;
   }
 
+  /**
+   * Determine the location of the CMS root.
+   *
+   * @return string|NULL local file system path to CMS root, or NULL if it cannot be determined
+   */
+  /**
+   * @return NULL|string
+   */
   function cmsRootPath() {
     $cmsRoot = $valid = NULL;
     if (defined('CIVICRM_CMSDIR')) {
@@ -495,6 +550,12 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
     return ($valid) ? $cmsRoot : NULL;
   }
 
+  /**
+   * @param $params
+   * @param $mail
+   *
+   * @return mixed
+   */
   function createUser(&$params, $mail) {
     $user_data = array(
       'ID' => '',
@@ -528,7 +589,7 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
     return $uid;
   }
 
-  /*
+  /**
    * Change user name in host CMS
    *
    * @param integer $ufID User ID in CMS
@@ -547,6 +608,11 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
     }
   }
 
+  /**
+   * @param $params
+   * @param $errors
+   * @param string $emailName
+   */
   function checkUserNameEmailExists(&$params, &$errors, $emailName = 'email') {
     $config = CRM_Core_Config::singleton();
 
@@ -554,7 +620,7 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
     $name  = $dao->escape(CRM_Utils_Array::value('name', $params));
     $email = $dao->escape(CRM_Utils_Array::value('mail', $params));
 
-    if (CRM_Utils_Array::value('name', $params)) {
+    if (!empty($params['name'])) {
       if (!validate_username($params['name'])) {
         $errors['cms_name'] = ts("Your username contains invalid characters");
       }
@@ -563,7 +629,7 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
       }
     }
 
-    if (CRM_Utils_Array::value('mail', $params)) {
+    if (!empty($params['mail'])) {
       if (!is_email($params['mail'])) {
         $errors[$emailName] = "Your email is invaid";
       }
@@ -591,19 +657,53 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
   }
 
   /**
+   * @return mixed
+   */
+  function getLoggedInUserObject() {
+    if (function_exists('is_user_logged_in') &&
+    is_user_logged_in()) {
+      global $current_user;
+    }
+    return $current_user;
+  }
+  /**
    * Get currently logged in user uf id.
    *
    * @return int $userID logged in user uf id.
    */
   public function getLoggedInUfID() {
     $ufID = NULL;
-    if (function_exists('is_user_logged_in') &&
-      is_user_logged_in()
-    ) {
-      global $current_user;
-      $ufID = $current_user->ID;
-    }
-    return $ufID;
+    $current_user = $this->getLoggedInUserObject();
+    return isset($current_user->ID) ? $current_user->ID : NULL;
+  }
+
+  /**
+   * Get currently logged in user unique identifier - this tends to be the email address or user name.
+   *
+   * @return string $userID logged in user unique identifier
+   */
+  function getLoggedInUniqueIdentifier() {
+    $user = $this->getLoggedInUserObject();
+    return $this->getUniqueIdentifierFromUserObject($user);
+  }
+
+  /**
+   * Get User ID from UserFramework system (Joomla)
+   * @param object $user object as described by the CMS
+   * @return mixed <NULL, number>
+   */
+  function getUserIDFromUserObject($user) {
+    return !empty($user->ID) ? $user->ID : NULL;
+  }
+
+  /**
+   * Get Unique Identifier from UserFramework system (CMS)
+   * @param object $user object as described by the User Framework
+   * @return mixed $uniqueIdentifer Unique identifier from the user Framework system
+   *
+   */
+  function getUniqueIdentifierFromUserObject($user) {
+    return empty($user->user_email) ? NULL : $user->user_email;
   }
 
   /**
@@ -621,6 +721,9 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
     return $loginURL;
   }
 
+  /**
+   * @param $form
+   */
   public function getLoginDestination(&$form) {
     return;
   }
@@ -646,6 +749,19 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
    */
   function getTimeZoneString() {
     return get_option('timezone_string');
+  }
+
+  /**
+   * Get Url to view user record
+   * @param integer $contactID Contact ID
+   *
+   * @return string
+   */
+  function getUserRecordUrl($contactID) {
+    $uid = CRM_Core_BAO_UFMatch::getUFId($contactID);
+    if (CRM_Core_Session::singleton()->get('userID') == $contactID || CRM_Core_Permission::checkAnyPerm(array('cms:administer users'))) {
+      return CRM_Core_Config::singleton()->userFrameworkBaseURL . "wp-admin/user-edit.php?user_id=" . $uid;
+    }
   }
 }
 

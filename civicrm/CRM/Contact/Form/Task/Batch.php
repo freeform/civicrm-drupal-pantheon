@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -67,12 +67,6 @@ class CRM_Contact_Form_Task_Batch extends CRM_Contact_Form_Task {
    * when not to reset sort_name
    */
   protected $_preserveDefault = TRUE;
-
-  /**
-   * the internal QF names for the state/country/county fields
-   */
-
-  protected $_stateCountryCountyFields = array();
 
   /**
    * build all the data structures needed to build the form
@@ -146,20 +140,10 @@ class CRM_Contact_Form_Task_Batch extends CRM_Contact_Form_Task {
       'household_name',
     );
 
-    $stateCountryMap = array();
-
     foreach ($this->_contactIds as $contactId) {
       $profileFields = $this->_fields;
       CRM_Core_BAO_Address::checkContactSharedAddressFields($profileFields, $contactId);
       foreach ($profileFields as $name => $field) {
-
-        // Link state to country, county to state per location per contact
-        list($prefixName, $index) = CRM_Utils_System::explode('-', $name, 2);
-        if ($prefixName == 'state_province' || $prefixName == 'country' || $prefixName == 'county') {
-          $stateCountryMap["$index-$contactId"][$prefixName] = "field_{$contactId}_{$field['name']}";
-          $this->_stateCountryCountyFields["$index-$contactId"][$prefixName] = "field[{$contactId}][{$field['name']}]";
-        }
-
         CRM_Core_BAO_UFGroup::buildProfile($this, $field, NULL, $contactId);
 
         if (in_array($field['name'], $preserveDefaultsArray)) {
@@ -167,10 +151,6 @@ class CRM_Contact_Form_Task_Batch extends CRM_Contact_Form_Task {
         }
       }
     }
-
-    CRM_Core_BAO_Address::addStateCountryMap($stateCountryMap);
-
-
 
     $this->assign('fields', $this->_fields);
 
@@ -190,7 +170,7 @@ class CRM_Contact_Form_Task_Batch extends CRM_Contact_Form_Task {
    *
    * @access public
    *
-   * @return None
+   * @return array
    */
   function setDefaultValues() {
     if (empty($this->_fields)) {
@@ -212,9 +192,6 @@ class CRM_Contact_Form_Task_Batch extends CRM_Contact_Form_Task {
 
     $this->assign('sortName', $sortName);
 
-    // now fix all state country selectors
-    CRM_Core_BAO_Address::fixAllStateSelects($this, $defaults, $this->_stateCountryCountyFields);
-
     return $defaults;
   }
 
@@ -234,7 +211,7 @@ class CRM_Contact_Form_Task_Batch extends CRM_Contact_Form_Task {
       foreach ($field as $fieldName => $fieldValue) {
         if ($fieldName == 'external_identifier') {
           if (in_array($fieldValue, $externalIdentifiers)) {
-            $errors["field[$componentId][external_identifier]"] = ts('Duplicate value for External Identifier.');
+            $errors["field[$componentId][external_identifier]"] = ts('Duplicate value for External ID.');
           }
           else {
             $externalIdentifiers[$componentId] = $fieldValue;
@@ -251,7 +228,7 @@ class CRM_Contact_Form_Task_Batch extends CRM_Contact_Form_Task {
    *
    * @access public
    *
-   * @return None
+   * @return void
    */
   public function postProcess() {
     $params = $this->exportValues();
@@ -265,7 +242,7 @@ class CRM_Contact_Form_Task_Batch extends CRM_Contact_Form_Task {
 
       //CRM-5521
       //validate subtype before updating
-      if (CRM_Utils_Array::value('contact_sub_type', $value) && !CRM_Contact_BAO_ContactType::isAllowEdit($key)) {
+      if (!empty($value['contact_sub_type']) && !CRM_Contact_BAO_ContactType::isAllowEdit($key)) {
         unset($value['contact_sub_type']);
         $inValidSubtypeCnt++;
       }
@@ -330,9 +307,7 @@ class CRM_Contact_Form_Task_Batch extends CRM_Contact_Form_Task {
 
         //street address consider to be parsed properly,
         //If we get street_name and street_number.
-        if (!CRM_Utils_Array::value('street_name', $parsedFields) ||
-          !CRM_Utils_Array::value('street_number', $parsedFields)
-        ) {
+        if (empty($parsedFields['street_name']) || empty($parsedFields['street_number'])) {
           $parsedFields = array_fill_keys(array_keys($parsedFields), '');
         }
 

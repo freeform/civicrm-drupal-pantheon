@@ -3,9 +3,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -33,7 +33,7 @@
  * @package CiviCRM_APIv3
  * @subpackage API_Group
  *
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * @version $Id: GroupContact.php 30171 2010-10-14 09:11:27Z mover $
  *
  */
@@ -41,7 +41,7 @@
 
 /**
  * This API will give list of the groups for particular contact
- * Particualr status can be sent in params array
+ * Particular status can be sent in params array
  * If no status mentioned in params, by default 'added' will be used
  * to fetch the records
  *
@@ -58,7 +58,7 @@ function civicrm_api3_group_contact_get($params) {
       $params['status'] = 'Added';
     }
     //ie. id passed in so we have to return something
-    return _civicrm_api3_basic_get('CRM_Contact_BAO_GroupContact', $params);
+    return _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params);
   }
   $status = CRM_Utils_Array::value('status', $params, 'Added');
 
@@ -104,32 +104,30 @@ function civicrm_api3_group_contact_get($params) {
  * {@getfields GroupContact_create}
  */
 function civicrm_api3_group_contact_create($params) {
-
+  // Nonstandard bao - doesn't accept ID as a param, so convert id to group_id + contact_id
+  if (!empty($params['id'])) {
+    $getParams = array('id' => $params['id']);
+    $info = _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $getParams);
+    if (!empty($info['values'][$params['id']])) {
+      $params['group_id'] = $info['values'][$params['id']]['group_id'];
+      $params['contact_id'] = $info['values'][$params['id']]['contact_id'];
+    }
+  }
+  civicrm_api3_verify_mandatory($params, NULL, array('group_id', 'contact_id'));
   $action = CRM_Utils_Array::value('status', $params, 'Added');
   return _civicrm_api3_group_contact_common($params, $action);
-}
-
-/**
- * Adjust Metadata for Create action
- *
- * The metadata is used for setting defaults, documentation & validation
- * @param array $params array or parameters determined by getfields
- */
-function _civicrm_api3_group_contact_create_spec(&$params) {
-  $params['group_id']['api.required'] = 1;
-  $params['contact_id']['api.required'] = 1;
 }
 
 /**
  *
  * @param <type> $params
  *
- * @return <type>
- * @deprecated
+ * @return array <type>@deprecated
  */
 function civicrm_api3_group_contact_delete($params) {
-  $params['status'] = 'Removed';
-  return civicrm_api('GroupContact', 'Create', $params);
+  $params['status'] = CRM_Utils_Array::value('status', $params, empty($params['skip_undelete']) ? 'Removed' : 'Deleted');
+  // "Deleted" isn't a real option so skip the api wrapper to avoid pseudoconstant validation
+  return civicrm_api3_group_contact_create($params);
 }
 
 /**
@@ -144,8 +142,7 @@ function _civicrm_api3_group_contact_delete_spec(&$params) {
  *
  * @param <type> $params
  *
- * @return <type>
- * @deprecated
+ * @return array|int <type>@deprecated
  */
 function civicrm_api3_group_contact_pending($params) {
   $params['status'] = 'Pending';
@@ -237,5 +234,17 @@ function civicrm_api3_group_contact_update_status($params) {
   );
 
   return TRUE;
+}
+
+/**
+ * @deprecated api notice
+ * @return array of deprecated actions
+ */
+function _civicrm_api3_group_contact_deprecation() {
+  return array(
+    'delete' => 'GroupContact "delete" action is deprecated in favor of "create".',
+    'pending' => 'GroupContact "pending" action is deprecated in favor of "create".',
+    'update_status' => 'GroupContact "update_status" action is deprecated in favor of "create".',
+  );
 }
 

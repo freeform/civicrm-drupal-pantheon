@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -43,7 +43,10 @@ class CRM_Financial_Page_AJAX {
    * $financialAccountType array with key account relationship and value financial account type option groups
    *
    */
-  function jqFinancial($config) {
+  /**
+   * @param $config
+   */
+  static function jqFinancial($config) {
     if (!isset($_GET['_value']) ||
       empty($_GET['_value'])) {
       CRM_Utils_System::civiExit();
@@ -87,11 +90,13 @@ class CRM_Financial_Page_AJAX {
         ) + $selectedArray;
       }
     }
-    echo json_encode($elements);
-    CRM_Utils_System::civiExit();
+    CRM_Utils_JSON::output($elements);
   }
 
-  function jqFinancialRelation($config) {
+  /**
+   * @param $config
+   */
+  static function jqFinancialRelation($config) {
     if (!isset($_GET['_value']) ||
       empty($_GET['_value'])) {
       CRM_Utils_System::civiExit();
@@ -144,19 +149,20 @@ class CRM_Financial_Page_AJAX {
         }
       }
     }
-    echo json_encode($elements);
-    CRM_Utils_System::civiExit();
+    CRM_Utils_JSON::output($elements);
   }
 
-  function jqFinancialType($config) {
+  /**
+   * @param $config
+   */
+  static function jqFinancialType($config) {
     if (! isset($_GET['_value']) ||
       empty($_GET['_value'])) {
       CRM_Utils_System::civiExit();
     }
 
     $elements = CRM_Core_DAO::getFieldValue('CRM_Contribute_DAO_Product', $_GET['_value'], 'financial_type_id');
-    echo json_encode($elements);
-    CRM_Utils_System::civiExit();
+    CRM_Utils_JSON::output($elements);
   }
 
   /**
@@ -248,8 +254,7 @@ class CRM_Financial_Page_AJAX {
         }
       }
     }
-    echo json_encode($response);
-    CRM_Utils_System::civiExit();
+    CRM_Utils_JSON::output($response);
   }
 
   static function getFinancialTransactionsList() {
@@ -377,19 +382,58 @@ class CRM_Financial_Page_AJAX {
         if (isset($notPresent)) {
           $js = "enableActions('x')";
           $row[$financialItem->id]['check'] = "<input type='checkbox' id='mark_x_". $financialItem->id."' name='mark_x_". $financialItem->id."' value='1' onclick={$js}></input>";
-          $row[$financialItem->id]['action'] = CRM_Core_Action::formLink(CRM_Financial_Form_BatchTransaction::links(), null, array('id' => $financialItem->id, 'contid' => $financialItem->contributionID, 'cid' => $financialItem->contact_id));
+          $row[$financialItem->id]['action'] = CRM_Core_Action::formLink(
+            CRM_Financial_Form_BatchTransaction::links(),
+            null,
+            array(
+              'id' => $financialItem->id,
+              'contid' => $financialItem->contributionID,
+              'cid' => $financialItem->contact_id
+            ),
+            ts('more'),
+            FALSE,
+            'financialItem.batch.row',
+            'FinancialItem',
+            $financialItem->id
+          );
         }
         else {
           $js = "enableActions('y')";
           $row[$financialItem->id]['check'] = "<input type='checkbox' id='mark_y_". $financialItem->id."' name='mark_y_". $financialItem->id."' value='1' onclick={$js}></input>";
-          $row[$financialItem->id]['action'] = CRM_Core_Action::formLink(CRM_Financial_Page_BatchTransaction::links(), null, array('id' => $financialItem->id, 'contid' => $financialItem->contributionID, 'cid' => $financialItem->contact_id));
+          $row[$financialItem->id]['action'] = CRM_Core_Action::formLink(
+            CRM_Financial_Page_BatchTransaction::links(),
+            null,
+            array(
+              'id' => $financialItem->id,
+              'contid' => $financialItem->contributionID,
+              'cid' => $financialItem->contact_id
+            ),
+            ts('more'),
+            FALSE,
+            'financialItem.batch.row',
+            'FinancialItem',
+            $financialItem->id
+          );
         }
       }
       else {
         $row[$financialItem->id]['check'] = NULL;
         $links = CRM_Financial_Page_BatchTransaction::links();
         unset($links['remove']);
-        $row[$financialItem->id]['action'] = CRM_Core_Action::formLink($links, null, array('id' => $financialItem->id, 'contid' => $financialItem->contributionID, 'cid' => $financialItem->contact_id));
+        $row[$financialItem->id]['action'] = CRM_Core_Action::formLink(
+          $links,
+          null,
+          array(
+            'id' => $financialItem->id,
+            'contid' => $financialItem->contributionID,
+            'cid' => $financialItem->contact_id
+          ),
+          ts('more'),
+          FALSE,
+          'financialItem.batch.row',
+          'FinancialItem',
+          $financialItem->id
+        );
       }
       $row[$financialItem->id]['contact_type'] = CRM_Contact_BAO_Contact_Utils::getImage(CRM_Utils_Array::value('contact_sub_type',$row[$financialItem->id]) ? CRM_Utils_Array::value('contact_sub_type',$row[$financialItem->id]) : CRM_Utils_Array::value('contact_type',$row[$financialItem->id]) ,false, $financialItem->contact_id);
       $financialitems = $row;
@@ -442,8 +486,7 @@ class CRM_Financial_Page_AJAX {
     else {
       $status = array('status' => ts("This batch is configured to include only transactions using %1 payment method. If you want to include other transactions, please edit the batch first and modify the Payment Method.", array( 1 => $paymentInstrument)));
     }
-    echo json_encode($status);
-    CRM_Utils_System::civiExit();
+    CRM_Utils_JSON::output($status);
   }
 
   static function getBatchSummary() {
@@ -464,7 +507,6 @@ class CRM_Financial_Page_AJAX {
         'opened_date' => CRM_Utils_Date::customFormat($batchInfo->created_date),
       );
 
-    echo json_encode($batchSummary);
-    CRM_Utils_System::civiExit();
+    CRM_Utils_JSON::output($batchSummary);
   }
 }

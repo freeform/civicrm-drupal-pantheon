@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -55,14 +55,14 @@ function buildPaymentBlock( type ) {
                         async: false
                         }).responseText;
 
-  cj('#billing-payment-block').html(response).trigger('crmFormLoad');
+  cj('#billing-payment-block').html(response).trigger('crmLoad').trigger('crmFormLoad');
 }
 
-cj( function() {
-    cj('.crm-group.payment_options-group').show();
+CRM.$(function($) {
+    $('.crm-group.payment_options-group').show();
 
-    cj('input[name="payment_processor"]').change( function() {
-        buildPaymentBlock( cj(this).val() );
+    $('input[name="payment_processor"]').change( function() {
+        buildPaymentBlock( $(this).val() );
     });
 });
 

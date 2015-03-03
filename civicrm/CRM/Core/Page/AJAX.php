@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -97,11 +97,11 @@ class CRM_Core_Page_AJAX {
    */
   static function setIsQuickConfig() {
     $id = $context = NULL;
-    if (CRM_Utils_Array::value('id', $_REQUEST)) {
+    if (!empty($_REQUEST['id'])) {
       $id = CRM_Utils_Type::escape($_REQUEST['id'], 'Integer');
     }
 
-    if (CRM_Utils_Array::value('context', $_REQUEST)) {
+    if (!empty($_REQUEST['context'])) {
       $context = CRM_Utils_Type::escape($_REQUEST['context'], 'String');
     }
     // return false if $id is null and
@@ -126,9 +126,7 @@ class CRM_Core_Page_AJAX {
     if (!$result) {
       $priceSetId = null;
     }
-    echo json_encode($priceSetId);
-
-    CRM_Utils_System::civiExit();
+    CRM_Utils_JSON::output($priceSetId);
   }
 
   /**
@@ -137,6 +135,8 @@ class CRM_Core_Page_AJAX {
    * @param string $type 'method'|'class'|''
    * @param string $className 'Class_Name'
    * @param string $fnName method name
+   *
+   * @return bool
    */
   static function checkAuthz($type, $className, $fnName = null) {
     switch ($type) {
@@ -161,6 +161,73 @@ class CRM_Core_Page_AJAX {
       default:
         return FALSE;
     }
+  }
+
+  /**
+   * Outputs the CiviCRM standard json-formatted page/form response
+   * @param array|string $response
+   */
+  static function returnJsonResponse($response) {
+    // Allow lazy callers to not wrap content in an array
+    if (is_string($response)) {
+      $response = array('content' => $response);
+    }
+    // Add session variables to response
+    $session = CRM_Core_Session::singleton();
+    $response += array(
+      'status' => 'success',
+      'userContext' => htmlspecialchars_decode($session->readUserContext()),
+      'title' => CRM_Utils_System::$title,
+    );
+    // crmMessages will be automatically handled by our ajax preprocessor
+    // @see js/Common.js
+    if ($session->getStatus(FALSE)) {
+      $response['crmMessages'] = $session->getStatus(TRUE);
+    }
+    $output = json_encode($response);
+
+    // CRM-11831 @see http://www.malsup.com/jquery/form/#file-upload
+    if (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && $_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest') {
+      header('Content-Type: application/json');
+    }
+    else {
+      $output = "<textarea>$output</textarea>";
+    }
+    echo $output;
+    CRM_Utils_System::civiExit();
+  }
+
+  /**
+   * Set headers appropriate for a js file
+   */
+  static function setJsHeaders() {
+    // Encourage browsers to cache for a long time - 1 year
+    $year = 60*60*24*364;
+    header('Expires: '.gmdate('D, d M Y H:i:s \G\M\T', time() + $year));
+    header('Content-Type:	application/javascript');
+    header("Cache-Control: max-age=$year, public");
+  }
+
+  /**
+   * Send autocomplete results to the client. Input can be a simple or nested array.
+   * @param array $results - If nested array, also provide:
+   * @param string $val - array key to use as the value
+   * @param string $key - array key to use as the key
+   * @deprecated
+   */
+  static function autocompleteResults($results, $val='label', $key='id') {
+    $output = array();
+    if (is_array($results)) {
+      foreach ($results as $k => $v) {
+        if (is_array($v)) {
+          echo $v[$val] . '|' . $v[$key] . "\n";
+        }
+        else {
+          echo "$v|$k\n";
+        }
+      }
+    }
+    CRM_Utils_System::civiExit();
   }
 }
 

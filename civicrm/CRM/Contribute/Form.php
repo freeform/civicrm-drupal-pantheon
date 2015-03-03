@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,47 +28,27 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
 
 /**
- * This class generates form components generic to Mobile provider
+ * This class generates form components generic to Contribution admin
  *
  */
-class CRM_Contribute_Form extends CRM_Core_Form {
+class CRM_Contribute_Form extends CRM_Admin_Form {
 
   /**
-   * The id of the object being edited / created
-   *
-   * @var int
-   */
-  protected $_id;
-
-  /**
-   * The name of the BAO object for this form
-   *
-   * @var string
-   */
-  protected $_BAOName;
-
-  function preProcess() {
-    $this->_id = $this->get('id');
-    $this->_BAOName = $this->get('BAOName');
-  }
-
-  /**
-   * This function sets the default values for the form. MobileProvider that in edit/view mode
+   * This function sets the default values for the form. Note that in edit/view mode
    * the default values are retrieved from the database
    *
    * @access public
    *
-   * @return None
+   * @return array
    */
   function setDefaultValues() {
     $defaults = array();
-    $params = array();
 
     if (isset($this->_id)) {
       $params = array('id' => $this->_id);
@@ -77,7 +57,7 @@ class CRM_Contribute_Form extends CRM_Core_Form {
         $baoName::retrieve($params, $defaults);
       }
     }
-    if ($this->_action == CRM_Core_Action::DELETE && CRM_Utils_Array::value('name', $defaults)) {
+    if ($this->_action == CRM_Core_Action::DELETE && !empty($defaults['name'])) {
       $this->assign('delName', $defaults['name']);
     }
     elseif ($this->_action == CRM_Core_Action::ADD) {
@@ -88,8 +68,8 @@ class CRM_Contribute_Form extends CRM_Core_Form {
 
     }
     elseif ($this->_action & CRM_Core_Action::UPDATE) {
-      if (CRM_Utils_Array::value('contact_id', $defaults) || CRM_Utils_Array::value('created_id', $defaults)) {
-        $contactID = CRM_Utils_Array::value('created_id', $defaults) ? $defaults['created_id'] : $defaults['contact_id'];
+      if (!empty($defaults['contact_id']) || !empty($defaults['created_id'])) {
+        $contactID = !empty($defaults['created_id']) ? $defaults['created_id'] : $defaults['contact_id'];
         $this->assign('created_id', $contactID);
         $this->assign('organisationId', $contactID);
       }
@@ -101,40 +81,5 @@ class CRM_Contribute_Form extends CRM_Core_Form {
     return $defaults;
   }
 
-  /**
-   * Function to actually build the form
-   *
-   * @return None
-   * @access public
-   */
-  public function buildQuickForm() {
-    $this->addButtons(array(
-        array(
-          'type' => 'next',
-          'name' => ts('Save'),
-          'isDefault' => TRUE,
-        ),
-        array(
-          'type' => 'cancel',
-          'name' => ts('Cancel'),
-        ),
-      )
-    );
-
-    if ($this->_action & CRM_Core_Action::DELETE) {
-      $this->addButtons(array(
-          array(
-            'type' => 'next',
-            'name' => ts('Delete'),
-            'isDefault' => TRUE,
-          ),
-          array(
-            'type' => 'cancel',
-            'name' => ts('Cancel'),
-          ),
-        )
-      );
-    }
-  }
 }
 

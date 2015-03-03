@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@ s | under the terms of the GNU Affero General Public License           |
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -145,13 +145,12 @@ class CRM_Contact_Form_Search_Advanced extends CRM_Contact_Form_Search {
       );
 
       // see if we need to include this paneName in the current form
-      if ($this->_searchPane == $type ||
-        CRM_Utils_Array::value("hidden_{$type}", $_POST) ||
+      if ($this->_searchPane == $type || !empty($_POST["hidden_{$type}"]) ||
         CRM_Utils_Array::value("hidden_{$type}", $this->_formValues)
       ) {
         $allPanes[$name]['open'] = 'true';
 
-        if (CRM_Utils_Array::value($type, $components)) {
+        if (!empty($components[$type])) {
           $c = $components[$type];
           $this->add('hidden', "hidden_$type", 1);
           $c->buildAdvancedSearchPaneForm($this);
@@ -178,6 +177,15 @@ class CRM_Contact_Form_Search_Advanced extends CRM_Contact_Form_Search {
     }
   }
 
+  /**
+   * Use the form name to create the tpl file name
+   *
+   * @return string
+   * @access public
+   */
+  /**
+   * @return string
+   */
   function getTemplateFileName() {
     if (!$this->_searchPane) {
       return parent::getTemplateFileName();
@@ -206,9 +214,6 @@ class CRM_Contact_Form_Search_Advanced extends CRM_Contact_Form_Search {
 
     if ($this->_context === 'amtg') {
       $defaults['task'] = CRM_Contact_Task::GROUP_CONTACTS;
-    }
-    else {
-      $defaults['task'] = CRM_Contact_Task::PRINT_CONTACTS;
     }
 
     $defaults['privacy_toggle'] = 1;
@@ -264,7 +269,7 @@ class CRM_Contact_Form_Search_Advanced extends CRM_Contact_Form_Search {
       $this->_formValues = CRM_Contact_BAO_SavedSearch::getFormValues($this->_ssID);
     }
 
-    if (isset($this->_groupID) && !CRM_Utils_Array::value('group', $this->_formValues)) {
+    if (isset($this->_groupID) && empty($this->_formValues['group'])) {
       $this->_formValues['group'] = array($this->_groupID => 1);
     }
 
@@ -278,7 +283,7 @@ class CRM_Contact_Form_Search_Advanced extends CRM_Contact_Form_Search {
       ) {
         foreach (array(
           'case_type_id', 'case_status_id', 'case_deleted', 'case_tags') as $caseCriteria) {
-          if (CRM_Utils_Array::value($caseCriteria, $this->_formValues)) {
+          if (!empty($this->_formValues[$caseCriteria])) {
             $allCases = TRUE;
             $this->_formValues['case_owner'] = 1;
             continue;
@@ -295,6 +300,9 @@ class CRM_Contact_Form_Search_Advanced extends CRM_Contact_Form_Search {
         else {
           $this->_formValues['case_owner'] = 0;
         }
+      }
+      if (array_key_exists('case_owner', $this->_formValues) && empty($this->_formValues['case_deleted'])) {
+        $this->_formValues['case_deleted'] = 0;
       }
     }
 
@@ -352,6 +360,15 @@ class CRM_Contact_Form_Search_Advanced extends CRM_Contact_Form_Search {
       unset($this->_formValues['contact_tags']);
       foreach ($tag as $key => $value) {
         $this->_formValues['contact_tags'][$value] = 1;
+      }
+    }
+
+    // CRM-13848
+    $financialType = CRM_Utils_Array::value('financial_type_id', $this->_formValues);
+    if ($financialType && is_array($financialType)) {
+      unset($this->_formValues['financial_type_id']);
+      foreach($financialType as $notImportant => $typeID) {
+        $this->_formValues['financial_type_id'][$typeID] = 1;
       }
     }
 

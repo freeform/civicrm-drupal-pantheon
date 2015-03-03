@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -37,6 +37,12 @@ class CRM_Report_Form_Mailing_Detail extends CRM_Report_Form {
 
   protected $_exposeContactID = FALSE;
 
+  /**
+   *
+   */
+  /**
+   *
+   */
   function __construct() {
     $this->_columns = array();
 
@@ -257,21 +263,8 @@ class CRM_Report_Form_Mailing_Detail extends CRM_Report_Form {
       'grouping' => 'contact-fields',
     );
 
-    $this->_columns['civicrm_group'] = array(
-      'dao' => 'CRM_Contact_DAO_Group',
-      'alias' => 'cgroup',
-      'filters' =>
-      array(
-        'gid' =>
-        array(
-          'name' => 'group_id',
-          'title' => ts('Group'),
-          'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-          'group' => TRUE,
-          'options' => CRM_Core_PseudoConstant::nestedGroup(),
-        ),
-      ),
-    );
+    $this->_groupFilter = TRUE;
+    $this->_tagFilter = TRUE;
 
     parent::__construct();
   }
@@ -281,9 +274,7 @@ class CRM_Report_Form_Mailing_Detail extends CRM_Report_Form {
     foreach ($this->_columns as $tableName => $table) {
       if (array_key_exists('fields', $table)) {
         foreach ($table['fields'] as $fieldName => $field) {
-          if (CRM_Utils_Array::value('required', $field) ||
-            CRM_Utils_Array::value($fieldName, $this->_params['fields'])
-          ) {
+          if (!empty($field['required']) || !empty($this->_params['fields'][$fieldName])) {
             if (in_array($fieldName, array(
               'unsubscribe_id', 'optout_id', 'forward_id', 'reply_id'))) {
               $select[] = "IF({$field['dbAlias']} IS NULL, 'No', 'Yes') as {$tableName}_{$fieldName}";
@@ -443,6 +434,9 @@ class CRM_Report_Form_Mailing_Detail extends CRM_Report_Form {
     $this->_where .= " AND {$this->_aliases['civicrm_mailing']}.sms_provider_id IS NULL";
   }
 
+  /**
+   * @return array
+   */
   function mailingList() {
 
     $data    = array();
@@ -457,6 +451,9 @@ class CRM_Report_Form_Mailing_Detail extends CRM_Report_Form {
     return $data;
   }
 
+  /**
+   * @param $rows
+   */
   function alterDisplay(&$rows) {
     // custom code to alter rows
     $entryFound = FALSE;

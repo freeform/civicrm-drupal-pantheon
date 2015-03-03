@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -41,7 +41,7 @@
  * Base Search / View form for *all* listing of multiple
  * contacts
  */
-class CRM_Contact_Form_Search extends CRM_Core_Form {
+class CRM_Contact_Form_Search extends CRM_Core_Form_Search {
 
   /*
    * list of valid contexts
@@ -58,14 +58,6 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
    * @static
    */
   static $_modeValues = NULL;
-
-  /**
-   * The context that we are working on
-   *
-   * @var string
-   * @access protected
-   */
-  protected $_context;
 
   /**
    * The contextMenu
@@ -101,38 +93,6 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
   protected $_ssID;
 
   /**
-   * Are we forced to run a search
-   *
-   * @var int
-   * @access protected
-   */
-  protected $_force;
-
-  /**
-   * name of search button
-   *
-   * @var string
-   * @access protected
-   */
-  protected $_searchButtonName;
-
-    /**
-   * name of print button
-   *
-   * @var string
-   * @access protected
-   */
-  protected $_printButtonName;
-
-  /**
-   * name of action button
-   *
-   * @var string
-   * @access protected
-   */
-  protected $_actionButtonName;
-
-  /**
    * the group elements
    *
    * @var array
@@ -150,14 +110,6 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
    */
   public $_tag;
   public $_tagElement;
-
-  /**
-   * form values that we will be using
-   *
-   * @var array
-   * @access protected
-   */
-  public $_formValues;
 
   /**
    * The params used for search
@@ -215,14 +167,6 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
   protected $_modeValue;
 
   /**
-   * have we already done this search
-   *
-   * @access protected
-   * @var boolean
-   */
-  protected $_done;
-
-  /**
    * name of the selector to use
    */
   static $_selectorName = 'CRM_Contact_Selector';
@@ -253,6 +197,11 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
     return self::$_validContext;
   }
 
+  /**
+   * @param $context
+   *
+   * @return bool
+   */
   static function isSearchContext($context) {
     $searchContext = CRM_Utils_Array::value($context, self::validContext());
     return $searchContext ? TRUE : FALSE;
@@ -337,6 +286,11 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
     }
   }
 
+  /**
+   * @param int $mode
+   *
+   * @return mixed
+   */
   static function getModeValue($mode = 1) {
     self::setModeValues();
 
@@ -347,6 +301,9 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
     return self::$_modeValues[$mode];
   }
 
+  /**
+   * @return array
+   */
   static function getModeSelect() {
     self::setModeValues();
 
@@ -379,9 +336,14 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
    * @return void
    */
   function buildQuickForm() {
+    parent::buildQuickForm();
+    CRM_Core_Resources::singleton()
+      // jsTree is needed for tags popup
+      ->addScriptFile('civicrm', 'packages/jquery/plugins/jstree/jquery.jstree.js', 0, 'html-header', FALSE)
+      ->addStyleFile('civicrm', 'packages/jquery/plugins/jstree/themes/default/style.css', 0, 'html-header');
     $permission = CRM_Core_Permission::getPermission();
     // some tasks.. what do we want to do with the selected contacts ?
-    $tasks = array('' => ts('- actions -'));
+    $tasks = array();
     if ($this->_componentMode == 1 || $this->_componentMode == 7) {
       $tasks += CRM_Contact_Task::permissionedTaskTitles($permission,
         CRM_Utils_Array::value('deleted_contacts', $this->_formValues)
@@ -483,32 +445,24 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
       $this->assign_by_ref('group', $groupValues);
       $this->add('submit', $this->_actionButtonName, ts('Add Contacts to %1', array(1 => $this->_group[$this->_amtgID])),
         array(
-          'class' => 'form-submit',
-          'onclick' => "return checkPerformAction('mark_x', '" . $this->getName() . "', 1);",
+          'class' => 'crm-form-submit',
         )
       );
       $this->add('hidden', 'task', CRM_Contact_Task::GROUP_CONTACTS);
+      $selectedRowsRadio = $this->addElement('radio', 'radio_ts', NULL, '', 'ts_sel', array('checked' => 'checked'));
+      $allRowsRadio = $this->addElement('radio', 'radio_ts', NULL, '', 'ts_all');
+      $this->assign('ts_sel_id', $selectedRowsRadio->_attributes['id']);
+      $this->assign('ts_all_id', $allRowsRadio->_attributes['id']);
     }
     else {
-      $this->add('select', 'task', ts('Actions:') . ' ', $tasks);
-      $this->add('submit', $this->_actionButtonName, ts('Go'),
-        array(
-          'class' => 'form-submit',
-          'id' => 'Go',
-          'onclick' => "return checkPerformAction('mark_x', '" . $this->getName() . "', 0, 1);",
-        )
-      );
+      $this->addTaskMenu($tasks);
     }
 
-    // need to perform tasks on all or selected items ? using radio_ts(task selection) for it
-    $selectedRowsRadio = $this->addElement('radio', 'radio_ts', NULL, '', 'ts_sel', array(
-      'checked' => 'checked',
-        'onclick' => 'toggleTaskAction( true );',
-      ));
-    $this->assign('ts_sel_id', $selectedRowsRadio->_attributes['id']);
-
-
-    if ($qfKeyParam = CRM_Utils_Array::value('qfKey', $this->_formValues)) {
+    $selectedContactIds = array();
+    $qfKeyParam = CRM_Utils_Array::value('qfKey', $this->_formValues);
+    // We use ajax to handle selections only if the search results component_mode is set to "contacts"
+    if ($qfKeyParam && ($this->get('component_mode') <= 1 || $this->get('component_mode') == 7)) {
+      $this->addClass('crm-ajax-selection-form');
       $qfKeyParam = "civicrm search {$qfKeyParam}";
       $selectedContactIdsArr = CRM_Core_BAO_PrevNextCache::getSelection($qfKeyParam);
       $selectedContactIds = array_keys($selectedContactIdsArr[$qfKeyParam]);
@@ -516,52 +470,12 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
 
     $this->assign_by_ref('selectedContactIds', $selectedContactIds);
 
-    $allRowsRadio = $this->addElement('radio', 'radio_ts', NULL, '', 'ts_all', array('onclick' => $this->getName() . ".toggleSelect.checked = false; toggleCheckboxVals('mark_x_', this);toggleTaskAction( true );toggleContactSelection( 'resetSel', '{$qfKeyParam}', 'reset' );"));
-    $this->assign('ts_all_id', $allRowsRadio->_attributes['id']);
-
-    /*
-         * add form checkboxes for each row. This is needed out here to conform to QF protocol
-         * of all elements being declared in builQuickForm
-         */
-
     $rows = $this->get('rows');
 
     if (is_array($rows)) {
-      $this->addElement('checkbox', 'toggleSelect', NULL, NULL, array('onclick' => "toggleTaskAction( true );  toggleCheckboxVals('mark_x_',this);return toggleContactSelection( 'toggleSelect', '" . $qfKeyParam . "' , 'multiple' );"));
-
-      $unselectedContactIds = array();
-      foreach ($rows as $row) {
-        $this->addElement('checkbox', $row['checkbox'],
-          NULL, NULL,
-          array('onclick' => "toggleContactSelection( '" . $row['checkbox'] . "', '" . $qfKeyParam . "' , 'single' );toggleTaskAction( true ); return checkSelectedBox('" . $row['checkbox'] . "');")
-        );
-
-        if (!in_array($row['contact_id'], $selectedContactIds)) {
-          $unselectedContactIds[] = $row['contact_id'];
-        }
-      }
-      $this->assign_by_ref('unselectedContactIds', $unselectedContactIds);
+      $this->addRowSelectors($rows);
     }
 
-    // add buttons
-    $this->addButtons(array(
-        array(
-          'type' => 'refresh',
-          'name' => ts('Search'),
-          'isDefault' => TRUE,
-        ),
-      )
-    );
-
-    $this->add('submit', $this->_printButtonName, ts('Print'),
-      array(
-        'class' => 'form-submit',
-        'id' => 'Print',
-        'onclick' => "return checkPerformAction('mark_x', '" . $this->getName() . "', 1, 1);",
-      )
-    );
-
-    $this->setDefaultAction('refresh');
   }
 
   /**
@@ -573,7 +487,7 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
   function preProcess() {
     // set the various class variables
 
-    $this->_group = CRM_Core_PseudoConstant::nestedGroup();
+    $this->_group = CRM_Core_PseudoConstant::group();
 
     $this->_groupIterator = CRM_Core_PseudoConstant::groupIterator();
     $this->_tag = CRM_Core_BAO_Tag::getTags();
@@ -601,10 +515,7 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
      * set the button names
      */
     $this->_searchButtonName = $this->getButtonName('refresh');
-    $this->_printButtonName = $this->getButtonName('next', 'print');
     $this->_actionButtonName = $this->getButtonName('next', 'action');
-
-    $this->assign('printButtonName', $this->_printButtonName);
 
     $this->assign('actionButtonName', $this->_actionButtonName);
 
@@ -740,7 +651,7 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
     }
 
     // show the context menu only when we’re not searching for deleted contacts; CRM-5673
-    if (!CRM_Utils_Array::value('deleted_contacts', $this->_formValues)) {
+    if (empty($this->_formValues['deleted_contacts'])) {
       $menuItems = CRM_Contact_BAO_Contact::contextMenu();
       $primaryActions = CRM_Utils_Array::value('primaryActions', $menuItems, array());
       $this->_contextMenu = CRM_Utils_Array::value('moreActions', $menuItems, array());
@@ -816,6 +727,9 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
     $controller->moveFromSessionToTemplate();
   }
 
+  /**
+   * @return array
+   */
   function &getFormValues() {
     return $this->_formValues;
   }
@@ -850,25 +764,19 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
     //get the button name
     $buttonName = $this->controller->getButtonName();
 
-    if (isset($this->_ufGroupID) &&
-      !CRM_Utils_Array::value('uf_group_id', $this->_formValues)
-    ) {
+    if (isset($this->_ufGroupID) && empty($this->_formValues['uf_group_id'])) {
       $this->_formValues['uf_group_id'] = $this->_ufGroupID;
     }
 
-    if (isset($this->_componentMode) &&
-      !CRM_Utils_Array::value('component_mode', $this->_formValues)
-    ) {
+    if (isset($this->_componentMode) && empty($this->_formValues['component_mode'])) {
       $this->_formValues['component_mode'] = $this->_componentMode;
     }
 
-    if (isset($this->_operator) &&
-      !CRM_Utils_Array::value('operator', $this->_formValues)
-    ) {
+    if (isset($this->_operator) && empty($this->_formValues['operator'])) {
       $this->_formValues['operator'] = $this->_operator;
     }
 
-    if (!CRM_Utils_Array::value('qfKey', $this->_formValues)) {
+    if (empty($this->_formValues['qfKey'])) {
       $this->_formValues['qfKey'] = $this->controller->_key;
     }
 
@@ -881,7 +789,7 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
     $this->set('queryParams', $this->_params);
     $this->set('returnProperties', $this->_returnProperties);
 
-    if ($buttonName == $this->_actionButtonName || $buttonName == $this->_printButtonName) {
+    if ($buttonName == $this->_actionButtonName) {
       // check actionName and if next, then do not repeat a search, since we are going to the next page
       // hack, make sure we reset the task values
       $stateMachine = $this->controller->getStateMachine();
@@ -958,6 +866,9 @@ class CRM_Contact_Form_Search extends CRM_Core_Form {
     }
   }
 
+  /**
+   * @return null
+   */
   function &returnProperties() {
     return CRM_Core_DAO::$_nullObject;
   }

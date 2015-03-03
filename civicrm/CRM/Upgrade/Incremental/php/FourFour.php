@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,7 +27,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -36,6 +36,11 @@ class CRM_Upgrade_Incremental_php_FourFour {
 
   const MAX_WORD_REPLACEMENT_SIZE = 255;
 
+  /**
+   * @param $errors
+   *
+   * @return bool
+   */
   function verifyPreDBstate(&$errors) {
     return TRUE;
   }
@@ -46,8 +51,11 @@ class CRM_Upgrade_Incremental_php_FourFour {
    * Note: This function is called iteratively for each upcoming
    * revision to the database.
    *
-   * @param $postUpgradeMessage string, alterable
+   * @param $preUpgradeMessage
    * @param $rev string, a version number, e.g. '4.4.alpha1', '4.4.beta3', '4.4.0'
+   * @param null $currentVer
+   *
+   * @internal param string $postUpgradeMessage , alterable
    * @return void
    */
   function setPreUpgradeMessage(&$preUpgradeMessage, $rev, $currentVer = NULL) {
@@ -100,6 +108,11 @@ WHERE ceft.entity_table = 'civicrm_contribution' AND cft.payment_instrument_id I
     }
   }
 
+  /**
+   * @param $rev
+   *
+   * @return bool
+   */
   function upgrade_4_4_alpha1($rev) {
     // task to process sql
     $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => '4.4.alpha1')), 'task_4_4_x_runSql', $rev);
@@ -110,6 +123,9 @@ WHERE ceft.entity_table = 'civicrm_contribution' AND cft.payment_instrument_id I
     return TRUE;
   }
 
+  /**
+   * @param $rev
+   */
   function upgrade_4_4_beta1($rev) {
     $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => '4.4.beta1')), 'task_4_4_x_runSql', $rev);
 
@@ -136,6 +152,9 @@ WHERE ceft.entity_table = 'civicrm_contribution' AND cft.payment_instrument_id I
     $this->addTask('Migrate custom word-replacements', 'wordReplacements');
   }
 
+  /**
+   * @param $rev
+   */
   function upgrade_4_4_1($rev) {
     $config = CRM_Core_Config::singleton();
     // CRM-13327 upgrade handling for the newly added name badges
@@ -233,6 +252,11 @@ VALUES {$insertStatus}";
     $this->addTask('Patch word-replacement schema', 'wordReplacements_patch', $rev);
   }
 
+  /**
+   * @param $rev
+   *
+   * @return bool
+   */
   function upgrade_4_4_4($rev) {
     $fkConstraint = array();
     if (!CRM_Core_DAO::checkFKConstraintInFormat('civicrm_activity_contact', 'activity_id')) {
@@ -307,12 +331,15 @@ ALTER TABLE civicrm_dashboard
     return TRUE;
   }
 
+  /**
+   * @param $rev
+   */
   function upgrade_4_4_6($rev){
     $sql = "SELECT count(*) AS count FROM INFORMATION_SCHEMA.STATISTICS where ".
-      "INDEX_NAME = 'index_image_url' AND TABLE_NAME = 'civicrm_contact';";
+      "TABLE_SCHEMA = database() AND INDEX_NAME = 'index_image_url' AND TABLE_NAME = 'civicrm_contact';";
     $dao = CRM_Core_DAO::executeQuery($sql);
     $dao->fetch();
-    if($dao->count < 1) {
+    if ($dao->count < 1) {
       $sql = "CREATE INDEX index_image_url ON civicrm_contact (image_url);";
       $dao = CRM_Core_DAO::executeQuery($sql);
     }
@@ -325,6 +352,13 @@ ALTER TABLE civicrm_dashboard
     }
   }
 
+  /**
+   * @param CRM_Queue_TaskContext $ctx
+   * @param $startId
+   * @param $endId
+   *
+   * @return bool
+   */
   function upgrade_4_4_7($rev, $originalVer, $latestVer) {
     // For WordPress/Joomla(?), cleanup broken image_URL from 4.4.6 upgrades - https://issues.civicrm.org/jira/browse/CRM-14971
     $exBackendUrl = CRM_Utils_System::url('civicrm/contact/imagefile', 'photo=XXX', TRUE); // URL formula from 4.4.6 upgrade
@@ -479,6 +513,8 @@ AND image_URL IS NOT NULL
   /**
    * Update activity contacts CRM-12274
    *
+   * @param CRM_Queue_TaskContext $ctx
+   *
    * @return bool TRUE for success
    */
   static function activityContacts(CRM_Queue_TaskContext $ctx) {
@@ -586,6 +622,8 @@ WHERE       source_contact_id IS NOT NULL";
   /**
    * Migrate word-replacements from $config to civicrm_word_replacement
    *
+   * @param CRM_Queue_TaskContext $ctx
+   *
    * @return bool TRUE for success
    * @see http://issues.civicrm.org/jira/browse/CRM-13187
    */
@@ -614,6 +652,9 @@ CREATE TABLE IF NOT EXISTS `civicrm_word_replacement` (
    * and bad configurations, we change the constraint name from "UI_find"
    * (the original name in 4.4.0) to "UI_domain_find" (the new name in
    * 4.4.1).
+   *
+   * @param CRM_Queue_TaskContext $ctx
+   * @param $rev
    *
    * @return bool TRUE for success
    * @see http://issues.civicrm.org/jira/browse/CRM-13655

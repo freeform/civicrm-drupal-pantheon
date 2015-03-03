@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -58,6 +58,9 @@ class CRM_Member_PseudoConstant extends CRM_Core_PseudoConstant {
    *
    * @access public
    *
+   * @param null $id
+   * @param bool $force
+   *
    * @return array - array reference of all membership types if any
    * @static
    */
@@ -85,10 +88,15 @@ class CRM_Member_PseudoConstant extends CRM_Core_PseudoConstant {
    *
    * @access public
    *
+   * @param null $id
+   * @param null $cond
+   * @param string $column
+   * @param bool $force
+   *
    * @return array - array reference of all membership statuss if any
    * @static
    */
-  public static function &membershipStatus($id = NULL, $cond = NULL, $column = 'name', $force = FALSE) {
+  public static function &membershipStatus($id = NULL, $cond = NULL, $column = 'name', $force = FALSE, $allStatus = FALSE) {
     if (self::$membershipStatus === NULL) {
       self::$membershipStatus = array();
     }
@@ -100,7 +108,7 @@ class CRM_Member_PseudoConstant extends CRM_Core_PseudoConstant {
     if (!isset(self::$membershipStatus[$cacheKey]) || $force) {
       CRM_Core_PseudoConstant::populate(self::$membershipStatus[$cacheKey],
         'CRM_Member_DAO_MembershipStatus',
-        FALSE, $column, 'is_active', $cond, 'weight'
+        $allStatus, $column, 'is_active', $cond, 'weight'
       );
     }
 
@@ -122,8 +130,7 @@ class CRM_Member_PseudoConstant extends CRM_Core_PseudoConstant {
    * @access public
    * @static
    *
-   * @param boolean $name pseudoconstant to be flushed
-   *
+   * @param bool|string $name pseudoconstant to be flushed
    */
   public static function flush($name = 'cache') {
    if (isset(self::$$name)) {

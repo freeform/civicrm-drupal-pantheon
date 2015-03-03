@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -37,7 +37,23 @@
  * Drupal specific stuff goes here
  */
 abstract class CRM_Utils_System_DrupalBase extends CRM_Utils_System_Base {
+
+  /**
+   * Does this CMS / UF support a CMS specific logging mechanism?
+   * @todo - we should think about offering up logging mechanisms in a way that is also extensible by extensions
+   * @var bool
+   */
+  var $supports_UF_Logging = TRUE;
+  /**
+   *
+   */
   function __construct() {
+    /**
+     * deprecated property to check if this is a drupal install. The correct method is to have functions on the UF classes for all UF specific
+     * functions and leave the codebase oblivious to the type of CMS
+     * @deprecated
+     * @var bool
+     */
     $this->is_drupal = TRUE;
     $this->supports_form_extensions = TRUE;
   }
@@ -197,5 +213,88 @@ abstract class CRM_Utils_System_DrupalBase extends CRM_Utils_System_Base {
         }
       }
     }
+  }
+
+  /**
+   * Get User ID from UserFramework system (Drupal)
+   * @param object $user object as described by the CMS
+   * @return mixed <NULL, number>
+   */
+  function getUserIDFromUserObject($user) {
+    return !empty($user->uid) ? $user->uid : NULL;
+  }
+
+  /**
+   * Get Unique Identifier from UserFramework system (CMS)
+   * @param object $user object as described by the User Framework
+   * @return mixed $uniqueIdentifer Unique identifier from the user Framework system
+   *
+   */
+  function getUniqueIdentifierFromUserObject($user) {
+    return empty($user->mail) ? NULL : $user->mail;
+  }
+
+  /**
+   * Get currently logged in user unique identifier - this tends to be the email address or user name.
+   *
+   * @return string $userID logged in user unique identifier
+   */
+  function getLoggedInUniqueIdentifier() {
+    global $user;
+    return $this->getUniqueIdentifierFromUserObject($user);
+  }
+
+  /**
+   * Action to take when access is not permitted
+   */
+  function permissionDenied() {
+    drupal_access_denied();
+  }
+
+  /**
+   * Get Url to view user record
+   * @param integer $contactID Contact ID
+   *
+   * @return string
+   */
+  function getUserRecordUrl($contactID) {
+    $uid = CRM_Core_BAO_UFMatch::getUFId($contactID);
+    if (CRM_Core_Session::singleton()->get('userID') == $contactID || CRM_Core_Permission::checkAnyPerm(array('cms:administer users', 'cms:view user account'))) {
+      return CRM_Utils_System::url('user/' . $uid);
+    };
+  }
+
+  /**
+   * Is the current user permitted to add a user
+   * @return bool
+   */
+  function checkPermissionAddUser() {
+    if (CRM_Core_Permission::check('administer users')) {
+      return TRUE;
+    }
+  }
+
+
+  /**
+   * Log error to CMS
+   */
+  function logger($message) {
+    if (CRM_Core_Config::singleton()->userFrameworkLogging) {
+      watchdog('civicrm', $message, NULL, WATCHDOG_DEBUG);
+    }
+  }
+
+  /**
+   * Flush css/js caches
+   */
+  function clearResourceCache() {
+    _drupal_flush_css_js();
+  }
+
+  /**
+   * Append to coreResourcesList
+   */
+  function appendCoreResources(&$list) {
+    $list[] = 'js/crm.drupal.js';
   }
 }

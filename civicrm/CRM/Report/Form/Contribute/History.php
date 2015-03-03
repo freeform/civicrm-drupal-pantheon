@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -50,6 +50,13 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
   protected $_yearStatisticsFrom = '';
 
   protected $_yearStatisticsTo = '';
+
+  /**
+   *
+   */
+  /**
+   *
+   */
   function __construct() {
     $yearsInPast = 4;
     $date        = CRM_Core_SelectValues::date('custom', NULL, $yearsInPast, 0);
@@ -224,23 +231,6 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
           ),
         ),
       ),
-    ) + array(
-      'civicrm_group' =>
-      array(
-        'dao' => 'CRM_Contact_DAO_GroupContact',
-        'alias' => 'cgroup',
-        'filters' =>
-        array(
-          'gid' =>
-          array(
-            'name' => 'group_id',
-            'title' => ts('Group'),
-            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'group' => TRUE,
-            'options' => CRM_Core_PseudoConstant::nestedGroup(),
-          ),
-        ),
-      ),
     );
 
     $this->_columns['civicrm_contribution']['fields']['civicrm_upto_' . $this->_yearStatisticsFrom] = array('title' => ts('Up To %1 Donation', array(1 => $this->_yearStatisticsFrom)),
@@ -265,6 +255,7 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
       'is_statistics' => TRUE,
     );
 
+    $this->_groupFilter = TRUE;
     $this->_tagFilter = TRUE;
     parent::__construct();
   }
@@ -281,9 +272,7 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
       if (array_key_exists('fields', $table)) {
         foreach ($table['fields'] as $fieldName => $field) {
 
-          if (CRM_Utils_Array::value('required', $field) ||
-            CRM_Utils_Array::value($fieldName, $this->_params['fields'])
-          ) {
+          if (!empty($field['required']) || !empty($this->_params['fields'][$fieldName])) {
             if ($tableName == 'civicrm_address') {
               $this->_addressField = TRUE;
             }
@@ -300,17 +289,14 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
               continue;
             }
 
-            if (CRM_Utils_Array::value('is_statistics', $field)) {
+            if (!empty($field['is_statistics'])) {
               $this->_columnHeaders[$fieldName]['type'] = $field['type'];
               $this->_columnHeaders[$fieldName]['title'] = $field['title'];
               continue;
             }
             elseif ($fieldName == 'receive_date') {
-                if ((CRM_Utils_Array::value('this_year_op', $this->_params) == 'fiscal' &&
-                     CRM_Utils_Array::value('this_year_value', $this->_params)) ||
-                    (CRM_Utils_Array::value('other_year_op', $this->_params == 'fiscal') &&
-                      CRM_Utils_Array::value('other_year_value', $this->_params)
-                     )){
+                if ((CRM_Utils_Array::value('this_year_op', $this->_params) == 'fiscal' && !empty($this->_params['this_year_value'])) ||
+                    (CRM_Utils_Array::value('other_year_op', $this->_params == 'fiscal') && !empty($this->_params['other_year_value']))){
                     $select[] = self::fiscalYearOffset($field['dbAlias']) . " as {$tableName}_{$fieldName}";
                 }else{
                     $select[] = " YEAR(".$field['dbAlias'].")" . " as {$tableName}_{$fieldName}";
@@ -324,7 +310,7 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
               $this->_columnHeaders["{$tableName}_{$fieldName}"]['type'] = CRM_Utils_Array::value('type', $field);
               $this->_columnHeaders["{$tableName}_{$fieldName}"]['title'] = $field['title'];
             }
-            if (CRM_Utils_Array::value('no_display', $field)) {
+            if (!empty($field['no_display'])) {
               $this->_columnHeaders["{$tableName}_{$fieldName}"]['no_display'] = TRUE;
             }
           }
@@ -407,7 +393,7 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
               $this->_statusClause = " AND " . $clause;
             }
 
-            if (CRM_Utils_Array::value('having', $field)) {
+            if (!empty($field['having'])) {
               $havingClauses[] = $clause;
             }
             else {
@@ -445,15 +431,26 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
   }
 
   //Override to set limit is 10
+  /**
+   * @param int $rowCount
+   */
   function limit($rowCount = self::ROW_COUNT_LIMIT) {
     parent::limit($rowCount);
   }
 
   //Override to set pager with limit is 10
+  /**
+   * @param int $rowCount
+   */
   function setPager($rowCount = self::ROW_COUNT_LIMIT) {
     parent::setPager($rowCount);
   }
 
+  /**
+   * @param $rows
+   *
+   * @return array
+   */
   function statistics(&$rows) {
     $statistics = parent::statistics($rows);
     $count = 0;
@@ -475,10 +472,16 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
     return $statistics;
   }
 
+  /**
+   * @param $fields
+   * @param $files
+   * @param $self
+   *
+   * @return array
+   */
   static function formRule($fields, $files, $self) {
     $errors = array();
-    if (CRM_Utils_Array::value('this_year_value', $fields) &&
-      CRM_Utils_Array::value('other_year_value', $fields) &&
+    if (!empty($fields['this_year_value']) && !empty($fields['other_year_value']) &&
       ($fields['this_year_value'] == $fields['other_year_value'])
     ) {
       $errors['other_year_value'] = ts("Value for filters 'This Year' and 'Other Years' can not be same.");
@@ -498,11 +501,12 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
     $this->customDataFrom();
     $this->groupBy();
 
+    $sql = NULL;
     $rows = array();
 
     // build array of result based on column headers. This method also allows
     // modifying column headers before using it to build result set i.e $rows.
-    $this->buildRows($rows);
+    $this->buildRows($sql, $rows);
 
     // format result set.
     $this->formatDisplay($rows, FALSE);
@@ -515,24 +519,27 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
   }
 
   function fixReportParams() {
-    if (CRM_Utils_Array::value('this_year_value', $this->_params)) {
+    if (!empty($this->_params['this_year_value'])) {
       $this->_referenceYear['this_year'] = $this->_params['this_year_value'];
     }
-    if (CRM_Utils_Array::value('other_year_value', $this->_params)) {
+    if (!empty($this->_params['other_year_value'])) {
       $this->_referenceYear['other_year'] = $this->_params['other_year_value'];
     }
   }
 
-  function buildRows(&$rows) {
+  /**
+   * @param $rows
+   */
+  function buildRows($sql, &$rows) {
     $contactIds = array();
 
     $addWhere = '';
 
-    if (CRM_Utils_Array::value('other_year', $this->_referenceYear)) {
+    if (!empty($this->_referenceYear['other_year'])) {
         (CRM_Utils_Array::value('other_year_op', $this->_params) == 'calendar') ? $other_receive_date = 'YEAR (contri.receive_date)' : $other_receive_date = self::fiscalYearOffset('contri.receive_date');
         $addWhere .= " AND {$this->_aliases['civicrm_contact']}.id NOT IN ( SELECT DISTINCT cont.id FROM civicrm_contact cont, civicrm_contribution contri WHERE  cont.id = contri.contact_id AND {$other_receive_date} = {$this->_referenceYear['other_year']} AND contri.is_test = 0 ) ";
     }
-    if (CRM_Utils_Array::value('this_year', $this->_referenceYear)) {
+    if (!empty($this->_referenceYear['this_year'])) {
         (CRM_Utils_Array::value('this_year_op', $this->_params) == 'calendar') ? $receive_date = 'YEAR (contri.receive_date)' : $receive_date = self::fiscalYearOffset('contri.receive_date');
         $addWhere .= " AND {$this->_aliases['civicrm_contact']}.id IN ( SELECT DISTINCT cont.id FROM civicrm_contact cont, civicrm_contribution contri WHERE cont.id = contri.contact_id AND {$receive_date} = {$this->_referenceYear['this_year']} AND contri.is_test = 0 ) ";
     }
@@ -598,7 +605,7 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
         }
 
         foreach (array_keys($this->_relationshipColumns) as $col) {
-          if (CRM_Utils_Array::value($col, $relRow)) {
+          if (!empty($relRow[$col])) {
             $relatedRow[$col] = $relRow[$col];
           }
         }
@@ -611,6 +618,11 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
     }
   }
 
+  /**
+   * @param $contactIds
+   *
+   * @return array
+   */
   function buildContributionRows($contactIds) {
     $rows = array();
     if (empty($contactIds)) {
@@ -654,6 +666,11 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
     return $rows;
   }
 
+  /**
+   * @param $contactIds
+   *
+   * @return array
+   */
   function buildRelationshipRows($contactIds) {
     $relationshipRows = $relatedContactIds = array();
     if (empty($contactIds)) {
@@ -692,6 +709,12 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
   }
 
   // Override "This Year" $op options
+  /**
+   * @param string $type
+   * @param null $fieldName
+   *
+   * @return array
+   */
   function getOperationPair($type = "string", $fieldName = NULL) {
     if ($fieldName == 'this_year' || $fieldName == 'other_year') {
       return array('calendar' => ts('Is Calendar Year'), 'fiscal' => ts('Fiscal Year Starting'));
@@ -699,6 +722,9 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
     return parent::getOperationPair($type, $fieldName);
   }
 
+  /**
+   * @param $rows
+   */
   function alterDisplay(&$rows) {
     if (empty($rows)) {
       return;
@@ -732,9 +758,7 @@ class CRM_Report_Form_Contribute_History extends CRM_Report_Form {
       }
 
       // Convert Display name into link
-      if (CRM_Utils_Array::value('civicrm_contact_sort_name', $row) &&
-        CRM_Utils_Array::value('civicrm_contact_id', $row)
-      ) {
+      if (!empty($row['civicrm_contact_sort_name']) && !empty($row['civicrm_contact_id'])) {
         $url = CRM_Report_Utils_Report::getNextUrl('contribute/detail',
           'reset=1&force=1&id_op=eq&id_value=' . $row['civicrm_contact_id'],
           $this->_absoluteUrl, $this->_id

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -135,7 +135,7 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
     }
 
     //build the returnproperties
-    $returnProperties = array('display_name' => 1, 'contact_type' => 1);
+    $returnProperties = array('display_name' => 1, 'contact_type' => 1, 'prefix_id' => 1);
     $mailingFormat = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME,
       'mailing_format'
     );
@@ -154,7 +154,7 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
     if (stristr($mailingFormat, 'custom_')) {
       foreach ($mailingFormatProperties as $token => $true) {
         if (substr($token, 0, 7) == 'custom_') {
-          if (!CRM_Utils_Array::value($token, $customFormatProperties)) {
+          if (empty($customFormatProperties[$token])) {
             $customFormatProperties[$token] = $mailingFormatProperties[$token];
           }
         }
@@ -184,7 +184,7 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
 
     //get the contacts information
     $params = array();
-    if (CRM_Utils_Array::value('location_type_id', $fv)) {
+    if (!empty($fv['location_type_id'])) {
       $locType          = CRM_Core_PseudoConstant::get('CRM_Core_DAO_Address', 'location_type_id');
       $locName          = $locType[$fv['location_type_id']];
       $location         = array('location' => array("{$locName}" => $address));
@@ -205,7 +205,7 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
     }
 
     // fix for CRM-2651
-    if (CRM_Utils_Array::value('do_not_mail', $fv)) {
+    if (!empty($fv['do_not_mail'])) {
       $params[] = array('do_not_mail', '=', 0, 0, 0);
     }
     // fix for CRM-2613
@@ -258,7 +258,7 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
       // we need to remove all the "_id"
       unset($contact['contact_id']);
 
-      if ($locName && CRM_Utils_Array::value($locName, $contact)) {
+      if ($locName && !empty($contact[$locName])) {
         // If location type is not primary, $contact contains
         // one more array as "$contact[$locName] = array( values... )"
 
@@ -266,9 +266,10 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
           continue;
         }
 
+        $contact = array_merge($contact, $contact[$locName]);
         unset($contact[$locName]);
 
-        if (CRM_Utils_Array::value('county_id', $contact)) {
+        if (!empty($contact['county_id'])) {
           unset($contact['county_id']);
         }
 
@@ -279,7 +280,7 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
         $valuesothers = array();
         $paramsothers = array('contact_id' => $value);
         $valuesothers = CRM_Core_BAO_Location::getValues($paramsothers, $valuesothers);
-        if (CRM_Utils_Array::value('location_type_id', $fv)) {
+        if (!empty($fv['location_type_id'])) {
           foreach ($valuesothers as $vals) {
                         if ( CRM_Utils_Array::value('location_type_id', $vals) ==
                              CRM_Utils_Array::value('location_type_id', $fv ) ) {
@@ -304,10 +305,10 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
           continue;
         }
 
-        if (CRM_Utils_Array::value('addressee_display', $contact)) {
+        if (!empty($contact['addressee_display'])) {
           $contact['addressee_display'] = trim($contact['addressee_display']);
         }
-        if (CRM_Utils_Array::value('addressee', $contact)) {
+        if (!empty($contact['addressee'])) {
           $contact['addressee'] = $contact['addressee_display'];
         }
 
@@ -358,13 +359,16 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
 
   /**
    * Check for presence of tokens to be swapped out
+   *
    * @param array $contact
    * @param array $mailingFormatProperties
    * @param array $tokenFields
+   *
+   * @return bool
    */
   function tokenIsFound($contact, $mailingFormatProperties, $tokenFields) {
     foreach (array_merge($mailingFormatProperties, array_fill_keys($tokenFields, 1)) as $key => $dontCare) {
-      if (CRM_Utils_Array::value($key, $contact)) {
+      if (!empty($contact[$key])) {
         return TRUE;
       }
     }
@@ -426,6 +430,9 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
     return $returnProperties;
   }
 
+  /**
+   * @param $rows
+   */
   function mergeSameAddress(&$rows) {
     $uniqueAddress = array();
     foreach (array_keys($rows) as $rowID) {
@@ -438,18 +445,28 @@ class CRM_Contact_Form_Task_Label extends CRM_Contact_Form_Task {
       else {
         $name = $rows[$rowID]['display_name'];
       }
+
+      // CRM-15120
+      $formatted = array(
+        'first_name' => $rows[$rowID]['first_name'],
+        'individual_prefix' => $rows[$rowID]['individual_prefix']
+      );
+      $format = CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'display_name_format');
+      $firstNameWithPrefix = CRM_Utils_Address::format($formatted, $format, FALSE, FALSE, TRUE);
+      $firstNameWithPrefix = trim($firstNameWithPrefix);
+
       // fill uniqueAddress array with last/first name tree
       if (isset($uniqueAddress[$address])) {
-        $uniqueAddress[$address]['names'][$name][$rows[$rowID]['first_name']]['first_name'] = $rows[$rowID]['first_name'];
-        $uniqueAddress[$address]['names'][$name][$rows[$rowID]['first_name']]['addressee_display'] = $rows[$rowID]['addressee_display'];
+        $uniqueAddress[$address]['names'][$name][$firstNameWithPrefix]['first_name'] = $rows[$rowID]['first_name'];
+        $uniqueAddress[$address]['names'][$name][$firstNameWithPrefix]['addressee_display'] = $rows[$rowID]['addressee_display'];
         // drop unnecessary rows
         unset($rows[$rowID]);
         // this is the first listing at this address
       }
       else {
         $uniqueAddress[$address]['ID'] = $rowID;
-        $uniqueAddress[$address]['names'][$name][$rows[$rowID]['first_name']]['first_name'] = $rows[$rowID]['first_name'];
-        $uniqueAddress[$address]['names'][$name][$rows[$rowID]['first_name']]['addressee_display'] = $rows[$rowID]['addressee_display'];
+        $uniqueAddress[$address]['names'][$name][$firstNameWithPrefix]['first_name'] = $rows[$rowID]['first_name'];
+        $uniqueAddress[$address]['names'][$name][$firstNameWithPrefix]['addressee_display'] = $rows[$rowID]['addressee_display'];
       }
     }
     foreach ($uniqueAddress as $address => $data) {

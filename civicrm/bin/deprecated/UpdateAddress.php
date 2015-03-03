@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -132,6 +132,13 @@ function run() {
   processContacts($config, $processGeocode, $parseStreetAddress, $start, $end);
 }
 
+/**
+ * @param $config
+ * @param $processGeocode
+ * @param $parseStreetAddress
+ * @param null $start
+ * @param null $end
+ */
 function processContacts(&$config, $processGeocode, $parseStreetAddress, $start = NULL, $end = NULL) {
   // build where clause.
   $clause = array('( c.id = a.contact_id )');
@@ -224,9 +231,7 @@ WHERE      {$whereClause}
       $success = TRUE;
       // consider address is automatically parseable,
       // when we should found street_number and street_name
-      if (!CRM_Utils_Array::value('street_name', $parsedFields) ||
-        !CRM_Utils_Array::value('street_number', $parsedFields)
-      ) {
+      if (empty($parsedFields['street_name']) || empty($parsedFields['street_number'])) {
         $success = FALSE;
       }
 

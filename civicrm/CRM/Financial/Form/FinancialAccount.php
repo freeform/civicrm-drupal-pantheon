@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -67,10 +67,8 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
         && !CRM_Financial_BAO_FinancialAccount::getARAccounts($this->_id, array_search('Asset', $financialAccountType))) {
         $this->_isARFlag = TRUE;
         if ($this->_action & CRM_Core_Action::DELETE) {
-          CRM_Core_Session::setStatus(ts("The selected financial account cannot be deleted because at least one Accounts Receivable type account is required (to ensure that accounting transactions are in balance)."),
-            '', 'error');
-          CRM_Utils_System::redirect(CRM_Utils_System::url('civicrm/admin/financial/financialAccount',
-            "reset=1&action=browse"));
+          $msg = ts("The selected financial account cannot be deleted because at least one Accounts Receivable type account is required (to ensure that accounting transactions are in balance).");
+          CRM_Core_Error::statusBounce($msg);
         }
       }
     }
@@ -79,14 +77,12 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
   /**
    * Function to build the form
    *
-   * @return None
+   * @return void
    * @access public
    */
   public function buildQuickForm( ) {
     parent::buildQuickForm( );
-    $dataURL = CRM_Utils_System::url('civicrm/ajax/rest',
-      'className=CRM_Contact_Page_AJAX&fnName=getContactList&json=1&context=contact&org=1', FALSE, NULL, FALSE);
-    $this->assign('dataURL', $dataURL);
+    $this->setPageTitle(ts('Financial Account'));
 
     if ($this->_action & CRM_Core_Action::DELETE) {
       return;
@@ -101,8 +97,7 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
     $this->add('text', 'description', ts('Description'), $attributes['description']);
     $this->add('text', 'accounting_code', ts('Accounting Code'), $attributes['accounting_code']);
     $elementAccounting = $this->add('text', 'account_type_code', ts('Account Type Code'), $attributes['account_type_code']);
-    $this->add('text', 'contact_name', ts('Owner'), $attributes['name']);
-    $this->add('hidden', 'contact_id', '', array('id' => 'contact_id'));
+    $this->addEntityRef('contact_id', ts('Owner'), array('api' => array('params' => array('contact_type' => 'Organization')), 'create' => TRUE));
     $this->add('text', 'tax_rate', ts('Tax Rate'), $attributes['tax_rate']);
     $this->add('checkbox', 'is_deductible', ts('Tax-Deductible?'));
     $elementActive = $this->add('checkbox', 'is_active', ts('Enabled?'));
@@ -117,7 +112,7 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
     $financialAccountType = CRM_Core_PseudoConstant::get('CRM_Financial_DAO_FinancialAccount', 'financial_account_type_id');
     if (!empty($financialAccountType)) {
       $element = $this->add('select', 'financial_account_type_id', ts('Financial Account Type'),
-        array('' => '- select -') + $financialAccountType, TRUE);
+        array('' => '- select -') + $financialAccountType, TRUE, array('class' => 'crm-select2 huge'));
       if ($this->_isARFlag) {
         $element->freeze();
         $elementAccounting->freeze();
@@ -135,7 +130,11 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
   /**
    * global validation rules for the form
    *
-   * @param array $fields posted values of the form
+   * @param $values
+   * @param $files
+   * @param $self
+   *
+   * @internal param array $fields posted values of the form
    *
    * @return array list of errors to be posted back to the form
    * @static
@@ -157,13 +156,12 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
    *
    * @access public
    *
-   * @return None
+   * @return void
    */
   function setDefaultValues() {
     $defaults = parent::setDefaultValues();
     if ($this->_action & CRM_Core_Action::ADD) {
       $defaults['contact_id'] = CRM_Core_DAO::getFieldValue('CRM_Core_DAO_Domain', CRM_Core_Config::domainID(), 'contact_id');
-      $defaults['contact_name'] = CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $defaults['contact_id'], 'sort_name');
     }
     return $defaults;
   }
@@ -172,7 +170,7 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
    * Function to process the form
    *
    * @access public
-   * @return None
+   * @return void
    */
   public function postProcess() {
     if ($this->_action & CRM_Core_Action::DELETE) {
@@ -192,6 +190,5 @@ class CRM_Financial_Form_FinancialAccount extends CRM_Contribute_Form {
       CRM_Core_Session::setStatus(ts('The Financial Account \'%1\' has been saved.', array(1 => $contributionType->name)));
     }
   }
+
 }
-
-

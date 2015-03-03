@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -49,6 +49,12 @@ class CRM_Report_Form_Mailing_Opened extends CRM_Report_Form {
     'pieChart' => 'Pie Chart',
   );
 
+  /**
+   *
+   */
+  /**
+   *
+   */
   function __construct() {
     $this->_columns = array();
 
@@ -145,20 +151,7 @@ class CRM_Report_Form_Mailing_Opened extends CRM_Report_Form {
       'grouping' => 'contact-fields',
     );
 
-    $this->_columns['civicrm_group'] = array(
-      'dao' => 'CRM_Contact_DAO_Group',
-      'alias' => 'cgroup',
-      'filters' => array(
-        'gid' => array(
-          'name' => 'group_id',
-          'title' => ts('Group'),
-          'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-          'group' => TRUE,
-          'options' => CRM_Core_PseudoConstant::nestedGroup(),
-        ),
-      ),
-    );
-
+    $this->_groupFilter = TRUE;
     $this->_tagFilter = TRUE;
     parent::__construct();
   }
@@ -174,9 +167,7 @@ class CRM_Report_Form_Mailing_Opened extends CRM_Report_Form {
     foreach ($this->_columns as $tableName => $table) {
       if (array_key_exists('fields', $table)) {
         foreach ($table['fields'] as $fieldName => $field) {
-          if (CRM_Utils_Array::value('required', $field) ||
-            CRM_Utils_Array::value($fieldName, $this->_params['fields'])
-          ) {
+          if (!empty($field['required']) || !empty($this->_params['fields'][$fieldName])) {
             if ($tableName == 'civicrm_email') {
               $this->_emailField = TRUE;
             }
@@ -193,7 +184,7 @@ class CRM_Report_Form_Mailing_Opened extends CRM_Report_Form {
       }
     }
 
-    if (CRM_Utils_Array::value('charts', $this->_params)) {
+    if (!empty($this->_params['charts'])) {
       $select[] = "COUNT(civicrm_mailing_event_opened.id) as civicrm_mailing_opened_count";
       $this->_columnHeaders["civicrm_mailing_opened_count"]['title'] = ts('Opened Count');
     }
@@ -201,6 +192,13 @@ class CRM_Report_Form_Mailing_Opened extends CRM_Report_Form {
     $this->_select = "SELECT " . implode(', ', $select) . " ";
   }
 
+  /**
+   * @param $fields
+   * @param $files
+   * @param $self
+   *
+   * @return array
+   */
   static function formRule($fields, $files, $self) {
     $errors = $grouping = array();
     return $errors;
@@ -238,7 +236,7 @@ class CRM_Report_Form_Mailing_Opened extends CRM_Report_Form {
   }
 
   function groupBy() {
-    if (CRM_Utils_Array::value('charts', $this->_params)) {
+    if (!empty($this->_params['charts'])) {
       $this->_groupBy = " GROUP BY {$this->_aliases['civicrm_mailing']}.id";
     }
     else {
@@ -263,6 +261,9 @@ class CRM_Report_Form_Mailing_Opened extends CRM_Report_Form {
     $this->endPostProcess($rows);
   }
 
+  /**
+   * @param $rows
+   */
   function buildChart(&$rows) {
     if (empty($rows)) {
       return;
@@ -283,6 +284,9 @@ class CRM_Report_Form_Mailing_Opened extends CRM_Report_Form {
     $this->assign('chartType', $this->_params['charts']);
   }
 
+  /**
+   * @param $rows
+   */
   function alterDisplay(&$rows) {
     // custom code to alter rows
     $entryFound = FALSE;

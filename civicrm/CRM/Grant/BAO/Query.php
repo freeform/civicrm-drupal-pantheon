@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,11 +29,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
 class CRM_Grant_BAO_Query {
+  /**
+   * @return array
+   */
   static function &getFields() {
     $fields = array();
     $fields = CRM_Grant_BAO_Grant::exportableFields();
@@ -43,40 +46,42 @@ class CRM_Grant_BAO_Query {
   /**
    * build select for CiviGrant
    *
+   * @param $query
+   *
    * @return void
    * @access public
    */
   static function select(&$query) {
     if ($query->_mode & CRM_Contact_BAO_Query::MODE_GRANT) {
-      if (CRM_Utils_Array::value('grant_status_id', $query->_returnProperties)) {
+      if (!empty($query->_returnProperties['grant_status_id'])) {
         $query->_select['grant_status_id'] = 'grant_status.id as grant_status_id';
         $query->_element['grant_status'] = 1;
         $query->_tables['grant_status'] = $query->_whereTables['grant_status'] = 1;
         $query->_tables['civicrm_grant'] = $query->_whereTables['civicrm_grant'] = 1;
       }
 
-      if (CRM_Utils_Array::value('grant_status', $query->_returnProperties)) {
+      if (!empty($query->_returnProperties['grant_status'])) {
         $query->_select['grant_status'] = 'grant_status.label as grant_status';
         $query->_element['grant_status'] = 1;
         $query->_tables['grant_status'] = $query->_whereTables['grant_status'] = 1;
         $query->_tables['civicrm_grant'] = $query->_whereTables['civicrm_grant'] = 1;
       }
 
-      if (CRM_Utils_Array::value('grant_type_id', $query->_returnProperties)) {
+      if (!empty($query->_returnProperties['grant_type_id'])) {
         $query->_select['grant_type_id'] = 'grant_type.id as grant_type_id';
         $query->_element['grant_type'] = 1;
         $query->_tables['grant_type'] = $query->_whereTables['grant_type'] = 1;
         $query->_tables['civicrm_grant'] = $query->_whereTables['civicrm_grant'] = 1;
       }
 
-      if (CRM_Utils_Array::value('grant_type', $query->_returnProperties)) {
+      if (!empty($query->_returnProperties['grant_type'])) {
         $query->_select['grant_type'] = 'grant_type.label as grant_type';
         $query->_element['grant_type'] = 1;
         $query->_tables['grant_type'] = $query->_whereTables['grant_type'] = 1;
         $query->_tables['civicrm_grant'] = $query->_whereTables['civicrm_grant'] = 1;
       }
 
-      if (CRM_Utils_Array::value('grant_note', $query->_returnProperties)) {
+      if (!empty($query->_returnProperties['grant_note'])) {
         $query->_select['grant_note'] = "civicrm_note.note as grant_note";
         $query->_element['grant_note'] = 1;
         $query->_tables['grant_note'] = 1;
@@ -98,6 +103,8 @@ class CRM_Grant_BAO_Query {
    * Given a list of conditions in params generate the required
    * where clause
    *
+   * @param $query
+   *
    * @return void
    * @access public
    */
@@ -113,6 +120,10 @@ class CRM_Grant_BAO_Query {
     }
   }
 
+  /**
+   * @param $values
+   * @param $query
+   */
   static function whereClauseSingle(&$values, &$query) {
     $strtolower = function_exists('mb_strtolower') ? 'mb_strtolower' : 'strtolower';
     list($name, $op, $value, $grouping, $wildcard) = $values;
@@ -226,6 +237,13 @@ class CRM_Grant_BAO_Query {
     }
   }
 
+  /**
+   * @param $name
+   * @param $mode
+   * @param $side
+   *
+   * @return null|string
+   */
   static function from($name, $mode, $side) {
     $from = NULL;
     switch ($name) {
@@ -266,6 +284,12 @@ class CRM_Grant_BAO_Query {
     return (isset($this->_qill)) ? $this->_qill : "";
   }
 
+  /**
+   * @param $mode
+   * @param bool $includeCustomFields
+   *
+   * @return array|null
+   */
   static function defaultReturnProperties($mode,
     $includeCustomFields = TRUE
   ) {
@@ -294,6 +318,8 @@ class CRM_Grant_BAO_Query {
    *
    * @access public
    *
+   * @param $form
+   *
    * @return void
    * @static
    */
@@ -301,14 +327,14 @@ class CRM_Grant_BAO_Query {
 
     $grantType = CRM_Core_OptionGroup::values('grant_type');
     $form->add('select', 'grant_type_id', ts('Grant Type'),
-      array(
-        '' => ts('- any -')) + $grantType
+      array('' => ts('- any -')) + $grantType,
+      FALSE, array('class' => 'crm-select2')
     );
 
     $grantStatus = CRM_Core_OptionGroup::values('grant_status');
     $form->add('select', 'grant_status_id', ts('Grant Status'),
-      array(
-        '' => ts('- any -')) + $grantStatus
+      array('' => ts('- any -')) + $grantStatus,
+      FALSE, array('class' => 'crm-select2')
     );
 
     $form->addDate('grant_application_received_date_low', ts('App. Received Date - From'), FALSE, array('formatType' => 'searchDate'));
@@ -331,7 +357,7 @@ class CRM_Grant_BAO_Query {
 
     $form->addElement('checkbox', 'grant_decision_date_notset', ts(''), NULL);
 
-    $form->addYesNo('grant_report_received', ts('Grant report received?'));
+    $form->addYesNo('grant_report_received', ts('Grant report received?'), TRUE);
 
     $form->add('text', 'grant_amount_low', ts('Minimum Amount'), array('size' => 8, 'maxlength' => 8));
     $form->addRule('grant_amount_low', ts('Please enter a valid money value (e.g. %1).', array(1 => CRM_Utils_Money::format('9.99', ' '))), 'money');
@@ -360,13 +386,15 @@ class CRM_Grant_BAO_Query {
     $form->assign('validGrant', TRUE);
   }
 
-  static function addShowHide(&$showHide) {
-    $showHide->addHide('grantForm');
-    $showHide->addShow('grantForm_show');
-  }
-
+  /**
+   * @param $row
+   * @param $id
+   */
   static function searchAction(&$row, $id) {}
 
+  /**
+   * @param $tables
+   */
   static function tableNames(&$tables) {}
 }
 

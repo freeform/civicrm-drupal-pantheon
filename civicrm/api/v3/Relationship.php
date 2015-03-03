@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -32,7 +32,7 @@
  * @package CiviCRM_APIv3
  * @subpackage API_Relationship
  *
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * @version $Id: Relationship.php 30486 2010-11-02 16:12:09Z shot $
  *
  */
@@ -40,15 +40,15 @@
 /**
  * Add or update a relationship
  *
- * @param  array   $params  input parameters
+ * @param  array $params input parameters
  *
+ * @throws API_Exception
  * @example RelationshipCreate.php Std Create example
  *
  * @return array API Result Array
  * {@getfields relationship_create}
  * @static void
  * @access public
- *
  */
 function civicrm_api3_relationship_create($params) {
 
@@ -57,7 +57,7 @@ function civicrm_api3_relationship_create($params) {
   $ids = array();
   $action = CRM_Core_Action::ADD;
 
-  if (CRM_Utils_Array::value('id', $params)) {
+  if (!empty($params['id'])) {
     $ids['contactTarget'] = $values['contact_id_b'];
     $action = CRM_Core_Action::UPDATE;
   }
@@ -144,7 +144,7 @@ function civicrm_api3_relationship_delete($params) {
 function civicrm_api3_relationship_get($params) {
   $options = _civicrm_api3_get_options_from_params($params);
 
-  if (!CRM_Utils_Array::value('contact_id', $params)) {
+  if (empty($params['contact_id'])) {
     if(!empty($params['membership_type_id']) && empty($params['relationship_type_id'])) {
       CRM_Contact_BAO_Relationship::membershipTypeToRelationshipTypes($params);
     }
@@ -177,11 +177,12 @@ function civicrm_api3_relationship_get($params) {
  * take the input parameter list as specified in the data model and
  * convert it into the same format that we use in QF and BAO object
  *
- * @param array  $params       Associative array of property name/value
+ * @param array $params Associative array of property name/value
  *                             pairs to insert in new contact.
- * @param array  $values       The reformatted properties that we can use internally
+ * @param array $values The reformatted properties that we can use internally
  *                            '
  *
+ * @throws Exception
  * @return array|CRM_Error
  * @access public
  */
@@ -192,7 +193,7 @@ function _civicrm_api3_relationship_format_params($params, &$values) {
   _civicrm_api3_store_values($fields, $params, $values);
 
   $relationTypes = CRM_Core_PseudoConstant::relationshipType('name');
-  if (CRM_Utils_Array::value('id', $params)) {
+  if (!empty($params['id'])) {
     $relation = new CRM_Contact_BAO_Relationship();
     $relation->id = $params['id'];
     if (!$relation->find(TRUE)) {
@@ -250,7 +251,7 @@ function _civicrm_api3_relationship_format_params($params, &$values) {
         }
 
         if ($relationshipTypeId) {
-          if (CRM_Utils_Array::value('relationship_type_id', $values) &&
+          if (!empty($values['relationship_type_id']) &&
             $relationshipTypeId != $values['relationship_type_id']
           ) {
             throw new Exception('Mismatched Relationship Type and Relationship Type Id');

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -64,7 +64,7 @@ class CRM_Utils_OpenFlashChart {
     if (empty($params)) {
       return $chart;
     }
-    if (!CRM_Utils_Array::value('multiValues', $params)) {
+    if (empty($params['multiValues'])) {
       $params['multiValues'] = array($params['values']);
     }
 
@@ -74,7 +74,7 @@ class CRM_Utils_OpenFlashChart {
     }
 
     // get the required data.
-    $chartTitle = CRM_Utils_Array::value('legend', $params) ? $params['legend'] : ts('Bar Chart');
+    $chartTitle = !empty($params['legend']) ? $params['legend'] : ts('Bar Chart');
 
     $xValues = $yValues = array();
     $xValues = array_keys($values[0]);
@@ -203,7 +203,7 @@ class CRM_Utils_OpenFlashChart {
     foreach ($allValues as $label => $value) {
       $values[] = new pie_value((double)$value, $label);
     }
-    $graphTitle = CRM_Utils_Array::value('legend', $params) ? $params['legend'] : ts('Pie Chart');
+    $graphTitle = !empty($params['legend']) ? $params['legend'] : ts('Pie Chart');
 
     //get the currency.
     $config = CRM_Core_Config::singleton();
@@ -315,7 +315,7 @@ class CRM_Utils_OpenFlashChart {
       $count++;
     }
 
-    $chartTitle = CRM_Utils_Array::value('legend', $params) ? $params['legend'] : ts('Bar Chart');
+    $chartTitle = !empty($params['legend']) ? $params['legend'] : ts('Bar Chart');
 
     //set y axis parameters.
     $yMin = 0;
@@ -389,6 +389,13 @@ class CRM_Utils_OpenFlashChart {
     return $chart;
   }
 
+  /**
+   * @param $rows
+   * @param $chart
+   * @param $interval
+   *
+   * @return array
+   */
   static function chart($rows, $chart, $interval) {
     $chartData = $dateKeys = array();
 
@@ -445,7 +452,7 @@ class CRM_Utils_OpenFlashChart {
 
     // rotate the x labels.
     $chartData['xLabelAngle'] = CRM_Utils_Array::value('xLabelAngle', $rows, 0);
-    if (CRM_Utils_Array::value('tip', $rows)) {
+    if (!empty($rows['tip'])) {
       $chartData['tip'] = $rows['tip'];
     }
 
@@ -456,7 +463,7 @@ class CRM_Utils_OpenFlashChart {
     // carry some chart params if pass.
     foreach (array(
       'xSize', 'ySize', 'divName') as $f) {
-      if (CRM_Utils_Array::value($f, $rows)) {
+      if (!empty($rows[$f])) {
         $chartData[$f] = $rows[$f];
       }
     }
@@ -464,6 +471,14 @@ class CRM_Utils_OpenFlashChart {
     return self::buildChart($chartData, $chart);
   }
 
+  /**
+   * @param $rows
+   * @param $chart
+   * @param $interval
+   * @param $chartInfo
+   *
+   * @return array
+   */
   static function reportChart($rows, $chart, $interval, &$chartInfo) {
     foreach ($interval as $key => $val) {
       $graph[$val] = $rows['value'][$key];
@@ -478,14 +493,14 @@ class CRM_Utils_OpenFlashChart {
 
     // rotate the x labels.
     $chartData['xLabelAngle'] = CRM_Utils_Array::value('xLabelAngle', $chartInfo, 20);
-    if (CRM_Utils_Array::value('tip', $chartInfo)) {
+    if (!empty($chartInfo['tip'])) {
       $chartData['tip'] = $chartInfo['tip'];
     }
 
     // carry some chart params if pass.
     foreach (array(
       'xSize', 'ySize', 'divName') as $f) {
-      if (CRM_Utils_Array::value($f, $rows)) {
+      if (!empty($rows[$f])) {
         $chartData[$f] = $rows[$f];
       }
     }
@@ -493,6 +508,12 @@ class CRM_Utils_OpenFlashChart {
     return self::buildChart($chartData, $chart);
   }
 
+  /**
+   * @param $params
+   * @param $chart
+   *
+   * @return array
+   */
   static function buildChart(&$params, $chart) {
     $openFlashChart = array();
     if ($chart && is_array($params) && !empty($params)) {

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -42,6 +42,8 @@
  *
  */
 class CRM_Price_Page_Field extends CRM_Core_Page {
+
+  public $useLivePageJS = TRUE;
 
   /**
    * The price set group id of the field
@@ -76,8 +78,6 @@ class CRM_Price_Page_Field extends CRM_Core_Page {
    * @access public
    */ function &actionLinks() {
     if (!isset(self::$_actionLinks)) {
-      // helper variable for nicer formatting
-      $deleteExtra = ts('Are you sure you want to delete this price field?');
       self::$_actionLinks = array(
         CRM_Core_Action::UPDATE => array(
           'name' => ts('Edit Price Field'),
@@ -93,14 +93,12 @@ class CRM_Price_Page_Field extends CRM_Core_Page {
         ),
         CRM_Core_Action::DISABLE => array(
           'name' => ts('Disable'),
-          'extra' => 'onclick = "enableDisable( %%fid%%,\'' . 'CRM_Price_BAO_PriceField' . '\',\'' . 'enable-disable' . '\' );"',
-          'ref' => 'disable-action',
+          'ref' => 'crm-enable-disable',
           'title' => ts('Disable Price'),
         ),
         CRM_Core_Action::ENABLE => array(
           'name' => ts('Enable'),
-          'extra' => 'onclick = "enableDisable( %%fid%%,\'' . 'CRM_Price_BAO_PriceField' . '\',\'' . 'disable-enable' . '\' );"',
-          'ref' => 'enable-action',
+          'ref' => 'crm-enable-disable',
           'title' => ts('Enable Price'),
         ),
         CRM_Core_Action::DELETE => array(
@@ -108,7 +106,6 @@ class CRM_Price_Page_Field extends CRM_Core_Page {
           'url' => 'civicrm/admin/price/field',
           'qs' => 'action=delete&reset=1&sid=%%sid%%&fid=%%fid%%',
           'title' => ts('Delete Price'),
-          'extra' => 'onclick = "return confirm(\'' . $deleteExtra . '\');"',
         ),
       );
     }
@@ -124,6 +121,11 @@ class CRM_Price_Page_Field extends CRM_Core_Page {
    * @access public
    */
   function browse() {
+    $resourceManager = CRM_Core_Resources::singleton();
+    if (!empty($_GET['new']) && $resourceManager->ajaxPopupsEnabled) {
+      $resourceManager->addScriptFile('civicrm', 'js/crm.addNew.js', 999, 'html-header');
+    }
+
     $priceField    = array();
     $priceFieldBAO = new CRM_Price_BAO_PriceField();
 
@@ -172,11 +174,18 @@ class CRM_Price_Page_Field extends CRM_Core_Page {
       $htmlTypes = CRM_Price_BAO_PriceField::htmlTypes();
       $priceField[$priceFieldBAO->id]['html_type_display'] = $htmlTypes[$priceField[$priceFieldBAO->id]['html_type']];
       $priceField[$priceFieldBAO->id]['order'] = $priceField[$priceFieldBAO->id]['weight'];
-      $priceField[$priceFieldBAO->id]['action'] = CRM_Core_Action::formLink(self::actionLinks(), $action,
+      $priceField[$priceFieldBAO->id]['action'] = CRM_Core_Action::formLink(
+        self::actionLinks(),
+        $action,
         array(
           'fid' => $priceFieldBAO->id,
           'sid' => $this->_sid,
-        )
+        ),
+        ts('more'),
+        FALSE,
+        'priceField.row.actions',
+        'PriceField',
+        $priceFieldBAO->id
       );
     }
 
@@ -280,7 +289,10 @@ class CRM_Price_Page_Field extends CRM_Core_Page {
       }
     }
 
-    if ($this->_sid) {
+    if ($action & CRM_Core_Action::DELETE) {
+      CRM_Utils_System::setTitle(ts('Delete Price Field'));
+    }
+    elseif ($this->_sid) {
       $groupTitle = CRM_Price_BAO_PriceSet::getTitle($this->_sid);
       $this->assign('sid', $this->_sid);
       $this->assign('groupTitle', $groupTitle);
@@ -309,7 +321,9 @@ class CRM_Price_Page_Field extends CRM_Core_Page {
   /**
    * Preview price field
    *
-   * @param int  $id    price field id
+   * @param $fid
+   *
+   * @internal param int $id price field id
    *
    * @return void
    * @access public

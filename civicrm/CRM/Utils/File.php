@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id: $
  *
  */
@@ -129,7 +129,12 @@ class CRM_Utils_File {
    * delete a directory given a path name, delete children directories
    * and files if needed
    *
-   * @param string $path  the path name
+   * @param $target
+   * @param bool $rmdir
+   * @param bool $verbose
+   *
+   * @throws Exception
+   * @internal param string $path the path name
    *
    * @return void
    * @access public
@@ -141,8 +146,8 @@ class CRM_Utils_File {
       throw new Exception("Overly broad deletion");
     }
 
-    if ($sourcedir = @opendir($target)) {
-      while (FALSE !== ($sibling = readdir($sourcedir))) {
+    if ($dh = @opendir($target)) {
+      while (FALSE !== ($sibling = readdir($dh))) {
         if (!in_array($sibling, $exceptions)) {
           $object = $target . DIRECTORY_SEPARATOR . $sibling;
 
@@ -156,7 +161,7 @@ class CRM_Utils_File {
         }
       }
       }
-      closedir($sourcedir);
+      closedir($dh);
 
       if ($rmdir) {
         if (rmdir($target)) {
@@ -172,20 +177,25 @@ class CRM_Utils_File {
     }
   }
 
+  /**
+   * @param $source
+   * @param $destination
+   */
   static function copyDir($source, $destination) {
-    $dir = opendir($source);
-    @mkdir($destination);
-    while (FALSE !== ($file = readdir($dir))) {
-      if (($file != '.') && ($file != '..')) {
-        if (is_dir($source . DIRECTORY_SEPARATOR . $file)) {
-          CRM_Utils_File::copyDir($source . DIRECTORY_SEPARATOR . $file, $destination . DIRECTORY_SEPARATOR . $file);
-        }
-        else {
-          copy($source . DIRECTORY_SEPARATOR . $file, $destination . DIRECTORY_SEPARATOR . $file);
+    if ($dh = opendir($source)) {
+      @mkdir($destination);
+      while (FALSE !== ($file = readdir($dh))) {
+        if (($file != '.') && ($file != '..')) {
+          if (is_dir($source . DIRECTORY_SEPARATOR . $file)) {
+            CRM_Utils_File::copyDir($source . DIRECTORY_SEPARATOR . $file, $destination . DIRECTORY_SEPARATOR . $file);
+          }
+          else {
+            copy($source . DIRECTORY_SEPARATOR . $file, $destination . DIRECTORY_SEPARATOR . $file);
+          }
         }
       }
+      closedir($dh);
     }
-    closedir($dir);
   }
 
   /**
@@ -235,23 +245,34 @@ class CRM_Utils_File {
   }
 
   /**
-   * Appends trailing slashed to paths
+   * Appends a slash to the end of a string if it doesn't already end with one
+   *
+   * @param string $path
+   * @param string $slash
    *
    * @return string
    * @access public
    * @static
    */
-  static function addTrailingSlash($name, $separator = NULL) {
-    if (!$separator) {
-      $separator = DIRECTORY_SEPARATOR;
+  static function addTrailingSlash($path, $slash = NULL) {
+    if (!$slash) {
+      // FIXME: Defaulting to backslash on windows systems can produce unexpected results, esp for URL strings which should always use forward-slashes.
+      // I think this fn should default to forward-slash instead.
+      $slash = DIRECTORY_SEPARATOR;
     }
-
-    if (substr($name, -1, 1) != $separator) {
-      $name .= $separator;
+    if (!in_array(substr($path, -1, 1), array('/', '\\'))) {
+      $path .= $slash;
     }
-    return $name;
+    return $path;
   }
 
+  /**
+   * @param $dsn
+   * @param $fileName
+   * @param null $prefix
+   * @param bool $isQueryString
+   * @param bool $dieOnErrors
+   */
   static function sourceSQLFile($dsn, $fileName, $prefix = NULL, $isQueryString = FALSE, $dieOnErrors = TRUE) {
     require_once 'DB.php';
 
@@ -294,6 +315,11 @@ class CRM_Utils_File {
     }
   }
 
+  /**
+   * @param $ext
+   *
+   * @return bool
+   */
   static function isExtensionSafe($ext) {
     static $extensions = NULL;
     if (!$extensions) {
@@ -345,6 +371,11 @@ class CRM_Utils_File {
     return $name;
   }
 
+  /**
+   * @param $name
+   *
+   * @return string
+   */
   static function makeFileName($name) {
     $uniqID   = md5(uniqid(rand(), TRUE));
     $info     = pathinfo($name);
@@ -362,23 +393,31 @@ class CRM_Utils_File {
     }
   }
 
+  /**
+   * @param $path
+   * @param $ext
+   *
+   * @return array
+   */
   static function getFilesByExtension($path, $ext) {
     $path  = self::addTrailingSlash($path);
-    $dh    = opendir($path);
     $files = array();
-    while (FALSE !== ($elem = readdir($dh))) {
-      if (substr($elem, -(strlen($ext) + 1)) == '.' . $ext) {
-        $files[] .= $path . $elem;
+    if ($dh = opendir($path)) {
+      while (FALSE !== ($elem = readdir($dh))) {
+        if (substr($elem, -(strlen($ext) + 1)) == '.' . $ext) {
+          $files[] .= $path . $elem;
+        }
       }
+      closedir($dh);
     }
-    closedir($dh);
     return $files;
   }
 
   /**
    * Restrict access to a given directory (by planting there a restrictive .htaccess file)
    *
-   * @param string $dir  the directory to be secured
+   * @param string $dir the directory to be secured
+   * @param bool $overwrite
    */
   static function restrictAccess($dir, $overwrite = FALSE) {
     // note: empty value for $dir can play havoc, since that might result in putting '.htaccess' to root dir
@@ -457,6 +496,11 @@ HTACCESS;
     return $_path;
   }
 
+  /**
+   * @param $directory
+   *
+   * @return string
+   */
   static function relativeDirectory($directory) {
     // Do nothing on windows
     if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
@@ -480,9 +524,15 @@ HTACCESS;
     return $directory;
   }
 
+  /**
+   * @param $directory
+   *
+   * @return string
+   */
   static function absoluteDirectory($directory) {
-    // Do nothing on windows - config will need to specify absolute path
-    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+    // check if directory is already absolute, if so return immediately
+    // Note: Windows PHP accepts any mix of "/" or "\", so "C:\htdocs" or "C:/htdocs" would be a valid absolute path
+    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN' && preg_match(';^[a-zA-Z]:[/\\\\];', $directory)) {
       return $directory;
     }
 
@@ -499,6 +549,9 @@ HTACCESS;
 
   /**
    * Make a file path relative to some base dir
+   *
+   * @param $directory
+   * @param $basePath
    *
    * @return string
    */
@@ -567,8 +620,7 @@ HTACCESS;
           }
         }
       }
-      $dh = opendir($subdir);
-      if ($dh) {
+      if ($dh = opendir($subdir)) {
         while (FALSE !== ($entry = readdir($dh))) {
           $path = $subdir . DIRECTORY_SEPARATOR . $entry;
           if ($entry{0} == '.') {
@@ -588,6 +640,8 @@ HTACCESS;
    *
    * @param string $parent
    * @param string $child
+   * @param bool $checkRealPath
+   *
    * @return bool
    */
   static function isChildPath($parent, $child, $checkRealPath = TRUE) {
@@ -616,6 +670,8 @@ HTACCESS;
    *
    * @param string $fromDir the directory which should be moved
    * @param string $toDir the new location of the directory
+   * @param bool $verbose
+   *
    * @return bool TRUE on success
    */
   static function replaceDir($fromDir, $toDir, $verbose = FALSE) {

@@ -2,9 +2,9 @@
 
 /*
   +--------------------------------------------------------------------+
-  | CiviCRM version 4.4                                                |
+  | CiviCRM version 4.5                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2013                                |
+  | Copyright CiviCRM LLC (c) 2004-2014                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -31,7 +31,7 @@
  *
  * @package CiviCRM_APIv3
  * @subpackage API_ActivityProfile
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * @version $Id: ActivityProfile.php 30486 2011-05-20 16:12:09Z rajan $
  *
  */
@@ -138,9 +138,14 @@ function civicrm_api3_profile_get($params) {
   }
 }
 
+/**
+ * @param $params
+ */
 function _civicrm_api3_profile_get_spec(&$params) {
   $params['profile_id']['api.required'] = TRUE;
+  $params['profile_id']['title'] = 'Profile ID';
   $params['contact_id']['description'] = 'If no contact is specified an array of defaults will be returned';
+  $params['contact_id']['title'] = 'Contact ID';
 }
 
 /**
@@ -271,7 +276,7 @@ function civicrm_api3_profile_submit($params) {
     );
   }
 
-  if (CRM_Utils_Array::value('add_to_group_id', $ufGroupDetails)) {
+  if (!empty($ufGroupDetails['add_to_group_id'])) {
     $contactIds = array($params['contact_id']);
     CRM_Contact_BAO_GroupContact::addContactsToGroup($contactIds,
       $ufGroupDetails['add_to_group_id']
@@ -317,6 +322,7 @@ function _civicrm_api3_profile_submit_spec(&$params, $apirequest) {
     _civicrm_api3_buildprofile_submitfields(FALSE, FALSE, True);
   }
   $params['profile_id']['api.required'] = TRUE;
+  $params['profile_id']['title'] = 'Profile ID';
 }
 
 /**
@@ -531,6 +537,7 @@ function _civicrm_api3_buildprofile_submitfields($profileID, $optionsBehaviour =
       'soft_credit' => 'soft_credit_to',
       'group' => 'group_id',
       'tag' => 'tag_id',
+      'soft_credit_type' => 'soft_credit_type_id',
     );
 
     if(array_key_exists($ufFieldTaleFieldName, $hardCodedEntityFields)) {
@@ -598,6 +605,12 @@ function _civicrm_api3_buildprofile_submitfields($profileID, $optionsBehaviour =
   return $profileFields[$profileID];
 }
 
+/**
+ * @param $a
+ * @param $b
+ *
+ * @return bool
+ */
 function _civicrm_api3_order_by_weight($a, $b) {
   return CRM_Utils_Array::value('weight', $b) < CRM_Utils_Array::value('weight', $a) ? TRUE : FALSE;
 }
@@ -664,6 +677,7 @@ function _civicrm_api3_map_profile_fields_to_entity(&$field) {
     'check_number' => 'contribution',
     'contribution_status_id' => 'contribution',
     'soft_credit' => 'contribution',
+    'soft_credit_type' => 'contribution_soft',
     'group' => 'group_contact',
     'tag' => 'entity_tag',
    );
@@ -675,7 +689,12 @@ function _civicrm_api3_map_profile_fields_to_entity(&$field) {
 
 /**
  * @todo this should be handled by the api wrapper using getfields info - need to check
- * how we add a a pseudoconstant to this pseudoapi to make that work
+ * how we add a a pseudoconstant to this pseudo api to make that work
+ *
+ * @param $profileID
+ *
+ * @return integer|string
+ * @throws CiviCRM_API3_Exception
  */
 function _civicrm_api3_profile_getProfileID($profileID) {
   if(!empty($profileID) && strtolower($profileID) != 'billing' && !is_numeric($profileID)) {
@@ -712,4 +731,15 @@ function _civicrm_api3_profile_appendaliases($values, $entity) {
     $values['send_receipt'] = array('title' => 'Send Receipt', 'type' => (int) 16);
   }
   return $values;
+}
+
+/**
+ * @deprecated api notice
+ * @return array of deprecated actions
+ */
+function _civicrm_api3_profile_deprecation() {
+  return array(
+    'set' => 'Profile api "set" action is deprecated in favor of "submit".',
+    'apply' => 'Profile api "apply" action is deprecated in favor of "submit".',
+  );
 }

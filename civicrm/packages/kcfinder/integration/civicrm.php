@@ -136,6 +136,6 @@ function authenticate_joomla($config) {
 
 checkAuthentication( );
 
-spl_autoload_register('__autoload');
+//spl_autoload_register('__autoload');
 
 ?>

@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,9 +30,6 @@
   {if $action eq 4}
     <div class="crm-block crm-content-block crm-activity-view-block">
   {else}
-    {if $context NEQ 'standalone'}
-    <h3>{if $action eq 1 or $action eq 1024}{ts 1=$activityTypeName}New activity: %1{/ts}{elseif $action eq 8}{ts 1=$activityTypeName}Delete %1{/ts}{else}{ts 1=$activityTypeName}Edit %1{/ts}{/if}</h3>
-    {/if}
     {if $activityTypeDescription }
       <div class="help">{$activityTypeDescription}</div>
     {/if}
@@ -56,7 +53,6 @@
   <table class="{if $action eq 4}crm-info-panel{else}form-layout{/if}">
 
   {if $action eq 4}
-  <h3>{$activityTypeName}</h3>
     {if $activityTypeDescription }
     <div class="help">{$activityTypeDescription}</div>
     {/if}
@@ -77,62 +73,40 @@
   <tr class="crm-activity-form-block-source_contact_id">
     <td class="label">{$form.source_contact_id.label}</td>
     <td class="view-value">
-      {if $admin and $action neq 4}{$form.source_contact_id.html} {else} {$source_contact_value} {/if}
+      {$form.source_contact_id.html}
     </td>
   </tr>
 
   <tr class="crm-activity-form-block-target_contact_id">
-    {if $single eq false}
-      <td class="label">{ts}With Contact(s){/ts}</td>
-      <td class="view-value" style="white-space: normal">
-        {$with|escape}
-        <br/>
-        {$form.is_multi_activity.html}&nbsp;{$form.is_multi_activity.label} {help id="id-is_multi_activity"}
-      </td>
-      {elseif $action neq 4}
-      <td class="label">{ts}With Contact{/ts}</td>
-      <td class="view-value">
-        {include file="CRM/Contact/Form/NewContact.tpl" noLabel=true skipBreak=true multiClient=true parent="activity" showNewSelect=true}
-        {if $action eq 1}
-        <br/>
-        {$form.is_multi_activity.html}&nbsp;{$form.is_multi_activity.label} {help id="id-is_multi_activity"}
-        {/if}
-      </td>
-      {else}
-      <td class="label">{ts}With Contact{/ts}</td>
-      <td class="view-value" style="white-space: normal">
-        {foreach from=$target_contact key=id item=name}
-          <a href="{crmURL p='civicrm/contact/view' q="reset=1&cid=$id"}">{$name}</a>;&nbsp;
-        {/foreach}
-      </td>
-    {/if}
+  <td class="label">{$form.target_contact_id.label}</td>
+    <td class="view-value">
+      {$form.target_contact_id.html}
+      {if $action eq 1 or $single eq false}
+      <br/>
+      {$form.is_multi_activity.html}&nbsp;{$form.is_multi_activity.label} {help id="id-is_multi_activity"}
+      {/if}
+    </td>
   </tr>
 
   <tr class="crm-activity-form-block-assignee_contact_id">
-    {if $action eq 4}
-      <td class="label">{ts}Assigned To{/ts}</td><td class="view-value">
-      {foreach from=$assignee_contact key=id item=name}
-        <a href="{crmURL p='civicrm/contact/view' q="reset=1&cid=$id"}">{$name}</a>;&nbsp;
-      {/foreach}
-    </td>
-      {else}
-      <td class="label">{ts}Assigned To{/ts}</td>
-      <td>
-        <a href="#" class="button" id="swap_target_assignee" title="{ts}Swap Target and Assignee Contacts{/ts}" style="float:right;">
-          <span>
-            <div class="icon swap-icon"></div>
-          </span>
-        </a>
-        {$form.assignee_contact_id.html}
-        {edit}
-          <span class="description">{ts}You can optionally assign this activity to someone. Assigned activities will appear in their Activities listing at CiviCRM Home.{/ts}
-          {if $activityAssigneeNotification}
-            <br />{ts}A copy of this activity will be emailed to each Assignee.{/ts}
-          {/if}
-          </span>
-        {/edit}
+      <td class="label">
+        {$form.assignee_contact_id.label}
+        {edit}{help id="assignee_contact_id" title=$form.assignee_contact_id.label}{/edit}
       </td>
-    {/if}
+      <td>
+        {$form.assignee_contact_id.html}
+        {if $action neq 4}
+          {if !$form.target_contact_id.frozen}
+            <a href="#" class="crm-hover-button" id="swap_target_assignee" title="{ts}Swap Target and Assignee Contacts{/ts}" style="position:relative; bottom: 1em;">
+              <span class="icon ui-icon-shuffle"></span>
+            </a>
+          {/if}
+          {if $activityAssigneeNotification}
+            <br />
+            <span class="description"><span class="icon email-icon"></span>{ts}A copy of this activity will be emailed to each Assignee.{/ts}</span>
+          {/if}
+        {/if}
+      </td>
   </tr>
 
   {if $activityTypeFile}
@@ -163,14 +137,14 @@
     {if $action neq 4}
       <td class="view-value">{include file="CRM/common/jcalendar.tpl" elementName=activity_date_time}</td>
       {else}
-      <td class="view-value">{$form.activity_date_time.html|crmDate}</td>
+      <td class="view-value">{$form.activity_date_time.value|crmDate}</td>
     {/if}
   </tr>
   <tr class="crm-activity-form-block-duration">
     <td class="label">{$form.duration.label}</td>
     <td class="view-value">
       {$form.duration.html}
-      {if $action neq 4}<span class="description">{ts}Total time spent on this activity (in minutes).{/ts}{/if}
+      {if $action neq 4}<span class="description">{ts}minutes{/ts}{/if}
     </td>
   </tr>
   <tr class="crm-activity-form-block-status_id">
@@ -201,24 +175,14 @@
   {if $form.tag.html}
   <tr class="crm-activity-form-block-tag">
     <td class="label">{$form.tag.label}</td>
-    <td class="view-value"><div class="crm-select-container">{$form.tag.html}</div>
-      {literal}
-        <script type="text/javascript">
-          cj(".crm-activity-form-block-tag select[multiple]").crmasmSelect({
-            addItemTarget: 'bottom',
-            animate: true,
-            highlight: true,
-            sortable: true,
-            respectParents: true
-          });
-        </script>
-      {/literal}
+    <td class="view-value">
+      <div class="crm-select-container">{$form.tag.html}</div>
     </td>
   </tr>
   {/if}
 
-  {if $tagsetInfo_activity}
-  <tr class="crm-activity-form-block-tag_set"><td colspan="2">{include file="CRM/common/Tag.tpl" tagsetType='activity'}</td></tr>
+  {if $tagsetInfo.activity}
+  <tr class="crm-activity-form-block-tag_set">{include file="CRM/common/Tagset.tpl" tagsetType='activity' tableLayout=true}</tr>
   {/if}
 
   {if $action neq 4 OR $viewCustomData}
@@ -261,32 +225,35 @@
               <td class="label">{$form.followup_activity_subject.label}</td>
               <td>{$form.followup_activity_subject.html|crmAddClass:huge}</td>
             </tr>
+              <tr>
+                  <td class="label">
+                    {$form.followup_assignee_contact_id.label}
+                    {edit}
+                    {/edit}
+                  </td>
+                  <td>
+                    {$form.followup_assignee_contact_id.html}
+                  </td>
+              </tr>
           </table>
         </div><!-- /.crm-accordion-body -->
       </div><!-- /.crm-accordion-wrapper -->
       {literal}
         <script type="text/javascript">
-          cj(function() {
-            cj().crmAccordions();
-            cj('.crm-accordion-body').each( function() {
+          CRM.$(function($) {
+            $('.crm-accordion-body').each( function() {
               //open tab if form rule throws error
-              if ( cj(this).children( ).find('span.crm-error').text( ).length > 0 ) {
-                cj(this).parent('.collapsed').crmAccordionToggle();
+              if ( $(this).children( ).find('span.crm-error').text( ).length > 0 ) {
+                $(this).parent('.collapsed').crmAccordionToggle();
               }
             });
-          });
-          cj('#swap_target_assignee').click( function() {
-            var assignees = cj('input#assignee_contact_id').tokenInput("get");
-            var targets = cj('input#contact_1').tokenInput("get");
-            cj('#assignee_contact_id').tokenInput("clear");
-            cj('#contact_1').tokenInput("clear");
-            cj(assignees).each( function() {
-              cj('#contact_1').tokenInput("add", this);
+            $('#swap_target_assignee').click(function() {
+              var assignees = $('#assignee_contact_id').select2("data");
+              var targets = $('#target_contact_id').select2("data");
+              $('#assignee_contact_id').select2("data", targets);
+              $('#target_contact_id').select2("data", assignees);
+              return false;
             });
-            cj(targets).each( function() {
-              cj('#assignee_contact_id').tokenInput("add", this);
-            });
-            return false;
           });
         </script>
       {/literal}
@@ -316,6 +283,9 @@
       <a href="{crmURL p='civicrm/contact/view/activity' q=$urlParams}" class="delete button" title="{ts}Delete{/ts}"><span><div class="icon delete-icon"></div>{ts}Delete{/ts}</span></a>
     {/if}
   {/if}
+  {if $action eq 4 and call_user_func(array('CRM_Case_BAO_Case','checkPermission'), $activityId, 'File On Case', $atype)}
+    <a href="#" onclick="fileOnCase('file', {$activityId}, null, this); return false;" class="cancel button" title="{ts}File On Case{/ts}"><span><div class="icon ui-icon-clipboard"></div>{ts}File On Case{/ts}</span></a>
+  {/if}
   {include file="CRM/common/formButtons.tpl" location="bottom"}
   </div>
 
@@ -326,7 +296,7 @@
   {include file="CRM/common/customData.tpl"}
     {literal}
     <script type="text/javascript">
-    cj(function() {
+    CRM.$(function($) {
     {/literal}
     {if $customDataSubType}
       CRM.buildCustomData( '{$customDataType}', {$customDataSubType} );
@@ -337,9 +307,6 @@
     });
     </script>
     {/literal}
-  {/if}
-  {if ! $form.case_select}
-  {include file="CRM/common/formNavigate.tpl"}
   {/if}
   </div>{* end of form block*}
 {/if} {* end of snippet if*}

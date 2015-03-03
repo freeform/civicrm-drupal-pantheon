@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,14 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
 class CRM_Report_Form_Contact_LoggingSummary extends CRM_Logging_ReportSummary {
+  /**
+   *
+   */
   function __construct() {
     parent::__construct();
 
@@ -154,6 +157,9 @@ class CRM_Report_Form_Contact_LoggingSummary extends CRM_Logging_ReportSummary {
     );
   }
 
+  /**
+   * @param $rows
+   */
   function alterDisplay(&$rows) {
     // cache for id → is_deleted mapping
     $isDeleted = array();
@@ -165,7 +171,7 @@ class CRM_Report_Form_Contact_LoggingSummary extends CRM_Logging_ReportSummary {
           CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $row['log_civicrm_entity_altered_contact_id'], 'is_deleted') !== '0';
       }
 
-      if (CRM_Utils_Array::value('log_civicrm_entity_altered_contact', $row) &&
+      if (!empty($row['log_civicrm_entity_altered_contact']) &&
         !$isDeleted[$row['log_civicrm_entity_altered_contact_id']]) {
         $row['log_civicrm_entity_altered_contact_link'] =
           CRM_Utils_System::url('civicrm/contact/view', 'reset=1&cid=' . $row['log_civicrm_entity_altered_contact_id']);
@@ -228,6 +234,9 @@ class CRM_Report_Form_Contact_LoggingSummary extends CRM_Logging_ReportSummary {
     $rows = $newRows;
   }
 
+  /**
+   * @param null $logTable
+   */
   function from( $logTable = null ) {
     static $entity = null;
     if ( $logTable ) {
@@ -243,7 +252,7 @@ class CRM_Report_Form_Contact_LoggingSummary extends CRM_Logging_ReportSummary {
 INNER JOIN civicrm_contact modified_contact_civireport
         ON (entity_log_civireport.{$detail['fk']} = modified_contact_civireport.id {$clause})";
 
-    if (CRM_Utils_Array::value('joins', $detail)) {
+    if (!empty($detail['joins'])) {
       $clause = CRM_Utils_Array::value('entity_table', $detail);
       $clause = $clause ? "AND fk_table.entity_table = 'civicrm_contact'" : null;
       $joinClause = "

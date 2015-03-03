@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -112,9 +112,11 @@ class CRM_Custom_Form_Group extends CRM_Core_Form {
   /**
    * global form rule
    *
-   * @param array $fields  the input form values
-   * @param array $files   the uploaded files if any
-   * @param array $options additional user data
+   * @param array $fields the input form values
+   * @param array $files the uploaded files if any
+   * @param $self
+   *
+   * @internal param array $options additional user data
    *
    * @return true if no errors, else array of errors
    * @access public
@@ -135,7 +137,7 @@ class CRM_Custom_Form_Group extends CRM_Core_Form {
       $errors['title'] = ts('Custom group \'%1\' already exists in Database.', array(1 => $title));
     }
 
-    if (CRM_Utils_Array::value(1, $fields['extends'])) {
+    if (!empty($fields['extends'][1])) {
       if (in_array('', $fields['extends'][1]) && count($fields['extends'][1]) > 1) {
         $errors['extends'] = ts("Cannot combine other option with 'Any'.");
       }
@@ -151,8 +153,12 @@ class CRM_Custom_Form_Group extends CRM_Core_Form {
       $self->assign('showStyle', TRUE);
     }
 
-    if (CRM_Utils_Array::value('is_multiple', $fields)) {
+    if (!empty($fields['is_multiple'])) {
         $self->assign('showMultiple', TRUE);
+    }
+
+    if (empty($fields['is_multiple']) && $fields['style'] == 'Tab with table') {
+      $errors['style'] = ts("Display Style 'Tab with table' is only supported for multiple-record custom field sets.");
     }
 
     //checks the given custom set doesnot start with digit
@@ -417,8 +423,12 @@ class CRM_Custom_Form_Group extends CRM_Core_Form {
       $defaults['is_active'] = $defaults['collapse_display'] = 1;
       $defaults['style'] = 'Inline';
     }
-    elseif (!CRM_Utils_Array::value('max_multiple', $defaults) && !$this->_isGroupEmpty) {
+    elseif (empty($defaults['max_multiple']) && !$this->_isGroupEmpty) {
       $this->assign('showMaxMultiple', FALSE);
+    }
+
+    if (($this->_action & CRM_Core_Action::UPDATE) && !empty($defaults['is_multiple'])) {
+      $defaults['collapse_display'] = 0;
     }
 
     if (isset($defaults['extends'])) {
@@ -489,7 +499,9 @@ class CRM_Custom_Form_Group extends CRM_Core_Form {
       CRM_Core_Session::setStatus(ts('Your custom field set \'%1 \' has been saved.', array(1 => $group->title)), ts('Saved'), 'success');
     }
     else {
-      $url = CRM_Utils_System::url('civicrm/admin/custom/group/field/add', 'reset=1&action=add&gid=' . $group->id);
+      // Jump directly to adding a field if popups are disabled
+      $action = CRM_Core_Resources::singleton()->ajaxPopupsEnabled ? '' : '/add';
+      $url = CRM_Utils_System::url("civicrm/admin/custom/group/field$action", 'reset=1&new=1&gid=' . $group->id . '&action=' . ($action ? 'add' : 'browse'));
       CRM_Core_Session::setStatus(ts("Your custom field set '%1' has been added. You can add custom fields now.",
           array(1 => $group->title)
         ), ts('Saved'), 'success');
@@ -526,19 +538,30 @@ class CRM_Custom_Form_Group extends CRM_Core_Form {
    * @static
    * return array array of relationship name.
    */
+  /**
+   * @param $list
+   *
+   * @return array
+   */
   static function getFormattedList(&$list) {
     $relName = array();
 
-    foreach ($list as $k => $v) {
-      $key = substr($k, 0, strpos($k, '_'));
+    foreach ($list as $listItemKey => $itemValue) {
+      // Extract the relationship ID.
+      $key = substr($listItemKey, 0, strpos($listItemKey, '_'));
       if (isset($list["{$key}_b_a"])) {
+        $relName["$key"] = $list["{$key}_a_b"];
+        // Are the two labels different?
         if ($list["{$key}_a_b"] != $list["{$key}_b_a"]) {
           $relName["$key"] = $list["{$key}_a_b"] . ' / ' . $list["{$key}_b_a"];
         }
         unset($list["{$key}_b_a"]);
+        unset($list["{$key}_a_b"]);
       }
       else {
+        // If no '_b_a' label exists save the '_a_b' one and unset it from the list
         $relName["{$key}"] = $list["{$key}_a_b"];
+        unset($list["{$key}_a_b"]);
       }
     }
     return $relName;

@@ -1,10 +1,10 @@
 // http://civicrm.org/licensing
-(function($) {
+(function($, _) {
 
   var ajaxFormParams = {
     dataType:'json',
     beforeSubmit: function(arr, $form, options) {
-      addCiviOverlay($form);
+      $form.block();
     },
     success: requestHandler,
     error: errorHandler
@@ -18,11 +18,11 @@
       data.reset = 1;
       o.addClass('form');
       $('.crm-edit-ready').removeClass('crm-edit-ready');
-      addCiviOverlay(o);
+      o.block();
       $.getJSON(CRM.url('civicrm/ajax/inline', data))
         .fail(errorHandler)
         .done(function(response) {
-          removeCiviOverlay(o);
+          o.unblock();
           o.css('overflow', 'hidden').wrapInner('<div class="inline-edit-hidden-content" style="display:none" />').append(response.content);
           // Smooth resizing
           var newHeight = $('.crm-container-snippet', o).height();
@@ -36,16 +36,26 @@
           $('form', o).validate(CRM.validate.params);
           ajaxFormParams.data = data;
           $('form', o).ajaxForm(ajaxFormParams);
-          o.trigger('crmFormLoad');
+          o.trigger('crmLoad').trigger('crmFormLoad');
         });
     }
-  };
+  }
+
+  function reloadBlock(el) {
+    return $(el).each(function() {
+      var data = $(this).data('edit-params');
+      data.snippet = data.reset = 1;
+      data.class_name = data.class_name.replace('Form', 'Page');
+      data.type = 'page';
+      $(this).closest('.crm-summary-block').load(CRM.url('civicrm/ajax/inline', data), function() {$(this).trigger('crmLoad');});
+    });
+  }
 
   function requestHandler(response) {
     var o = $('div.crm-inline-edit.form');
     $('form', o).ajaxFormUnbind();
 
-    if (response.status == 'save' || response.status == 'cancel') {
+    if (response.status == 'success' || response.status == 'cancel') {
       o.trigger('crmFormSuccess', [response]);
       $('.crm-inline-edit-container').addClass('crm-edit-ready');
       var data = o.data('edit-params');
@@ -73,29 +83,22 @@
       // Delete an address
       if (o.hasClass('address') && !o.hasClass('add-new') && !response.addressId) {
         o.parent().remove();
-        CRM.alert('', ts('Address Deleted'), 'success');
+        CRM.status(ts('Address Deleted'));
       }
       else {
         // Reload this block plus all dependent blocks
         var update = $.merge([o], dependent);
-        for (var i in update) {
-          $(update[i]).each(function() {
-            var data = $(this).data('edit-params');
-            data.snippet = data.reset = 1;
-            data.class_name = data.class_name.replace('Form', 'Page');
-            data.type = 'page';
-            $(this).closest('.crm-summary-block').load(CRM.url('civicrm/ajax/inline', data), function() {$(this).trigger('load');});
-          });
-        }
-        CRM.alert('', ts('Saved'), 'success');
+        _.each(update, reloadBlock);
+        CRM.status(ts('Saved'));
       }
       // Update changelog tab and contact footer
-      if (response.changeLog.count) {
-        $("#tab_log a em").html(response.changeLog.count);
+      if (response.changeLog && response.changeLog.count) {
+        CRM.tabHeader.updateCount('#tab_log', response.changeLog.count);
       }
       $("#crm-record-log").replaceWith(response.changeLog.markup);
-      if ($('#Change_Log div').length) {
-        $('#Change_Log').load($("#tab_log a").attr('href'));
+      // Refresh tab contents - Simple logging
+      if (!CRM.reloadChangeLogTab && $('#changeLog').closest('.ui-tabs-panel').data('civiCrmSnippet')) {
+        $('#changeLog').closest('.ui-tabs-panel').crmSnippet('destroy');
       }
     }
     else {
@@ -103,9 +106,9 @@
       $('.crm-container-snippet', o).replaceWith(response.content);
       $('form', o).validate(CRM.validate.params);
       $('form', o).ajaxForm(ajaxFormParams);
-      o.trigger('crmFormError', [response]).trigger('crmFormLoad');
+      o.trigger('crmFormError', [response]).trigger('crmFormLoad').trigger('crmLoad');
     }
-  };
+  }
 
   /**
    * Configure optimistic locking mechanism for inplace editing
@@ -120,18 +123,6 @@
       var o = $(event.target);
       var data = o.data('edit-params');
       var errorTag = o.find('.update_oplock_ts');
-      $('#crm-notification-container')
-        .off('.opLock')
-        .on('click.opLock', '.crm-lock-button-save', function(e){
-          CRM.closeAlertByChild(this);
-          $(form).find('input[name=oplock_ts]').val(errorTag.attr('data:update_oplock_ts'));
-          $(form).find('.form-submit.default').first().click();
-          return false;
-        })
-        .on('click.opLock', '.crm-lock-button-reload', function(){
-          window.location.reload();
-          return false;
-        });
       if (errorTag.length > 0) {
         $('<span>')
           .addClass('crm-lock-button')
@@ -139,13 +130,23 @@
 
         var buttonContainer = o.find('.crm-lock-button');
         $('<button>')
-          .addClass('crm-button crm-lock-button-save')
+          .addClass('crm-button')
           .text(options.saveAnywayLabel)
+          .click(function() {
+            $(form).find('input[name=oplock_ts]').val(errorTag.attr('data:update_oplock_ts'));
+            errorTag.parent().hide();
+            $(this).closest('form').find('.crm-form-submit.default').first().click();
+            return false;
+          })
           .appendTo(buttonContainer)
           ;
         $('<button>')
-          .addClass('crm-button crm-lock-button-reload')
+          .addClass('crm-button')
           .text(options.reloadLabel)
+          .click(function() {
+            window.location.reload();
+            return false;
+          })
           .appendTo(buttonContainer)
           ;
       }
@@ -154,10 +155,10 @@
 
   function errorHandler(response) {
     CRM.alert(ts('Unable to reach the server. Please refresh this page in your browser and try again.'), ts('Network Error'), 'error');
-    removeCiviOverlay($('.crm-inline-edit.form form'));
+    $('.crm-inline-edit.form form').unblock();
   }
 
-  $('document').ready(function() {
+  $(function() {
     // don't perform inline edit during print mode
     if (CRM.summaryPrint.mode) {
       $('div').removeClass('crm-inline-edit');
@@ -181,8 +182,7 @@
     function refreshTitle() {
       var contactName = $('.crm-summary-display_name').text();
       contactName = $.trim(contactName);
-      var title = $('title').html().replace(oldName, contactName);
-      document.title = title;
+      document.title = $('title').html().replace(oldName, contactName);
       oldName = contactName;
     }
     $('#contactname-block').load(refreshTitle);
@@ -239,10 +239,10 @@
         }
       })
       // handle delete link within blocks
-      .on('click', '.crm-delete-inline', function() {
+      .on('click', '.crm-delete-inline', function(e) {
         var row = $(this).closest('tr');
         var form = $(this).closest('form');
-        row.addClass('hiddenElement');
+        row.hide();
         $('input', row).val('');
         //if the primary is checked for deleted block
         //unset and set first as primary
@@ -251,6 +251,7 @@
           $('[class$=is_primary] input:first', form).prop('checked', true );
         }
         $('.add-more-inline', form).show();
+        e.preventDefault();
       })
       // Delete an address
       .on('click', '.crm-inline-edit.address .delete-button', function() {
@@ -258,7 +259,7 @@
          CRM.confirm(function() {
             CRM.api('address', 'delete', {id: $block.data('edit-params').aid}, {success:
               function(data) {
-                CRM.alert('', ts('Address Deleted'), 'success');
+                CRM.status(ts('Address Deleted'));
                 $('.crm-inline-edit-container').addClass('crm-edit-ready');
                 $block.remove();
               }
@@ -271,7 +272,7 @@
         return false;
       })
       // add more and set focus to new row
-      .on('click', '.add-more-inline', function() {
+      .on('click', '.add-more-inline', function(e) {
         var form = $(this).closest('form');
         var row = $('tr[class="hiddenElement"]:first', form);
         row.removeClass('hiddenElement');
@@ -280,6 +281,7 @@
         if ($('tr[class="hiddenElement"]').length < 1) {
           $(this).hide();
         }
+        e.preventDefault();
       });
     // Trigger cancel button on esc keypress
     $(document).keydown(function(key) {
@@ -287,10 +289,44 @@
         $('.crm-inline-edit.form :submit[name$=cancel]').click();
       }
     });
-    // Switch tabs when clicking log link
-    $('#crm-container').on('click', '#crm-record-log a.crm-log-view', function() {
-      $('#tab_log a').click();
-      return false;
-    });
+    $('#crm-container')
+      // Switch tabs when clicking log link
+      .on('click', '#crm-record-log a.crm-log-view', function() {
+        $('#tab_log a').click();
+        return false;
+      })
+      // Handle action links in popup
+      .on('click', '.crm-contact_actions-list a, .crm-contact_activities-list a', function(e) {
+        $('#crm-contact-actions-list').hide();
+        if ($(this).attr('href') === '#') {
+          var $tab = $('#tab_' + ($(this).data('tab') || 'summary'));
+          CRM.tabHeader.focus($tab);
+          e.preventDefault();
+        } else {
+          CRM.popup.call(this, e);
+        }
+      })
+      .on('crmPopupFormSuccess',  '.crm-contact_actions-list a, .crm-contact_activities-list a', function() {
+        var $tab = $('#tab_' + ($(this).data('tab') || 'summary'));
+        CRM.tabHeader.resetTab($tab);
+        CRM.tabHeader.focus($tab);
+      });
+    $(document)
+      // Actions menu
+      .on('click', function(e) {
+        if ($(e.target).is('#crm-contact-actions-link, #crm-contact-actions-link *')) {
+          $('#crm-contact-actions-list').show();
+          return false;
+        }
+        $('#crm-contact-actions-list').hide();
+      })
+      .on('crmFormSuccess', function(e, data) {
+        // Reload changelog whenever an inline or popup form submits
+        CRM.reloadChangeLogTab && CRM.reloadChangeLogTab();
+        // Refresh dependent blocks
+        if (data && data.reloadBlocks) {
+          _.each(data.reloadBlocks, reloadBlock);
+        }
+      });
   });
-})(cj);
+})(CRM.$, CRM._);

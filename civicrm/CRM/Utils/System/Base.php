@@ -4,9 +4,36 @@
  * Base class for UF system integrations
  */
 abstract class CRM_Utils_System_Base {
+  /**
+   * deprecated property to check if this is a drupal install. The correct method is to have functions on the UF classes for all UF specific
+   * functions and leave the codebase oblivious to the type of CMS
+   * @deprecated
+   * @var bool
+   */
   var $is_drupal = FALSE;
+
+  /**
+   * deprecated property to check if this is a joomla install. The correct method is to have functions on the UF classes for all UF specific
+   * functions and leave the codebase oblivious to the type of CMS
+   * @deprecated
+   * @var bool
+   */
   var $is_joomla = FALSE;
+
+    /**
+     * deprecated property to check if this is a wordpress install. The correct method is to have functions on the UF classes for all UF specific
+     * functions and leave the codebase oblivious to the type of CMS
+     * @deprecated
+     * @var bool
+     */
   var $is_wordpress = FALSE;
+
+  /**
+   * Does this CMS / UF support a CMS specific logging mechanism?
+   * @todo - we should think about offering up logging mechanisms in a way that is also extensible by extensions
+   * @var bool
+   */
+  var $supports_UF_Logging = FALSE;
 
   /*
    * Does the CMS allow CMS forms to be extended by hooks
@@ -69,10 +96,16 @@ abstract class CRM_Utils_System_Base {
     }
   }
 
+  /**
+   * @return string
+   */
   function getDefaultBlockLocation() {
     return 'left';
   }
 
+  /**
+   * @return string
+   */
   function getVersion() {
     return 'Unknown';
   }
@@ -81,6 +114,9 @@ abstract class CRM_Utils_System_Base {
    * Format the url as per language Negotiation.
    *
    * @param string $url
+   *
+   * @param bool $addLanguagePart
+   * @param bool $removeLanguagePart
    *
    * @return string $url, formatted url.
    * @static
@@ -116,6 +152,8 @@ abstract class CRM_Utils_System_Base {
    * Determine the native ID of the CMS user
    *
    * @param $username
+   *
+   * @throws CRM_Core_Exception
    * @return int|NULL
    */
   function getUfId($username) {
@@ -146,7 +184,17 @@ abstract class CRM_Utils_System_Base {
   }
 
   /**
+   * Flush css/js caches
+   */
+  function clearResourceCache() {
+    // nullop by default
+  }
+
+  /**
    * Return default Site Settings
+   *
+   * @param $dir
+   *
    * @return array array
    * - $url, (Joomla - non admin url)
    * - $siteName,
@@ -215,7 +263,108 @@ abstract class CRM_Utils_System_Base {
    * @return string Timezone e.g. 'America/Los_Angeles'
    */
   function getTimeZoneString() {
+    return date_default_timezone_get();
+  }
+
+  /**
+   * Get Unique Identifier from UserFramework system (CMS)
+   * @param object $user object as described by the User Framework
+   * @return mixed $uniqueIdentifer Unique identifier from the user Framework system
+   *
+   */
+  function getUniqueIdentifierFromUserObject($user) {}
+
+  /**
+   * Get User ID from UserFramework system (CMS)
+   * @param object $user object as described by the User Framework
+   * @return mixed <NULL, number>
+   *
+   */
+  function getUserIDFromUserObject($user) {}
+
+  /**
+   * Get currently logged in user uf id.
+   *
+   * @return int $userID logged in user uf id.
+   */
+  function getLoggedInUfID() {}
+
+  /**
+   * Get currently logged in user unique identifier - this tends to be the email address or user name.
+   *
+   * @return string $userID logged in user unique identifier
+   */
+  function getLoggedInUniqueIdentifier() {}
+
+  /**
+   * return a UFID (user account ID from the UserFramework / CMS system being based on the user object
+   * passed, defaulting to the logged in user if not passed. Note that ambiguous situation occurs
+   * in CRM_Core_BAO_UFMatch::synchronize - a cleaner approach would seem to be resolving the user id before calling
+   * the function
+   *
+   * Note there is already a function getUFId which takes $username as a param - we could add $user
+   * as a second param to it but it seems messy - just overloading it because the name is taken
+   * @param object $user
+   * @return int $ufid - user ID of UF System
+   */
+  function getBestUFID($user = NULL) {
+    if($user) {
+      return $this->getUserIDFromUserObject($user);
+    }
+    return $this->getLoggedInUfID();
+  }
+
+  /**
+   * return a unique identifier (usually an email address or username) from the UserFramework / CMS system being based on the user object
+   * passed, defaulting to the logged in user if not passed. Note that ambiguous situation occurs
+   * in CRM_Core_BAO_UFMatch::synchronize - a cleaner approach would seem to be resolving the unique identifier before calling
+   * the function
+   *
+   * @param object $user
+   * @return string $uniqueIdentifier - unique identifier from the UF System
+   */
+  function getBestUFUniqueIdentifier($user = NULL) {
+    if($user) {
+      return $this->getUniqueIdentifierFromUserObject($user);
+    }
+    return $this->getLoggedInUniqueIdentifier();
+  }
+
+  /**
+   * Get Url to view user record
+   * @param integer $contactID Contact ID
+   *
+   * @return string
+   */
+  function getUserRecordUrl($contactID) {
     return NULL;
   }
+  /**
+   * Is the current user permitted to add a user
+   * @return bool
+   */
+  function checkPermissionAddUser() {
+    return FALSE;
+  }
+
+  /**
+   * output code from error function
+   * @param string $content
+   */
+  function outputError($content) {
+    echo CRM_Utils_System::theme($content);
+  }
+
+  /**
+   * Log error to CMS
+   */
+  function logger($message) {
+
+  }
+
+  /**
+   * Append to coreResourcesList
+   */
+  function appendCoreResources(&$list) {}
 }
 

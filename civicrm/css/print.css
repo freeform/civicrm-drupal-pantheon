@@ -1,7 +1,7 @@
 /* CiviCRM Print Media Stylesheet */
 
 /* Hide any buttons or other form items when printing*/
-#crm-container .buttons, #crm-container .crm-submit-buttons, #crm-container .crm-actions-ribbon, #crm-container .form-submit {
+#crm-container .buttons, #crm-container .crm-submit-buttons, #crm-container .crm-actions-ribbon, #crm-container .crm-form-submit {
      display: none;
 }
 
@@ -72,6 +72,10 @@ table.form-layout td, table.form-layout th {
 #crm-container table.report-layout tr.total-row {
    font-size        : 1em;
    border-top       : 2px groove #DCDCDC;
+}
+
+#crm-container table.report-layout tr.crm-report-sectionHeader.page-break {
+  page-break-before: always;
 }
 
 #crm-container .report-label {

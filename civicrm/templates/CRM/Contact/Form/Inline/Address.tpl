@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -83,7 +83,7 @@
       cj('.crm-inline-edit.address').each(function() {
         if (ok && cj(this).data('location-type-id') == lt) {
           var label = cj('option:selected', ele).text();
-          ele.val('');
+          ele.select2('val', '');
           ele.crmError(label + "{/literal} {ts escape='js'}has already been assigned to another address. Please select another location for this address.{/ts}"{literal});
           ok = false;
         }
@@ -94,14 +94,14 @@
     }
   });
   {/literal}{* // Enforce unique is_primary fields *}{literal}
-  cj(':checkbox[id*="[is_primary"]', 'form#Address_{/literal}{$blockId}{literal}').change(function() {
+  cj(':checkbox[id*="[is_primary"]', 'form[name=Address_{/literal}{$blockId}{literal}]').change(function() {
     if (this.defaultChecked) {
       cj(this).crmError("{/literal} {ts escape='js'}Please choose another address to be primary before changing this one.{/ts}{literal}");
       cj(this).prop('checked', true);
     }
   });
   {/literal}{* // Reset location_type_id when cancel button pressed *}{literal}
-  cj(':submit[name$=cancel]', 'form#Address_{/literal}{$blockId}{literal}').click(function() {
+  cj(':submit[name$=cancel]', 'form[name=Address_{/literal}{$blockId}{literal}]').click(function() {
     var container = cj(this).closest('div.crm-inline-edit.address');
     var origValue = container.attr('data-location-type-id') || '';
     container.data('location-type-id', origValue);

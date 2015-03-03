@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -32,7 +32,7 @@
  * @package CiviCRM_APIv3
  * @subpackage API_Membership
  *
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * @version $Id: MembershipStatus.php 30171 2010-10-14 09:11:27Z mover $
  *
  */
@@ -81,7 +81,7 @@ function civicrm_api3_membership_status_get($params) {
  * Update an existing membership status
  *
  * This api is used for updating an existing membership status.
- * Required parrmeters : id of a membership status
+ * Required parameters : id of a membership status
  *
  * @param  Array   $params  an associative array of name/value property values of civicrm_membership_status
  * @deprecated - should just use create
@@ -142,8 +142,11 @@ function civicrm_api3_membership_status_delete($params) {
  * This API is used for deriving Membership Status of a given Membership
  * record using the rules encoded in the membership_status table.
  *
- * @param  Int     $membershipID  Id of a membership
- * @param  String  $statusDate
+ * @param $membershipParams
+ *
+ * @throws API_Exception
+ * @internal param Int $membershipID Id of a membership
+ * @internal param String $statusDate
  *
  * @return Array  Array of status id and status name
  * @public
@@ -169,7 +172,7 @@ SELECT start_date, end_date, join_date, membership_type_id
     $membershipTypeID = empty($membershipParams['membership_type_id']) ? $dao->membership_type_id : $membershipParams['membership_type_id'];
     $result = CRM_Member_BAO_MembershipStatus::getMembershipStatusByDate($dao->start_date, $dao->end_date, $dao->join_date, 'today', CRM_Utils_Array::value('ignore_admin_only', $membershipParams), $membershipTypeID, $membershipParams);
     //make is error zero only when valid status found.
-    if (CRM_Utils_Array::value('id', $result)) {
+    if (!empty($result['id'])) {
       $result['is_error'] = 0;
     }
   }

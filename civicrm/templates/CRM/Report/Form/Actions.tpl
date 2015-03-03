@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -57,8 +57,28 @@
                         {/if}
                         {if $form.groups}
                             <tr>
-                                <td>{$form.groups.html|crmAddClass:big}</td>
-                                <td align="right">{$form.$group.html}</td>
+                                <td>
+                                  {$form.groups.html}{$form.$group.html}
+                                  <script type="text/javascript">
+                                    {literal}
+                                    (function($) {
+                                      $('#groups').val('').change(function() {
+                                        CRM.confirm({
+                                          message: ts({/literal}'{ts escape='js' 1='<em>%1</em>'}Add all contacts to %1 group?{/ts}'{literal}, {1: $('option:selected', '#groups').text()})
+                                        })
+                                          .on({
+                                            'crmConfirm:yes': function() {
+                                              $('#groups').siblings(':submit').click();
+                                            },
+                                            'crmConfirm:no dialogclose': function() {
+                                              $('#groups').select2('val', '');
+                                            }
+                                          });
+                                      });
+                                    })(CRM.$);
+                                    {/literal}
+                                  </script>
+                                </td>
                             </tr>
                         {/if}
                     </table>
@@ -73,11 +93,11 @@
     var flashChartType = {/literal}{if $chartType}'{$chartType}'{else}''{/if}{literal};
     function disablePrintPDFButtons( viewtype ) {
       if (viewtype && flashChartType != viewtype) {
-        cj('#_qf_Summary_submit_pdf').attr('disabled', true).addClass('button-disabled');
-  cj('#_qf_Summary_submit_print').attr('disabled', true).addClass('button-disabled');
+        cj('#_qf_Summary_submit_pdf').prop('disabled', true).addClass('button-disabled');
+  cj('#_qf_Summary_submit_print').prop('disabled', true).addClass('button-disabled');
       } else {
-        cj('#_qf_Summary_submit_pdf').removeAttr('disabled').removeClass('button-disabled');
-  cj('#_qf_Summary_submit_print').removeAttr('disabled').removeClass('button-disabled');
+        cj('#_qf_Summary_submit_pdf').prop('disabled', false).removeClass('button-disabled');
+  cj('#_qf_Summary_submit_print').prop('disabled', false).removeClass('button-disabled');
       }
     }
     </script>

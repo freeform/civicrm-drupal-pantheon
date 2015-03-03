@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -42,6 +42,12 @@ class CRM_Report_Form_Contact_CurrentEmployer extends CRM_Report_Form {
 
   public $_drilldownReport = array('contact/detail' => 'Link to Detail Report');
 
+  /**
+   *
+   */
+  /**
+   *
+   */
   function __construct() {
 
     $this->_columns = array(
@@ -131,6 +137,18 @@ class CRM_Report_Form_Contact_CurrentEmployer extends CRM_Report_Form {
           ),
         ),
       ),
+      'civicrm_phone' =>
+      array(
+        'dao' => 'CRM_Core_DAO_Phone',
+        'grouping' => 'contact-fields',
+        'fields' =>
+        array(
+          'phone' =>
+          array('title' => ts('Phone'),
+            'default' => TRUE,
+          ),
+        ),
+      ),
       'civicrm_email' =>
       array(
         'dao' => 'CRM_Core_DAO_Email',
@@ -206,9 +224,7 @@ class CRM_Report_Form_Contact_CurrentEmployer extends CRM_Report_Form {
     foreach ($this->_columns as $tableName => $table) {
       if (array_key_exists('fields', $table)) {
         foreach ($table['fields'] as $fieldName => $field) {
-          if (CRM_Utils_Array::value('required', $field) ||
-            CRM_Utils_Array::value($fieldName, $this->_params['fields'])
-          ) {
+          if (!empty($field['required']) || !empty($this->_params['fields'][$fieldName])) {
 
             $select[] = "{$field['dbAlias']} as {$tableName}_{$fieldName}";
             $this->_columnHeaders["{$tableName}_{$fieldName}"]['type'] = CRM_Utils_Array::value('type', $field);
@@ -237,6 +253,9 @@ FROM civicrm_contact {$this->_aliases['civicrm_contact']}
           ON ({$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_address']}.contact_id
              AND {$this->_aliases['civicrm_address']}.is_primary = 1 )
 
+     LEFT JOIN  civicrm_phone {$this->_aliases['civicrm_phone']}
+          ON ({$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_phone']}.contact_id
+             AND {$this->_aliases['civicrm_phone']}.is_primary = 1)
      LEFT JOIN  civicrm_email {$this->_aliases['civicrm_email']}
           ON ({$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_email']}.contact_id
              AND {$this->_aliases['civicrm_email']}.is_primary = 1) ";
@@ -301,6 +320,9 @@ FROM civicrm_contact {$this->_aliases['civicrm_contact']}
     parent::postProcess();
   }
 
+  /**
+   * @param $rows
+   */
   function alterDisplay(&$rows) {
     // custom code to alter rows
     $checkList = array();
@@ -325,7 +347,7 @@ FROM civicrm_contact {$this->_aliases['civicrm_contact']}
         // in previous row
 
         foreach ($row as $colName => $colVal) {
-          if (CRM_Utils_Array::value($colName, $checkList) && is_array($checkList[$colName]) &&
+          if (!empty($checkList[$colName]) && is_array($checkList[$colName]) &&
             in_array($colVal, $checkList[$colName])
           ) {
             $rows[$rowNum][$colName] = "";
@@ -380,4 +402,3 @@ FROM civicrm_contact {$this->_aliases['civicrm_contact']}
     }
   }
 }
-

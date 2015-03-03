@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -47,7 +47,7 @@
         <fieldset class="crm-profile crm-profile-id-{$field.group_id} crm-profile-name-{$field.groupName}"><legend>{$field.groupTitle}</legend>
         {/if}
 
-        {if $form.formName eq 'Confirm' OR $form.formName eq 'ThankYou'}
+        {if ($form.formName eq 'Confirm' OR $form.formName eq 'ThankYou') AND $prefix neq 'honor'}
           <div class="header-dark">{$field.groupTitle} </div>
         {/if}
         {assign var=fieldset  value=`$field.groupTitle`}
@@ -72,7 +72,7 @@
         {/if}
         {if $field.options_per_line != 0}
           <div class="crm-section editrow_{$n}-section form-item" id="editrow-{$n}">
-            <div class="label option-label">{$form.$n.label}</div>
+            <div class="label option-label">{if $prefix}{$form.$prefix.$n.label}{else}{$form.$n.label}{/if}</div>
             <div class="content 3">
               {assign var="count" value="1"}
               {strip}
@@ -80,11 +80,16 @@
                 <tr>
                 {* sort by fails for option per line. Added a variable to iterate through the element array*}
                   {assign var="index" value="1"}
-                  {foreach name=outer key=key item=item from=$form.$n}
+                  {if $prefix}
+                    {assign var="formElement" value=$form.$prefix.$n}
+                  {else}
+                    {assign var="formElement" value=$form.$n}
+                  {/if}
+                  {foreach name=outer key=key item=item from=$formElement}
                     {if $index < 10}
                       {assign var="index" value=`$index+1`}
                     {else}
-                      <td class="labels font-light">{$form.$n.$key.html}</td>
+                      <td class="labels font-light">{$formElement.$key.html}</td>
                       {if $count == $field.options_per_line}
                       </tr>
                       <tr>
@@ -103,7 +108,7 @@
         {else}
           <div class="crm-section editrow_{$n}-section form-item" id="editrow-{$n}">
             <div class="label">
-              {$form.$n.label}
+              {if $prefix}{$form.$prefix.$n.label}{else}{$form.$n.label}{/if}
             </div>
             <div class="content">
               {if $n|substr:0:3 eq 'im-'}
@@ -125,27 +130,18 @@
                 {include file="CRM/common/jcalendar.tpl" elementName=$n}
               {elseif $n|substr:0:5 eq 'phone'}
                 {assign var="phone_ext_field" value=$n|replace:'phone':'phone_ext'}
-                {$form.$n.html}
+                {if $prefix}{$form.$prefix.$n.html}{else}{$form.$n.html}{/if}
                 {if $form.$phone_ext_field.html}
                   &nbsp;{$form.$phone_ext_field.html}
                 {/if}
               {else}
-                {$form.$n.html}
-                {if $n eq 'gender' && $form.$fieldName.frozen neq true}
-                  <span class="crm-clear-link">(<a href="#" title="unselect" onclick="unselectRadio('{$n}', '{$form.formName}');return false;">{ts}clear{/ts}</a>)</span>
-                {/if}
+                {if $prefix}{$form.$prefix.$n.html}{else}{$form.$n.html}{/if}
               {/if}
 
             {*CRM-4564*}
-              {if $field.html_type eq 'Radio' && $form.$fieldName.frozen neq true && $field.is_required neq 1}
-                <span style="line-height: .75em; margin-top: 1px;">
-                    <span class="crm-clear-link">(<a href="#" title="unselect" onclick="unselectRadio('{$n}', '{$form.formName}');return false;">{ts}clear{/ts}</a>)</span>
-                   </span>
-              {elseif $field.html_type eq 'Autocomplete-Select'}
+              {if $field.html_type eq 'Autocomplete-Select'}
                 {if $field.data_type eq 'ContactReference'}
                 {include file="CRM/Custom/Form/ContactReference.tpl" element_name = $n}
-                {else}
-                {include file="CRM/Custom/Form/AutoComplete.tpl" element_name = $n}
                 {/if}
               {/if}
           </div>
@@ -182,9 +178,9 @@
 
 {literal}
 <script type="text/javascript">
-  cj(function(){
-    cj('#selector tr:even').addClass('odd-row ');
-    cj('#selector tr:odd ').addClass('even-row');
+  CRM.$(function($) {
+    $('#selector tr:even').addClass('odd-row');
+    $('#selector tr:odd ').addClass('even-row');
   });
 </script>
 {/literal}

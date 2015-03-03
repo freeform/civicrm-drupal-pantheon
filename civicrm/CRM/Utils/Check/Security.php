@@ -1,7 +1,7 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
  | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
@@ -267,6 +267,11 @@ class CRM_Utils_Check_Security {
     return $result;
   }
 
+  /**
+   * @param $topic
+   *
+   * @return string
+   */
   public function createDocUrl($topic) {
     return CRM_Utils_System::getWikiBaseURL() . $topic;
   }

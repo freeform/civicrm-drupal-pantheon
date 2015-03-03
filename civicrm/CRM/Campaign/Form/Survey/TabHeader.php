@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -38,18 +38,31 @@
  */
 class CRM_Campaign_Form_Survey_TabHeader {
 
+  /**
+   * @param $form
+   *
+   * @return array
+   */
   static function build(&$form) {
     $tabs = $form->get('tabHeader');
-    if (!$tabs || !CRM_Utils_Array::value('reset', $_GET)) {
+    if (!$tabs || empty($_GET['reset'])) {
       $tabs = self::process($form);
       $form->set('tabHeader', $tabs);
     }
     $form->assign_by_ref('tabHeader', $tabs);
-    $selectedTab = self::getCurrentTab($tabs);
-    $form->assign_by_ref('selectedTab', $selectedTab);
+    CRM_Core_Resources::singleton()
+      ->addScriptFile('civicrm', 'templates/CRM/common/TabHeader.js', 1, 'html-header')
+      ->addSetting(array('tabSettings' => array(
+        'active' => self::getCurrentTab($tabs),
+      )));
     return $tabs;
   }
 
+  /**
+   * @param $form
+   *
+   * @return array
+   */
   static function process(&$form) {
     if ($form->getVar('_surveyId') <= 0) {
       return NULL;
@@ -90,7 +103,7 @@ class CRM_Campaign_Form_Survey_TabHeader {
     }
 
     if ($surveyID) {
-      $reset = CRM_Utils_Array::value('reset', $_GET) ? 'reset=1&' : '';
+      $reset = !empty($_GET['reset']) ? 'reset=1&' : '';
 
       foreach ($tabs as $key => $value) {
         if (!isset($tabs[$key]['qfKey'])) {
@@ -98,7 +111,7 @@ class CRM_Campaign_Form_Survey_TabHeader {
         }
 
         $tabs[$key]['link'] = CRM_Utils_System::url("civicrm/survey/configure/{$key}",
-          "{$reset}action=update&snippet=5&id={$surveyID}{$tabs[$key]['qfKey']}"
+          "{$reset}action=update&id={$surveyID}{$tabs[$key]['qfKey']}"
         );
         $tabs[$key]['active'] = $tabs[$key]['valid'] = TRUE;
       }
@@ -106,11 +119,19 @@ class CRM_Campaign_Form_Survey_TabHeader {
     return $tabs;
   }
 
+  /**
+   * @param $form
+   */
   static function reset(&$form) {
     $tabs = self::process($form);
     $form->set('tabHeader', $tabs);
   }
 
+  /**
+   * @param $tabs
+   *
+   * @return int|string
+   */
   static function getCurrentTab($tabs) {
     static $current = FALSE;
 
@@ -131,6 +152,11 @@ class CRM_Campaign_Form_Survey_TabHeader {
     return $current;
   }
 
+  /**
+   * @param $form
+   *
+   * @return int|string
+   */
   static function getNextTab(&$form) {
     static $next = FALSE;
     if ($next)

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id: PaymentProcessor.php 9702 2007-05-29 23:57:16Z lobo $
  *
  */
@@ -164,7 +164,9 @@ class CRM_Admin_Form_PaymentProcessor extends CRM_Admin_Form {
   /**
    * Function to build the form
    *
-   * @return None
+   * @param bool $check
+   *
+   * @return void
    * @access public
    */
   public function buildQuickForm($check = FALSE) {
@@ -217,7 +219,7 @@ class CRM_Admin_Form_PaymentProcessor extends CRM_Admin_Form {
       $this->add('text', "test_{$field['name']}",
         $field['label'], $attributes[$field['name']]
       );
-      if (CRM_Utils_Array::value('rule', $field)) {
+      if (!empty($field['rule'])) {
         $this->addRule($field['name'], $field['msg'], $field['rule']);
         $this->addRule("test_{$field['name']}", $field['msg'], $field['rule']);
       }
@@ -226,6 +228,11 @@ class CRM_Admin_Form_PaymentProcessor extends CRM_Admin_Form {
     $this->addFormRule(array('CRM_Admin_Form_PaymentProcessor', 'formRule'));
   }
 
+  /**
+   * @param $fields
+   *
+   * @return array|bool
+   */
   static function formRule($fields) {
 
     // make sure that at least one of live or test is present
@@ -246,6 +253,13 @@ class CRM_Admin_Form_PaymentProcessor extends CRM_Admin_Form {
     return empty($errors) ? TRUE : $errors;
   }
 
+  /**
+   * @param $fields
+   * @param $errors
+   * @param null $section
+   *
+   * @return bool
+   */
   static function checkSection(&$fields, &$errors, $section = NULL) {
     $names = array('user_name');
 
@@ -271,6 +285,9 @@ class CRM_Admin_Form_PaymentProcessor extends CRM_Admin_Form {
     return $present;
   }
 
+  /**
+   * @return array
+   */
   function setDefaultValues() {
     $defaults = array();
     if ($this->_ppType) {
@@ -336,7 +353,7 @@ class CRM_Admin_Form_PaymentProcessor extends CRM_Admin_Form {
     $values = $this->controller->exportValues($this->_name);
     $domainID = CRM_Core_Config::domainID();
 
-    if (CRM_Utils_Array::value('is_default', $values)) {
+    if (!empty($values['is_default'])) {
       $query = "UPDATE civicrm_payment_processor SET is_default = 0 WHERE domain_id = $domainID";
       CRM_Core_DAO::executeQuery($query, CRM_Core_DAO::$_nullArray);
     }
@@ -348,6 +365,10 @@ class CRM_Admin_Form_PaymentProcessor extends CRM_Admin_Form {
 
   /**
    * Save a payment processor
+   *
+   * @param $values
+   * @param $domainID
+   * @param $test
    *
    * @return Void
    */

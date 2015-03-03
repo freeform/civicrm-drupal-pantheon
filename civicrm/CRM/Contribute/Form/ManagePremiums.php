@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -44,7 +44,7 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
    *
    * @access public
    *
-   * @return None
+   * @return void
    */
   public function preProcess() {
     parent::preProcess();
@@ -56,7 +56,7 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
    *
    * @access public
    *
-   * @return None
+   * @return void
    */
   function setDefaultValues() {
     $defaults = parent::setDefaultValues();
@@ -89,40 +89,19 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
   /**
    * Function to build the form
    *
-   * @return None
+   * @return void
    * @access public
    */
   public function buildQuickForm() {
-    //parent::buildQuickForm( );
+    parent::buildQuickForm( );
+    $this->setPageTitle(ts('Premium Product'));
 
     if ($this->_action & CRM_Core_Action::PREVIEW) {
       CRM_Contribute_BAO_Premium::buildPremiumPreviewBlock($this, $this->_id);
-
-      $this->addButtons(array(
-          array(
-            'type' => 'next',
-            'name' => ts('Done with Preview'),
-            'isDefault' => TRUE,
-          ),
-        )
-      );
-
       return;
     }
 
     if ($this->_action & CRM_Core_Action::DELETE) {
-      $this->addButtons(array(
-          array(
-            'type' => 'next',
-            'name' => ts('Delete'),
-            'isDefault' => TRUE,
-          ),
-          array(
-            'type' => 'cancel',
-            'name' => ts('Cancel'),
-          ),
-        )
-      );
       return;
     }
 
@@ -142,9 +121,7 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
     $this->addRule('imageOption', ts('Please select an option for the premium image.'), 'required');
 
     $this->addElement('text', 'imageUrl', ts('Image URL'));
-    $this->addRule('imageUrl', 'Please enter the valid URL to display this image.', 'url');
     $this->addElement('text', 'thumbnailUrl', ts('Thumbnail URL'));
-    $this->addRule('thumbnailUrl', 'Please enter the valid URL to display a thumbnail of this image.', 'url');
 
     $this->add('file', 'uploadFile', ts('Image File Name'), 'onChange="select_option();"');
 
@@ -164,12 +141,11 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
 
     $this->add('text', 'fixed_period_start_day', ts('Fixed Period Start Day'), CRM_Core_DAO::getAttribute('CRM_Contribute_DAO_Product', 'fixed_period_start_day'));
 
-
-    $this->add('Select', 'duration_unit', ts('Duration Unit'), array('' => '- select period -', 'day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'year' => 'Year'));
+    $this->add('Select', 'duration_unit', ts('Duration Unit'), array('' => '- select period -') + CRM_Core_SelectValues::getPremiumUnits());
 
     $this->add('text', 'duration_interval', ts('Duration'), CRM_Core_DAO::getAttribute('CRM_Contribute_DAO_Product', 'duration_interval'));
 
-    $this->add('Select', 'frequency_unit', ts('Frequency Unit'), array('' => '- select period -', 'day' => 'Day', 'week' => 'Week', 'month' => 'Month', 'year' => 'Year'));
+    $this->add('Select', 'frequency_unit', ts('Frequency Unit'), array('' => '- select period -') + CRM_Core_SelectValues::getPremiumUnits());
 
     $this->add('text', 'frequency_interval', ts('Frequency'), CRM_Core_DAO::getAttribute('CRM_Contribute_DAO_Product', 'frequency_interval'));
 
@@ -225,7 +201,6 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
         ),
       )
     );
-
     $this->assign('productId', $this->_id);
   }
 
@@ -233,6 +208,8 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
    * Function for validation
    *
    * @param array $params (ref.) an assoc array of name/value pairs
+   *
+   * @param $files
    *
    * @return mixed true or array of errors
    * @access public
@@ -250,7 +227,7 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
       }
     }
     // CRM-13231 financial type required if product has cost
-    if (CRM_Utils_Array::value('cost', $params) && !CRM_Utils_Array::value('financial_type_id', $params)) {
+    if (!empty($params['cost']) && empty($params['financial_type_id'])) {
       $errors['financial_type_id'] = ts('Financial Type is required for product having cost.');
     }
     $fileLocation = $files['uploadFile']['tmp_name'];
@@ -299,7 +276,7 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
    *
    * @access public
    *
-   * @return None
+   * @return void
    */
   public function postProcess() {
 
@@ -378,6 +355,11 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
    *
    * @access private
    *
+   * @param $filename
+   * @param $resizedName
+   * @param $width
+   * @param $height
+   *
    * @return Path to image
    */
   private function _resizeImage($filename, $resizedName, $width, $height) {
@@ -416,5 +398,6 @@ class CRM_Contribute_Form_ManagePremiums extends CRM_Contribute_Form {
     $config = CRM_Core_Config::singleton();
     return $config->imageUploadURL.basename($newFilename);
   }
+
 }
 

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -36,7 +36,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -45,7 +45,7 @@ class CRM_ACL_Form_EntityRole extends CRM_Admin_Form {
   /**
    * Function to build the form
    *
-   * @return None
+   * @return void
    * @access public
    */
   public function buildQuickForm() {
@@ -66,7 +66,7 @@ class CRM_ACL_Form_EntityRole extends CRM_Admin_Form {
 
     $label = ts('Assigned To');
     $group = array('' => ts('- select group -')) + CRM_Core_PseudoConstant::staticGroup(FALSE, 'Access');
-    $this->add('select', 'entity_id', $label, $group, TRUE);
+    $this->add('select', 'entity_id', $label, $group, TRUE, array('class' => 'crm-select2 huge'));
 
     $this->add('checkbox', 'is_active', ts('Enabled?'));
   }
@@ -76,7 +76,7 @@ class CRM_ACL_Form_EntityRole extends CRM_Admin_Form {
    *
    * @access public
    *
-   * @return None
+   * @return void
    */
   public function postProcess() {
     CRM_ACL_BAO_Cache::resetCache();

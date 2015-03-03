@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,13 +29,39 @@
 /**
  *
  * @package CiviCRM_Hook
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id: $
  *
  */
 class CRM_Utils_Hook_Joomla extends CRM_Utils_Hook {
+  /**
+   *Invoke hooks
+   *
+   * @param int $numParams Number of parameters to pass to the hook
+   * @param mixed $arg1 parameter to be passed to the hook
+   * @param mixed $arg2 parameter to be passed to the hook
+   * @param mixed $arg3 parameter to be passed to the hook
+   * @param mixed $arg4 parameter to be passed to the hook
+   * @param mixed $arg5 parameter to be passed to the hook
+   * @param mixed $arg6 parameter to be passed to the hook
+   * @param string $fnSuffix function suffix, this is effectively the hook name
+   *
+   * @return mixed
+   */
+  /**
+   * @param int $numParams
+   * @param mixed $arg1
+   * @param mixed $arg2
+   * @param mixed $arg3
+   * @param mixed $arg4
+   * @param mixed $arg5
+   * @param mixed $arg6
+   * @param string $fnSuffix
+   *
+   * @return mixed
+   */
   function invoke($numParams,
-                  &$arg1, &$arg2, &$arg3, &$arg4, &$arg5,
+                  &$arg1, &$arg2, &$arg3, &$arg4, &$arg5, &$arg6,
                   $fnSuffix
   ) {
     // ensure that we are running in a joomla context
@@ -61,10 +87,10 @@ class CRM_Utils_Hook_Joomla extends CRM_Utils_Hook {
         }
       }
 
-      $result = $app->triggerEvent($fnSuffix, array(&$arg1, &$arg2, &$arg3, &$arg4, &$arg5));
+      $result = $app->triggerEvent($fnSuffix, array(&$arg1, &$arg2, &$arg3, &$arg4, &$arg5, &$arg6));
 
       $moduleResult = $this->commonInvoke($numParams,
-        $arg1, $arg2, $arg3, $arg4, $arg5,
+        $arg1, $arg2, $arg3, $arg4, $arg5, $arg6,
         $fnSuffix, 'joomla');
       if (!empty($moduleResult) && is_array($moduleResult)) {
         if (empty($result)) {

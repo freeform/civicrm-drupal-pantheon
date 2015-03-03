@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -47,6 +47,12 @@ class CRM_Report_Form_Member_Summary extends CRM_Report_Form {
   protected $_customGroupGroupBy = FALSE;
   public $_drilldownReport = array('member/detail' => 'Link to Detail Report');
 
+  /**
+   *
+   */
+  /**
+   *
+   */
   function __construct() {
 
     // UI for selecting columns to appear in the report list
@@ -218,7 +224,7 @@ class CRM_Report_Form_Member_Summary extends CRM_Report_Form {
     foreach ($this->_columns as $tableName => $table) {
       if (array_key_exists('group_bys', $table)) {
         foreach ($table['group_bys'] as $fieldName => $field) {
-          if (CRM_Utils_Array::value($fieldName, $this->_params['group_bys'])) {
+          if (!empty($this->_params['group_bys'][$fieldName])) {
 
             switch (CRM_Utils_Array::value($fieldName, $this->_params['group_bys_freq'])) {
               case 'YEARWEEK':
@@ -250,7 +256,7 @@ class CRM_Report_Form_Member_Summary extends CRM_Report_Form {
                 $field['title'] = 'Quarter';
                 break;
             }
-            if (CRM_Utils_Array::value($fieldName, $this->_params['group_bys_freq'])) {
+            if (!empty($this->_params['group_bys_freq'][$fieldName])) {
               $this->_interval = $field['title'];
               $this->_columnHeaders["{$tableName}_{$fieldName}_start"]['title'] = $field['title'] . ' Beginning';
               $this->_columnHeaders["{$tableName}_{$fieldName}_start"]['type'] = $field['type'];
@@ -270,12 +276,10 @@ class CRM_Report_Form_Member_Summary extends CRM_Report_Form {
 
       if (array_key_exists('fields', $table)) {
         foreach ($table['fields'] as $fieldName => $field) {
-          if (CRM_Utils_Array::value('required', $field) ||
-            CRM_Utils_Array::value($fieldName, $this->_params['fields'])
-          ) {
+          if (!empty($field['required']) || !empty($this->_params['fields'][$fieldName])) {
 
             // only include statistics columns if set
-            if (CRM_Utils_Array::value('statistics', $field)) {
+            if (!empty($field['statistics'])) {
               $this->_statFields[] = 'civicrm_membership_member_count';
               foreach ($field['statistics'] as $stat => $label) {
                 switch (strtolower($stat)) {
@@ -303,9 +307,7 @@ class CRM_Report_Form_Member_Summary extends CRM_Report_Form {
               }
             }
             elseif ($fieldName == 'membership_type_id') {
-              if (!CRM_Utils_Array::value('membership_type_id', $this->_params['group_bys']) &&
-                CRM_Utils_Array::value('join_date', $this->_params['group_bys'])
-              ) {
+              if (empty($this->_params['group_bys']['membership_type_id']) && !empty($this->_params['group_bys']['join_date'])) {
                 $select[] = "GROUP_CONCAT(DISTINCT {$field['dbAlias']}  ORDER BY {$field['dbAlias']} ) as {$tableName}_{$fieldName}";
               }
               else {
@@ -350,7 +352,8 @@ class CRM_Report_Form_Member_Summary extends CRM_Report_Form {
   // end of from
 
   function where() {
-    $this->_whereClauses[] = "{$this->_aliases['civicrm_membership']}.is_test = 0";
+    $this->_whereClauses[] = "{$this->_aliases['civicrm_membership']}.is_test = 0 AND
+                              {$this->_aliases['civicrm_contact']}.is_deleted = 0";
     parent::where();
   }
 
@@ -362,13 +365,11 @@ class CRM_Report_Form_Member_Summary extends CRM_Report_Form {
       foreach ($this->_columns as $tableName => $table) {
         if (array_key_exists('group_bys', $table)) {
           foreach ($table['group_bys'] as $fieldName => $field) {
-            if (CRM_Utils_Array::value($fieldName, $this->_params['group_bys'])) {
-              if (CRM_Utils_Array::value('chart', $field)) {
+            if (!empty($this->_params['group_bys'][$fieldName])) {
+              if (!empty($field['chart'])) {
                 $this->assign('chartSupported', TRUE);
               }
-              if (CRM_Utils_Array::value('frequency', $table['group_bys'][$fieldName]) &&
-                CRM_Utils_Array::value($fieldName, $this->_params['group_bys_freq'])
-              ) {
+              if (!empty($table['group_bys'][$fieldName]['frequency']) && !empty($this->_params['group_bys_freq'][$fieldName])) {
 
                 $append = "YEAR({$field['dbAlias']}),";
                 if (in_array(strtolower($this->_params['group_bys_freq'][$fieldName]),
@@ -395,6 +396,11 @@ class CRM_Report_Form_Member_Summary extends CRM_Report_Form {
     }
   }
 
+  /**
+   * @param $rows
+   *
+   * @return array
+   */
   function statistics(&$rows) {
     $statistics = parent::statistics($rows);
     $select = "
@@ -450,13 +456,16 @@ GROUP BY    {$this->_aliases['civicrm_contribution']}.currency
     parent::postProcess();
   }
 
+  /**
+   * @param $rows
+   */
   function buildChart(&$rows) {
     $graphRows = array();
     $count = 0;
     $membershipTypeValues = CRM_Member_PseudoConstant::membershipType();
     $isMembershipType = CRM_Utils_Array::value('membership_type_id', $this->_params['group_bys']);
     $isJoiningDate = CRM_Utils_Array::value('join_date', $this->_params['group_bys']);
-    if (CRM_Utils_Array::value('charts', $this->_params)) {
+    if (!empty($this->_params['charts'])) {
       foreach ($rows as $key => $row) {
         if (!($row['civicrm_membership_join_date_subtotal'] &&
             $row['civicrm_membership_membership_type_id']
@@ -469,7 +478,7 @@ GROUP BY    {$this->_aliases['civicrm_contribution']}.currency
           if ($join_date) {
             list($year, $month) = explode('-', $join_date);
           }
-          if (CRM_Utils_Array::value('civicrm_membership_join_date_subtotal', $row)) {
+          if (!empty($row['civicrm_membership_join_date_subtotal'])) {
 
             switch ($this->_interval) {
               case 'Month':
@@ -523,13 +532,15 @@ GROUP BY    {$this->_aliases['civicrm_contribution']}.currency
     $this->assign('chartType', $this->_params['charts']);
   }
 
+  /**
+   * @param $rows
+   */
   function alterDisplay(&$rows) {
     // custom code to alter rows
     $entryFound = FALSE;
     foreach ($rows as $rowNum => $row) {
       // make count columns point to detail report
-      if (CRM_Utils_Array::value('join_date', $this->_params['group_bys']) &&
-        CRM_Utils_Array::value('civicrm_membership_join_date_start', $row) &&
+      if (!empty($this->_params['group_bys']['join_date']) && !empty($row['civicrm_membership_join_date_start']) &&
         $row['civicrm_membership_join_date_start'] &&
         $row['civicrm_membership_join_date_subtotal']
       ) {
@@ -566,7 +577,7 @@ GROUP BY    {$this->_aliases['civicrm_contribution']}.currency
             break;
         }
         $typeUrl = '';
-        if (CRM_Utils_Array::value('membership_type_id', $this->_params['group_bys']) &&
+        if (!empty($this->_params['group_bys']['membership_type_id']) &&
           $typeID = $row['civicrm_membership_membership_type_id']
         ) {
           $typeUrl = "&tid_op=in&tid_value={$typeID}";

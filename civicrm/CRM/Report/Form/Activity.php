@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -41,6 +41,12 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
 
   protected $_nonDisplayFields = array();
 
+  /**
+   *
+   */
+  /**
+   *
+   */
   function __construct() {
     // There could be multiple contacts. We not clear on which contact id to display.
     // Lets hide it for now.
@@ -223,6 +229,10 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
           array('title' => ts('Duration'),
             'type' => CRM_Utils_Type::T_INT,
           ),
+          'location' =>
+          array('title' => ts('Location'),
+            'type' => CRM_Utils_Type::T_STRING,
+          ),
           'details' => array(
             'title' => ts('Activity Details'),
           )
@@ -234,6 +244,10 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
           ),
           'activity_subject' =>
           array('title' => ts('Activity Subject')),
+          'location' =>
+            array('title' => ts('Location'),
+            'type' => CRM_Utils_Type::T_TEXT,
+          ),
           'activity_type_id' =>
           array('title' => ts('Activity Type'),
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
@@ -302,13 +316,16 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
     }
     $this->_groupFilter = TRUE;
     $this->_tagFilter = TRUE;
+    $this->_tagFilterTable = 'civicrm_activity';
     parent::__construct();
   }
 
+  /**
+   * @param null $recordType
+   */
   function select($recordType = NULL) {
     if (!array_key_exists("contact_{$recordType}", $this->_params['fields']) && $recordType != 'final') {
       $this->_nonDisplayFields[] = "civicrm_contact_contact_{$recordType}";
-      $this->_params['fields']["contact_{$recordType}"] = 1;
     }
     parent::select();
 
@@ -376,6 +393,9 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
     }
   }
 
+  /**
+   * @param $recordType
+   */
   function from($recordType) {
     $activityContacts = CRM_Core_OptionGroup::values('activity_contacts', FALSE, FALSE, FALSE, NULL, 'name');
     $assigneeID = CRM_Utils_Array::key('Activity Assignees', $activityContacts);
@@ -441,6 +461,9 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
     $this->addAddressFromClause();
   }
 
+  /**
+   * @param null $recordType
+   */
   function where($recordType = NULL) {
     $this->_where = " WHERE {$this->_aliases['civicrm_activity']}.is_test = 0 AND
                                 {$this->_aliases['civicrm_activity']}.is_deleted = 0 AND
@@ -476,6 +499,10 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
                 CRM_Utils_Array::value("{$fieldName}_min", $this->_params),
                 CRM_Utils_Array::value("{$fieldName}_max", $this->_params)
               );
+              if ($fieldName == 'activity_type_id' && empty($this->_params['activity_type_id_value'])) {
+                $actTypes = array_flip(CRM_Core_PseudoConstant::activityType(TRUE, FALSE, FALSE, 'label', TRUE));
+                $clause = "( {$this->_aliases['civicrm_activity']}.activity_type_id IN (".implode(',',$actTypes).") )";
+              }
             }
           }
 
@@ -518,6 +545,9 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
     $this->_groupBy = "GROUP BY {$this->_aliases['civicrm_activity']}.id";
   }
 
+  /**
+   * @param string $tableAlias
+   */
   function buildACLClause($tableAlias = 'contact_a') {
     //override for ACL( Since Contact may be source
     //contact/assignee or target also it may be null )
@@ -544,6 +574,11 @@ class CRM_Report_Form_Activity extends CRM_Report_Form {
     $this->_aclWhere = NULL;
   }
 
+  /**
+   * @param $groupID
+   *
+   * @throws Exception
+   */
   function add2group($groupID) {
     if (CRM_Utils_Array::value("contact_target_op", $this->_params) == 'nll') {
       CRM_Core_Error::fatal(ts('Current filter criteria didn\'t have any target contact to add to group'));
@@ -577,22 +612,21 @@ GROUP BY civicrm_activity_id {$this->_having} {$this->_orderBy}";
   }
 
   function postProcess() {
-    $this->buildACLClause(array('civicrm_contact_source', 'civicrm_contact_target', 'civicrm_contact_assignee'));
     $this->beginPostProcess();
 
     //Assign those recordtype to array which have filter operator as 'Is not empty' or 'Is empty'
     $nullFilters = array();
     foreach (array('target', 'source', 'assignee') as $type) {
-      if (CRM_Utils_Array::value("contact_{$type}_op", $this->_params) == 'nnll' ||
-        CRM_Utils_Array::value("contact_{$type}_value", $this->_params)) {
-        $nullFilters[] = " civicrm_contact_contact_{$type} IS NOT NULL ";
+      if (CRM_Utils_Array::value("contact_{$type}_op", $this->_params) == 'nnll' || !empty($this->_params["contact_{$type}_value"])) {
+        $nullFilters[] = " civicrm_contact_contact_{$type}_id IS NOT NULL ";
       }
       else if (CRM_Utils_Array::value("contact_{$type}_op", $this->_params) == 'nll') {
-        $nullFilters[] = " civicrm_contact_contact_{$type} IS NULL ";
+        $nullFilters[] = " civicrm_contact_contact_{$type}_id IS NULL ";
       }
     }
 
       // 1. fill temp table with target results
+    $this->buildACLClause(array('civicrm_contact_target'));
     $this->select('target');
     $this->from('target');
     $this->customDataFrom();
@@ -615,6 +649,7 @@ GROUP BY civicrm_activity_id {$this->_having} {$this->_orderBy}";
     CRM_Core_DAO::executeQuery($tempQuery);
 
     // 3. fill temp table with assignee results
+    $this->buildACLClause(array('civicrm_contact_assignee'));
     $this->select('assignee');
     $this->from('assignee');
     $this->customDataFrom();
@@ -626,6 +661,7 @@ GROUP BY civicrm_activity_id {$this->_having} {$this->_orderBy}";
     CRM_Core_DAO::executeQuery($tempQuery);
 
     // 4. fill temp table with source results
+    $this->buildACLClause(array('civicrm_contact_source'));
     $this->select('source');
     $this->from('source');
     $this->customDataFrom();
@@ -660,6 +696,9 @@ GROUP BY civicrm_activity_id {$this->_having} {$this->_orderBy} {$this->_limit}"
     $this->endPostProcess($rows);
   }
 
+  /**
+   * @param $rows
+   */
   function alterDisplay(&$rows) {
     // custom code to alter rows
 
@@ -785,7 +824,7 @@ GROUP BY civicrm_activity_id {$this->_having} {$this->_orderBy} {$this->_limit}"
           $fullDetails = $rows[$rowNum]['civicrm_activity_details'];
           $rows[$rowNum]['civicrm_activity_details'] = substr($fullDetails, 0, strrpos(substr($fullDetails, 0, 80), ' '));
           if ($actUrl) {
-            $rows[$rowNum]['civicrm_activity_details'] .= " <a href='{$actUrl}' title='{$onHoverAct}'>(more)</a>"; 
+            $rows[$rowNum]['civicrm_activity_details'] .= " <a href='{$actUrl}' title='{$onHoverAct}'>(more)</a>";
           }
           $entryFound = TRUE;
         }

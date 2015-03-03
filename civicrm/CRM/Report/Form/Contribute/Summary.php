@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -45,6 +45,12 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
 
   public $_drilldownReport = array('contribute/detail' => 'Link to Detail Report');
 
+  /**
+   *
+   */
+  /**
+   *
+   */
   function __construct() {
 
   // Check if CiviCampaign is a) enabled and b) has active campaigns
@@ -231,6 +237,13 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
           'amount' =>
           array('title' => ts('Soft Credit Amount'),
           ),
+          'soft_credit_type_id' =>
+          array('title' => 'Soft Credit Type',
+            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
+            'options' => CRM_Core_OptionGroup::values('soft_credit_type'),
+            'default' => NULL,
+            'type' => CRM_Utils_Type::T_STRING,
+          ),
           'soft_sum' =>
           array('title' => ts('Soft Credit Aggregate'),
             'type' => CRM_Report_Form::OP_INT,
@@ -251,27 +264,9 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
           ),
         ),
       ),
-      'civicrm_group' =>
-      array(
-        'dao' => 'CRM_Contact_DAO_GroupContact',
-        'alias' => 'cgroup',
-        'filters' =>
-        array(
-          'gid' =>
-          array(
-            'name' => 'group_id',
-            'title' => ts('Group'),
-            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
-            'group' => TRUE,
-            'options' => CRM_Core_PseudoConstant::nestedGroup(),
-            'type' => CRM_Utils_Type::T_INT,
-          ),
-        ),
-      ),
     ) + $this->addAddressFields();
 
     // If we have a campaign, build out the relevant elements
-    $this->_tagFilter = TRUE;
     if ($campaignEnabled && !empty($this->activeCampaigns)) {
       $this->_columns['civicrm_contribution']['fields']['campaign_id'] = array(
         'title' => 'Campaign',
@@ -284,6 +279,8 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
       $this->_columns['civicrm_contribution']['group_bys']['campaign_id'] = array('title' => ts('Campaign'));
     }
 
+    $this->_tagFilter = TRUE;
+    $this->_groupFilter = TRUE;
     $this->_currencyColumn = 'civicrm_contribution_currency';
     parent::__construct();
   }
@@ -292,6 +289,11 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     parent::preProcess();
   }
 
+  /**
+   * @param bool $freeze
+   *
+   * @return array
+   */
   function setDefaultValues($freeze = TRUE) {
     return parent::setDefaultValues($freeze);
   }
@@ -305,7 +307,7 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
           if ($tableName == 'civicrm_address') {
             $this->_addressField = TRUE;
           }
-          if (CRM_Utils_Array::value($fieldName, $this->_params['group_bys'])) {
+          if (!empty($this->_params['group_bys'][$fieldName])) {
             switch (CRM_Utils_Array::value($fieldName, $this->_params['group_bys_freq'])) {
               case 'YEARWEEK':
                 $select[]       = "DATE_SUB({$field['dbAlias']}, INTERVAL WEEKDAY({$field['dbAlias']}) DAY) AS {$tableName}_{$fieldName}_start";
@@ -335,7 +337,7 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
                 $field['title'] = 'Quarter';
                 break;
             }
-            if (CRM_Utils_Array::value($fieldName, $this->_params['group_bys_freq'])) {
+            if (!empty($this->_params['group_bys_freq'][$fieldName])) {
               $this->_interval = $field['title'];
               $this->_columnHeaders["{$tableName}_{$fieldName}_start"]['title'] = $field['title'] . ' Beginning';
               $this->_columnHeaders["{$tableName}_{$fieldName}_start"]['type'] = $field['type'];
@@ -356,12 +358,10 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
           if ($tableName == 'civicrm_address') {
             $this->_addressField = TRUE;
           }
-          if (CRM_Utils_Array::value('required', $field) ||
-            CRM_Utils_Array::value($fieldName, $this->_params['fields'])
-          ) {
+          if (!empty($field['required']) || !empty($this->_params['fields'][$fieldName])) {
 
             // only include statistics columns if set
-            if (CRM_Utils_Array::value('statistics', $field)) {
+            if (!empty($field['statistics'])) {
               foreach ($field['statistics'] as $stat => $label) {
                 switch (strtolower($stat)) {
                   case 'sum':
@@ -400,6 +400,13 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     $this->_select = "SELECT " . implode(', ', $select) . " ";
   }
 
+  /**
+   * @param $fields
+   * @param $files
+   * @param $self
+   *
+   * @return array
+   */
   static function formRule($fields, $files, $self) {
     $errors = $grouping = array();
     //check for searching combination of dispaly columns and
@@ -407,18 +414,18 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     $ignoreFields = array('total_amount', 'sort_name');
     $errors = $self->customDataFormRule($fields, $ignoreFields);
 
-    if (!CRM_Utils_Array::value('receive_date', $fields['group_bys'])) {
-      if (CRM_Utils_Array::value('receive_date_relative', $fields) ||
+    if (empty($fields['group_bys']['receive_date'])) {
+      if (!empty($fields['receive_date_relative']) ||
         CRM_Utils_Date::isDate($fields['receive_date_from']) ||
         CRM_Utils_Date::isDate($fields['receive_date_to'])
       ) {
         $errors['receive_date_relative'] = ts("Do not use filter on Date if group by Receive Date is not used ");
       }
     }
-    if (!CRM_Utils_Array::value('total_amount', $fields['fields'])) {
+    if (empty($fields['fields']['total_amount'])) {
       foreach (array(
         'total_count_value', 'total_sum_value', 'total_avg_value') as $val) {
-        if (CRM_Utils_Array::value($val, $fields)) {
+        if (!empty($fields[$val])) {
           $errors[$val] = ts("Please select the Amount Statistics");
         }
       }
@@ -429,14 +436,13 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
 
   function from() {
     $softCreditJoin = "LEFT";
-    if (CRM_Utils_Array::value('soft_amount', $this->_params['fields']) &&
-      !CRM_Utils_Array::value('total_amount', $this->_params['fields'])) {
+    if (!empty($this->_params['fields']['soft_amount']) && empty($this->_params['fields']['total_amount'])) {
       // if its only soft credit stats, use inner join
       $softCreditJoin = "INNER";
     }
 
     $this->_from = "
-        FROM civicrm_contact  {$this->_aliases['civicrm_contact']}
+        FROM civicrm_contact  {$this->_aliases['civicrm_contact']} {$this->_aclFrom}
              INNER JOIN civicrm_contribution   {$this->_aliases['civicrm_contribution']}
                      ON {$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_contribution']}.contact_id AND
                         {$this->_aliases['civicrm_contribution']}.is_test = 0
@@ -470,14 +476,12 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
       foreach ($this->_columns as $tableName => $table) {
         if (array_key_exists('group_bys', $table)) {
           foreach ($table['group_bys'] as $fieldName => $field) {
-            if (CRM_Utils_Array::value($fieldName, $this->_params['group_bys'])) {
-              if (CRM_Utils_Array::value('chart', $field)) {
+            if (!empty($this->_params['group_bys'][$fieldName])) {
+              if (!empty($field['chart'])) {
                 $this->assign('chartSupported', TRUE);
               }
 
-              if (CRM_Utils_Array::value('frequency', $table['group_bys'][$fieldName]) &&
-                CRM_Utils_Array::value($fieldName, $this->_params['group_bys_freq'])
-              ) {
+              if (!empty($table['group_bys'][$fieldName]['frequency']) && !empty($this->_params['group_bys_freq'][$fieldName])) {
 
                 $append = "YEAR({$field['dbAlias']}),";
                 if (in_array(strtolower($this->_params['group_bys_freq'][$fieldName]),
@@ -508,11 +512,28 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     }
   }
 
+  function storeWhereHavingClauseArray(){
+    parent::storeWhereHavingClauseArray();
+    if (empty($this->_params['fields']['soft_amount']) && !empty($this->_havingClauses)){
+      foreach ($this->_havingClauses as $key => $havingClause) {
+        if (stristr($havingClause, 'soft_soft')){
+          unset($this->_havingClauses[$key]);
+        }
+      }
+    }
+  }
+
+  /**
+   * @param $rows
+   *
+   * @return array
+   */
   function statistics(&$rows) {
     $statistics = parent::statistics($rows);
 
     $softCredit = CRM_Utils_Array::value('soft_amount', $this->_params['fields']);
     $onlySoftCredit = $softCredit && !CRM_Utils_Array::value('total_amount', $this->_params['fields']);
+    $totalAmount = $average = $softTotalAmount = $softAverage = array();
 
     $select = "SELECT
 COUNT({$this->_aliases['civicrm_contribution']}.total_amount )        as civicrm_contribution_total_amount_count,
@@ -584,14 +605,17 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
     parent::postProcess();
   }
 
+  /**
+   * @param $rows
+   */
   function buildChart(&$rows) {
     $graphRows = array();
 
-    if (CRM_Utils_Array::value('charts', $this->_params)) {
-      if (CRM_Utils_Array::value('receive_date', $this->_params['group_bys'])) {
+    if (!empty($this->_params['charts'])) {
+      if (!empty($this->_params['group_bys']['receive_date'])) {
 
-        $contrib = CRM_Utils_Array::value('total_amount', $this->_params['fields']) ? TRUE : FALSE;
-        $softContrib = CRM_Utils_Array::value('soft_amount', $this->_params['fields']) ? TRUE : FALSE;
+        $contrib = !empty($this->_params['fields']['total_amount']) ? TRUE : FALSE;
+        $softContrib = !empty($this->_params['fields']['soft_amount']) ? TRUE : FALSE;
 
         foreach ($rows as $key => $row) {
           if ($row['civicrm_contribution_receive_date_subtotal']) {
@@ -629,17 +653,17 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
     }
   }
 
+  /**
+   * @param $rows
+   */
   function alterDisplay(&$rows) {
     // custom code to alter rows
     $entryFound = FALSE;
 
     foreach ($rows as $rowNum => $row) {
       // make count columns point to detail report
-      if (CRM_Utils_Array::value('receive_date', $this->_params['group_bys']) &&
-        CRM_Utils_Array::value('civicrm_contribution_receive_date_start', $row) &&
-        CRM_Utils_Array::value('civicrm_contribution_receive_date_start', $row) &&
-        CRM_Utils_Array::value('civicrm_contribution_receive_date_subtotal', $row)
-      ) {
+      if (!empty($this->_params['group_bys']['receive_date']) && !empty($row['civicrm_contribution_receive_date_start']) &&
+        CRM_Utils_Array::value('civicrm_contribution_receive_date_start', $row) && !empty($row['civicrm_contribution_receive_date_subtotal'])) {
 
         $dateStart = CRM_Utils_Date::customFormat($row['civicrm_contribution_receive_date_start'], '%Y%m%d');
         $endDate   = new DateTime($dateStart);

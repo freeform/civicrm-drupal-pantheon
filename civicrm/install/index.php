@@ -542,6 +542,11 @@ class InstallRequirements {
     return $this->errors;
   }
 
+  /**
+   * @param $min
+   * @param $recommended
+   * @param $testDetails
+   */
   function requireMemory($min, $recommended, $testDetails) {
     $this->testing($testDetails);
     $mem = $this->getPHPMemory();
@@ -560,6 +565,9 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @return float
+   */
   function getPHPMemory() {
     $memString = ini_get("memory_limit");
 
@@ -587,6 +595,9 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param null $section
+   */
   function showTable($section = NULL) {
     if ($section) {
       $tests = $this->tests[$section];
@@ -609,6 +620,12 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $funcName
+   * @param $testDetails
+   *
+   * @return bool
+   */
   function requireFunction($funcName, $testDetails) {
     $this->testing($testDetails);
 
@@ -621,6 +638,9 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $testDetails
+   */
   function checkXCache($testDetails) {
     if (function_exists('xcache_isset') &&
       ini_get('xcache.size') > 0
@@ -630,6 +650,11 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $minVersion
+   * @param $testDetails
+   * @param null $maxVersion
+   */
   function requirePHPVersion($minVersion, $testDetails, $maxVersion = NULL) {
 
     $this->testing($testDetails);
@@ -657,6 +682,11 @@ class InstallRequirements {
     $this->error($testDetails);
   }
 
+  /**
+   * @param $filename
+   * @param $testDetails
+   * @param bool $absolute
+   */
   function requireFile($filename, $testDetails, $absolute = FALSE) {
     $this->testing($testDetails);
     if (!$absolute) {
@@ -668,6 +698,9 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $testDetails
+   */
   function requireNoPathSeparator($testDetails) {
     $this->testing($testDetails);
     if (substr_count($this->getBaseDir(), PATH_SEPARATOR)) {
@@ -675,6 +708,10 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $filename
+   * @param $testDetails
+   */
   function requireNoFile($filename, $testDetails) {
     $this->testing($testDetails);
     $filename = $this->getBaseDir() . $filename;
@@ -684,6 +721,10 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $filename
+   * @param $testDetails
+   */
   function moveFileOutOfTheWay($filename, $testDetails) {
     $this->testing($testDetails);
     $filename = $this->getBaseDir() . $filename;
@@ -695,6 +736,11 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $filename
+   * @param $testDetails
+   * @param bool $absolute
+   */
   function requireWriteable($filename, $testDetails, $absolute = FALSE) {
     $this->testing($testDetails);
     if (!$absolute) {
@@ -716,6 +762,10 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $moduleName
+   * @param $testDetails
+   */
   function requireApacheModule($moduleName, $testDetails) {
     $this->testing($testDetails);
     if (!in_array($moduleName, apache_get_modules())) {
@@ -723,6 +773,12 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $server
+   * @param $username
+   * @param $password
+   * @param $testDetails
+   */
   function requireMysqlConnection($server, $username, $password, $testDetails) {
     $this->testing($testDetails);
     $conn = @mysql_connect($server, $username, $password);
@@ -736,6 +792,10 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $server
+   * @param $testDetails
+   */
   function requireMySQLServer($server, $testDetails) {
     $this->testing($testDetails);
     $conn = @mysql_connect($server, NULL, NULL);
@@ -749,6 +809,10 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $version
+   * @param $testDetails
+   */
   function requireMySQLVersion($version, $testDetails) {
     $this->testing($testDetails);
 
@@ -770,6 +834,13 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $server
+   * @param $username
+   * @param $password
+   * @param $database
+   * @param $testDetails
+   */
   function requireMySQLInnoDB($server, $username, $password, $database, $testDetails) {
     $this->testing($testDetails);
     $conn = @mysql_connect($server, $username, $password);
@@ -798,6 +869,13 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $server
+   * @param $username
+   * @param $password
+   * @param $database
+   * @param $testDetails
+   */
   function requireMySQLTempTables($server, $username, $password, $database, $testDetails) {
     $this->testing($testDetails);
     $conn = @mysql_connect($server, $username, $password);
@@ -821,6 +899,13 @@ class InstallRequirements {
     $result = mysql_query('DROP TEMPORARY TABLE civicrm_install_temp_table_test');
   }
 
+  /**
+   * @param $server
+   * @param $username
+   * @param $password
+   * @param $database
+   * @param $testDetails
+   */
   function requireMySQLTrigger($server, $username, $password, $database, $testDetails) {
     $this->testing($testDetails);
     $conn = @mysql_connect($server, $username, $password);
@@ -855,6 +940,13 @@ class InstallRequirements {
   }
 
 
+  /**
+   * @param $server
+   * @param $username
+   * @param $password
+   * @param $database
+   * @param $testDetails
+   */
   function requireMySQLLockTables($server, $username, $password, $database, $testDetails) {
     $this->testing($testDetails);
     $conn = @mysql_connect($server, $username, $password);
@@ -897,6 +989,12 @@ class InstallRequirements {
     return;
   }
 
+  /**
+   * @param $server
+   * @param $username
+   * @param $password
+   * @param $testDetails
+   */
   function requireMySQLAutoIncrementIncrementOne($server, $username, $password, $testDetails) {
     $this->testing($testDetails);
     $conn = @mysql_connect($server, $username, $password);
@@ -923,6 +1021,14 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $server
+   * @param $username
+   * @param $password
+   * @param $database
+   * @param $minValueKB
+   * @param $testDetails
+   */
   function requireMySQLThreadStack($server, $username, $password, $database, $minValueKB, $testDetails) {
     $this->testing($testDetails);
     $conn = @mysql_connect($server, $username, $password);
@@ -951,6 +1057,14 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $server
+   * @param $username
+   * @param $password
+   * @param $database
+   * @param $testDetails
+   * @param bool $onlyRequire
+   */
   function requireDatabaseOrCreatePermissions($server,
     $username,
     $password,
@@ -987,6 +1101,10 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $varNames
+   * @param $errorMessage
+   */
   function requireServerVariables($varNames, $errorMessage) {
     //$this->testing($testDetails);
     foreach ($varNames as $varName) {
@@ -1003,6 +1121,11 @@ class InstallRequirements {
     }
   }
 
+  /**
+   * @param $testDetails
+   *
+   * @return bool
+   */
   function isRunningApache($testDetails) {
     $this->testing($testDetails);
     if (function_exists('apache_get_modules') || stristr($_SERVER['SERVER_SIGNATURE'], 'Apache')) {
@@ -1013,10 +1136,16 @@ class InstallRequirements {
     return FALSE;
   }
 
+  /**
+   * @return string
+   */
   function getBaseDir() {
     return dirname($_SERVER['SCRIPT_FILENAME']) . CIVICRM_DIRECTORY_SEPARATOR;
   }
 
+  /**
+   * @param $testDetails
+   */
   function testing($testDetails) {
     if (!$testDetails) {
       return;
@@ -1033,6 +1162,9 @@ class InstallRequirements {
     $this->tests[$section][$test] = array("good", $message);
   }
 
+  /**
+   * @param $testDetails
+   */
   function error($testDetails) {
     $section = $testDetails[0];
     $test = $testDetails[1];
@@ -1041,6 +1173,9 @@ class InstallRequirements {
     $this->errors[] = $testDetails;
   }
 
+  /**
+   * @param $testDetails
+   */
   function warning($testDetails) {
     $section = $testDetails[0];
     $test = $testDetails[1];
@@ -1050,16 +1185,31 @@ class InstallRequirements {
     $this->warnings[] = $testDetails;
   }
 
+  /**
+   * @return int
+   */
   function hasErrors() {
     return sizeof($this->errors);
   }
 
+  /**
+   * @return int
+   */
   function hasWarnings() {
     return sizeof($this->warnings);
   }
 }
 
+/**
+ * Class Installer
+ */
 class Installer extends InstallRequirements {
+  /**
+   * @param $server
+   * @param $username
+   * @param $password
+   * @param $database
+   */
   function createDatabaseIfNotExists($server, $username, $password, $database) {
     $conn = @mysql_connect($server, $username, $password);
 
@@ -1076,6 +1226,11 @@ class Installer extends InstallRequirements {
     }
   }
 
+  /**
+   * @param $config
+   *
+   * @return mixed
+   */
   function install($config) {
     global $installDirPath;
 
@@ -1095,9 +1250,9 @@ class Installer extends InstallRequirements {
     if (!$this->errors) {
       global $installType, $installURLPath;
 
-      $registerSiteURL = "http://civicrm.org/civicrm/profile/create?reset=1&gid=15";
+      $registerSiteURL = "https://civicrm.org/register-site";
       $commonOutputMessage = "
-                      <li> Have you registered this site at CiviCRM.org? If not, please help strengthen the CiviCRM ecosystem by taking a few minutes to <a href='$registerSiteURL' target='_blank'>fill out the site registration form</a>. The information collected will help us prioritize improvements, target our communications and build the community. If you have a technical role for this site, be sure to check Keep in Touch to receive technical updates (a low volume  mailing list).</li>
+                      <li>Have you registered this site at CiviCRM.org? If not, please help strengthen the CiviCRM ecosystem by taking a few minutes to <a href='$registerSiteURL' target='_blank'>fill out the site registration form</a>. The information collected will help us prioritize improvements, target our communications and build the community. If you have a technical role for this site, be sure to check Keep in Touch to receive technical updates (a low volume  mailing list).</li>
                       <li>We have integrated KCFinder with CKEditor and TinyMCE. This allows a user to upload images. All uploaded images are public.</li>
 ";
 
@@ -1290,6 +1445,12 @@ function civicrm_install_set_drupal_perms() {
   }
 }
 
+/**
+ * @param $cmsPath
+ * @param $str
+ *
+ * @return string
+ */
 function getSiteDir($cmsPath, $str) {
   static $siteDir = '';
 
@@ -1327,6 +1488,10 @@ function getSiteDir($cmsPath, $str) {
   return $siteDir;
 }
 
+/**
+ * @param $errorTitle
+ * @param $errorMsg
+ */
 function errorDisplayPage($errorTitle, $errorMsg) {
   include ('error.html');
   exit();

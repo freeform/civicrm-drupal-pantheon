@@ -90,7 +90,7 @@ function civicrm_help($section) {
     $output .= '<li>' . t('create or administer location types (e.g. home, work, school...) <a href="!1">CiviCRM &raquo; Administer &raquo; Customize Data and Screens &raquo; Dropdown Options &raquo; Location Types</a>.', array(
       '!1' => url('civicrm/admin/locationType', array('query' => 'reset=1')))) . '</li>';
     $output .= '<li>' . t('create or administer activity types (e.g. house meeting, intake interview...) at <a href="!1">CiviCRM &raquo; Administer &raquo; Customize Data and Screens &raquo; Activity Types</a>.', array(
-      '!1' => url('civicrm/admin/options/activity_type', array('query' => 'group=activity_type&reset=1')))) . '</li>';
+      '!1' => url('civicrm/admin/options/activity_type', array('query' => 'reset=1')))) . '</li>';
     $output .= '<li>' . t('create or administer custom data fields (e.g. volunteer skills, emergency contact info...) <a href="!1">CiviCRM &raquo; Administer &raquo; Customize Data and Screens &raquo; Custom Fields</a>.', array(
       '!1' => url('civicrm/admin/custom/group', array('query' => 'reset=1')))) . '</li>';
     $output .= '<li>' . t('create or administer CiviCRM profiles (i.e. what contact data is collected during user registration and included in My Account) at <a href="!1">CiviCRM &raquo; Administer &raquo; Customize Data and Screens &raquo; Profiles</a>.', array(
@@ -310,82 +310,7 @@ function civicrm_initialize() {
 }
 
 /**
- * Get CiviCRM query parameters from the url.
- *
- * This is useful for re-adding them to generated urls as drupal tends to drop
- * them and we need them for language switching and generating urls for metadata.
- */
-function _civicrm_get_url_parameters() {
-  $query = $_REQUEST;
-  unset($query['IDS_request_uri']);
-  unset($query['IDS_user_agent']);
-  return $query;
-}
-
-/**
- * Get CiviCRM query parameters from the url as a string for url output.
- *
- * Drupal tends to strip CiviCRM parameters from urls and we sometimes want to put them back.
- * For example drupal will output civicrm/contribution/transact as the metadata url whereas
- * we want civicrm/contribution/transact?reset=1&id=2
- *
- * @return string
- *   String of url parameters e.g '?reset=1&id=2'.
- */
-function _civicrm_get_url_parameters_as_url_string() {
-  $string = '';
-  foreach (_civicrm_get_url_parameters() as $key => $value) {
-    if (empty($string)) {
-      $string = '?' . $key . '=' . $value;
-    }
-    else {
-      $string .= '&' . $key . '=' . $value;
-    }
-  }
-  return $string;
-}
-
-/**
- * Alter metatags before being cached.
- *
- * This hook is invoked prior to the meta tags for a given page are cached.
- *
- * @param array $output
- *   Metatags to be displayed.
- * @param string $instance
- *  Context.
- */
-function civicrm_metatag_metatags_view_alter(&$output, $instance) {
-  $linkUrls = array('og:url', 'canonical', 'shortlink');
-  foreach ($linkUrls as $url) {
-    if (isset($output[$url]['#attached']['drupal_add_html_head'][0][0]['#value'])) {
-      $output[$url]['#attached']['drupal_add_html_head'][0][0]['#value'] .= _civicrm_get_url_parameters_as_url_string();
-    }
-  }
-}
-
-/**
- * Make the language switcher work with civicrm.
- *
- * We override theme_links__locale_block() so that civicrm language switcher
- * links hold the relevant civicrm parameters.
- *
- * @param array $variables
- *
- * @return array
- */
-function civicrm_links__locale_block($variables) {
-  if (arg(0) == 'civicrm') {
-    foreach ($variables['links'] as $lang => $attr) {
-      $variables['links'][$lang]['query'] = _civicrm_get_url_parameters();
-    }
-  }
-  return theme('links', $variables);
-}
-
-/**
- * Find & register class loader and store location in Drupal variable.
- *
+ * Find & register classloader and store location in Drupal variable.
  * Per CRM-13737 this allows for drupal code to be outside the core directory
  * which makes it easier for sites managing their own installation methods that
  * may need to cover different drupal versions
@@ -847,6 +772,7 @@ function civicrm_add_jquery(&$html) {
 function civicrm_form_alter(&$form, $formValues, $formID) {
   switch ($formID) {
     case 'user_admin_permissions':
+      $form['#submit'][] = 'civicrm_user_admin_permissions_submit';
     case 'system_clean_url_settings':
       if (!empty($formValues['input'])) {
         // reset navigation for permissions changed and clean url
@@ -902,20 +828,40 @@ function civicrm_form_alter(&$form, $formValues, $formID) {
   return;
 }
 
+/**
+ * Custom submit handler for CiviCRM to warn about unsafe permission configs.
+ */
+function civicrm_user_admin_permissions_submit($form, &$form_state) {
+  $rid = array_search('anonymous user', $form_state['values']['role_names']);
+  if ($rid === FALSE) {
+    return;
+  }
+  civicrm_initialize();
+  $roles = user_roles();
+  $permissions = array_filter($form_state['values'][$rid]);
+  $warning_permissions = CRM_Core_Permission::validateForPermissionWarnings($permissions);
+  $warning_permission_names = array();
+  foreach (module_implements('permission') as $module) {
+    if ($permissions = module_invoke($module, 'permission')) {
+      foreach ($permissions as $key => $permission) {
+        if (in_array($key, $warning_permissions)) {
+          $warning_permission_names[$key] = $permission['title'];
+        }
+      }
+    }
+  }
+  if (!empty($warning_permission_names)) {
+    drupal_set_message(t('The %1 role was assigned one or more permissions that may prove dangerous for users of that role to have. Please reconsider assigning %2 to them.', array( '%1' => $roles[$rid], '%2' => implode(', ', $warning_permission_names))), 'warning');
+  }
+}
+
 /*
  *
  * Implements hook_theme_registry_alter().
- *
  * Based on the jquery_update module.
  *
  * Make sure this page preprocess function runs last
  * so that a theme can't call drupal_get_js().
- *
- * Also, add civicrm parameters to links so they are not truncated by the
- * language switcher.
- *
- * @param array $theme_registry
- *   Registry theme metadata.
  */
 function civicrm_theme_registry_alter(&$theme_registry) {
   if (isset($theme_registry['page'])) {
@@ -926,9 +872,6 @@ function civicrm_theme_registry_alter(&$theme_registry) {
     // Now add it on at the end of the array so that it runs last.
     $theme_registry['page']['preprocess functions'][] = 'civicrm_preprocess_page';
   }
-  // Rewrite the links in order to add back CiviCRM parameters for the language switcher.
-  $theme_registry['links__locale_block']['theme path'] = drupal_get_path('module', 'civicrm');
-  $theme_registry['links__locale_block']['function'] = 'civicrm_links__locale_block';
 }
 
 /**
@@ -1324,3 +1267,4 @@ function civicrm_metatag_page_cache_cid_parts_alter(&$cid_parts) {
     $cid_parts['path'] .= '/' . md5(print_r($get, true));
   }
 }
+

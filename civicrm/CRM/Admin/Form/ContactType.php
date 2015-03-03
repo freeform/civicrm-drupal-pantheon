@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -42,11 +42,13 @@ class CRM_Admin_Form_ContactType extends CRM_Admin_Form {
   /**
    * Function to build the form
    *
-   * @return None
+   * @return void
    * @access public
    */
   public function buildQuickForm() {
     parent::buildQuickForm();
+    $this->setPageTitle(ts('Contact Type'));
+
     if ($this->_action & CRM_Core_Action::DELETE) {
       return;
     }
@@ -83,7 +85,10 @@ class CRM_Admin_Form_ContactType extends CRM_Admin_Form {
   /**
    * global form rule
    *
-   * @param array $fields  the input form values
+   * @param array $fields the input form values
+   *
+   * @param $files
+   * @param $self
    *
    * @return true if no errors, else array of errors
    * @access public
@@ -117,7 +122,7 @@ class CRM_Admin_Form_ContactType extends CRM_Admin_Form {
    *
    * @access public
    *
-   * @return None
+   * @return void
    */
   public function postProcess() {
     CRM_Utils_System::flushCache();
@@ -150,5 +155,6 @@ class CRM_Admin_Form_ContactType extends CRM_Admin_Form {
         array(1 => $contactType->label)
       ), ts('Saved'), 'success');
   }
+
 }
 

@@ -65,8 +65,7 @@
  * Run hook_views_data for active CiviCRM components
  */
 function civicrm_views_data_alter(&$data) {
-
-  if (!civicrm_initialize()) {
+  if (!civicrm_initialize() || CRM_Utils_System::isInUpgradeMode()) {
     return;
   }
 
@@ -449,7 +448,7 @@ function civicrm_views_get_field($data_type, $html_type = NULL) {
       );
     case "Int":
       return array(
-        'handler' => 'civicrm_handler_field_custom',
+        'handler' => 'views_handler_field_numeric',
         'click sortable' => TRUE,
       );
     case "Date":

@@ -2,9 +2,9 @@
 
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2014
  * $Id$
  *
  */
@@ -43,6 +43,12 @@ class CRM_Report_Form_Membership_Summary extends CRM_Report_Form {
     'pieChart' => 'Pie Chart',
   );
 
+  /**
+   *
+   */
+  /**
+   *
+   */
   function __construct() {
     // UI for selecting columns to appear in the report list
     // array conatining the columns, group_bys and filters build and provided to Form
@@ -160,6 +166,9 @@ class CRM_Report_Form_Membership_Summary extends CRM_Report_Form {
     parent::preProcess();
   }
 
+  /**
+   * @return array
+   */
   function setDefaultValues() {
     return parent::setDefaultValues();
   }
@@ -170,9 +179,7 @@ class CRM_Report_Form_Membership_Summary extends CRM_Report_Form {
     foreach ($this->_columns as $tableName => $table) {
       if (array_key_exists('fields', $table)) {
         foreach ($table['fields'] as $fieldName => $field) {
-          if (CRM_Utils_Array::value('required', $field) ||
-            CRM_Utils_Array::value($fieldName, $this->_params['fields'])
-          ) {
+          if (!empty($field['required']) || !empty($this->_params['fields'][$fieldName])) {
             // to include optional columns address and email, only if checked
             if ($tableName == 'civicrm_address') {
               $this->_addressField = TRUE;
@@ -191,6 +198,13 @@ class CRM_Report_Form_Membership_Summary extends CRM_Report_Form {
     $this->_select = "SELECT " . implode(', ', $select) . " ";
   }
 
+  /**
+   * @param $fields
+   * @param $files
+   * @param $self
+   *
+   * @return array
+   */
   static function formRule($fields, $files, $self) {
     $errors = $grouping = array();
     //check for searching combination of dispaly columns and
@@ -264,6 +278,11 @@ LEFT  JOIN civicrm_contribution  {$this->_aliases['civicrm_contribution']}
     }
   }
 
+  /**
+   * @param $rows
+   *
+   * @return array
+   */
   function statistics(&$rows) {
     $statistics = array();
     $statistics[] = array('title' => ts('Row(s) Listed'),
@@ -280,7 +299,7 @@ LEFT  JOIN civicrm_contribution  {$this->_aliases['civicrm_contribution']}
       foreach ($this->_columns as $tableName => $table) {
         if (array_key_exists('group_bys', $table)) {
           foreach ($table['group_bys'] as $fieldName => $field) {
-            if (CRM_Utils_Array::value($fieldName, $this->_params['group_bys'])) {
+            if (!empty($this->_params['group_bys'][$fieldName])) {
               $this->_groupBy[] = $field['dbAlias'];
             }
           }
@@ -329,7 +348,7 @@ LEFT  JOIN civicrm_contribution  {$this->_aliases['civicrm_contribution']}
         $row[$key] = $dao->$key;
       }
 
-      if (CRM_Utils_Array::value('charts', $this->_params) &&
+      if (!empty($this->_params['charts']) &&
         $row['civicrm_contribution_receive_date_subtotal']
       ) {
         $graphRows['receive_date'][] = $row['civicrm_contribution_receive_date_start'];
@@ -346,7 +365,7 @@ LEFT  JOIN civicrm_contribution  {$this->_aliases['civicrm_contribution']}
     $this->assign_by_ref('rows', $rows);
     $this->assign('statistics', $this->statistics($rows));
 
-    if (CRM_Utils_Array::value('charts', $this->_params)) {
+    if (!empty($this->_params['charts'])) {
       foreach (array(
         'receive_date', $this->_interval, 'value') as $ignore) {
         unset($graphRows[$ignore][$count - 1]);
@@ -358,6 +377,9 @@ LEFT  JOIN civicrm_contribution  {$this->_aliases['civicrm_contribution']}
     parent::endPostProcess();
   }
 
+  /**
+   * @param $rows
+   */
   function alterDisplay(&$rows) {
     // custom code to alter rows
     $entryFound = FALSE;

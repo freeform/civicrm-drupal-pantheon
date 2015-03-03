@@ -13,7 +13,7 @@ class CRM_UF_Page_ProfileEditor extends CRM_Core_Page {
 
   static function registerProfileScripts() {
     static $loaded = FALSE;
-    if ($loaded) {
+    if ($loaded || CRM_Core_Resources::isAjaxMode()) {
       return;
     }
     $loaded = TRUE;
@@ -31,11 +31,11 @@ class CRM_UF_Page_ProfileEditor extends CRM_Core_Page {
             'is_active' => 1,
             'rowCount' => 1000, // FIXME
           )),
+          'contactSubTypes' => CRM_Contact_BAO_ContactType::subTypes(),
           'profilePreviewKey' => CRM_Core_Key::get('CRM_UF_Form_Inline_Preview', TRUE),
         );
       })
       ->addScriptFile('civicrm', 'packages/backbone/json2.js', 100, 'html-header', FALSE)
-      ->addScriptFile('civicrm', 'packages/backbone/underscore.js', 110, 'html-header', FALSE)
       ->addScriptFile('civicrm', 'packages/backbone/backbone.js', 120, 'html-header')
       ->addScriptFile('civicrm', 'packages/backbone/backbone.marionette.js', 125, 'html-header', FALSE)
       ->addScriptFile('civicrm', 'packages/backbone/backbone.collectionsubset.js', 125, 'html-header', FALSE)
@@ -67,6 +67,8 @@ class CRM_UF_Page_ProfileEditor extends CRM_Core_Page {
    * @param array $entityTypes strings, e.g. "IndividualModel", "ActivityModel"
    */
   static function registerSchemas($entityTypes) {
+    /* CRM_Core_Error::backtrace(); */
+    /*   CRM_Core_Error::debug( '$entityTypes', $entityTypes ); */
     // TODO in cases where registerSchemas is called multiple times for same entity, be more efficient
     CRM_Core_Resources::singleton()->addSettingsFactory(function () use ($entityTypes) {
       return array(
@@ -80,14 +82,15 @@ class CRM_UF_Page_ProfileEditor extends CRM_Core_Page {
    */
   static function getSchemaJSON() {
     $entityTypes = explode(',', $_REQUEST['entityTypes']);
-    echo json_encode(self::getSchema($entityTypes));
-    CRM_Utils_System::civiExit();
+    CRM_Utils_JSON::output(self::getSchema($entityTypes));
   }
 
   /**
    * Get a list of Backbone-Form models
    *
    * @param array $entityTypes model names ("IndividualModel")
+   *
+   * @throws CRM_Core_Exception
    * @return array; keys are model names ("IndividualModel") and values describe 'sections' and 'schema'
    * @see js/model/crm.core.js
    * @see js/model/crm.mappedcore.js
@@ -108,6 +111,20 @@ class CRM_UF_Page_ProfileEditor extends CRM_Core_Page {
           $civiSchema[$entityType] = self::convertCiviModelToBackboneModel(
             'Individual',
             ts('Individual'),
+            $availableFields
+          );
+          break;
+        case 'OrganizationModel':
+          $civiSchema[$entityType] = self::convertCiviModelToBackboneModel(
+            'Organization',
+            ts('Organization'),
+            $availableFields
+          );
+          break;
+        case 'HouseholdModel':
+          $civiSchema[$entityType] = self::convertCiviModelToBackboneModel(
+            'Household',
+            ts('Household'),
             $availableFields
           );
           break;
@@ -136,6 +153,13 @@ class CRM_UF_Page_ProfileEditor extends CRM_Core_Page {
           $civiSchema[$entityType] = self::convertCiviModelToBackboneModel(
             'Participant',
             ts('Participant'),
+            $availableFields
+          );
+          break;
+        case 'CaseModel':
+          $civiSchema[$entityType] = self::convertCiviModelToBackboneModel(
+            'Case',
+            ts('Case'),
             $availableFields
           );
           break;
@@ -172,7 +196,9 @@ class CRM_UF_Page_ProfileEditor extends CRM_Core_Page {
         case 'Individual':
         case 'Organization':
         case 'Household':
-          if ($field['field_type'] != $extends && $field['field_type'] != 'Contact') {
+          if ($field['field_type'] != $extends && $field['field_type'] != 'Contact'
+            //CRM-15595 check if subtype
+            && !in_array($field['field_type'], CRM_Contact_BAO_ContactType::subTypes($extends))) {
             continue 2;
           }
           break;

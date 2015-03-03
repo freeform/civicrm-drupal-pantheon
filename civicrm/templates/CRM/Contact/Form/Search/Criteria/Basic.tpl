@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.5                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2014                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -52,7 +52,10 @@
         {include file="CRM/common/formButtons.tpl" location="top" buttonStyle="width:80px; text-align:center;"}
       </div>
       <div class="crm-submit-buttons reset-advanced-search">
-        <a href="{crmURL p='civicrm/contact/search/advanced' q='reset=1'}" id="resetAdvancedSearch" class="button" style="width:70px; text-align:center;"><span>{ts}Reset Form{/ts}</span></a>
+        <a href="{crmURL p='civicrm/contact/search/advanced' q='reset=1'}" id="resetAdvancedSearch" class="crm-hover-button" title="{ts}Clear all search criteria{/ts}">
+          <span class="icon ui-icon-circle-close"></span>
+          {ts}Reset Form{/ts}
+        </a>
       </div>
     </td>
   </tr>
@@ -60,66 +63,37 @@
   {if $form.contact_type}
             <td><label>{ts}Contact Type(s){/ts}</label><br />
                 {$form.contact_type.html}
-                 {literal}
-          <script type="text/javascript">
-
-                cj("select#contact_type").crmasmSelect({
-                  respectParents: true
-                });
-
-            </script>
-          {/literal}
             </td>
   {else}
     <td>&nbsp;</td>
   {/if}
   {if $form.group}
     <td>
-      <div id='groupselect'><label>{ts}Group(s){/ts}<span class="crm-clear-link">(<a id='searchbygrouptype'>{ts}search by group type{/ts}</a>)</span></label>
+      <div id='groupselect'><label>{ts}Group(s){/ts} <span class="description">(<a href="#" id='searchbygrouptype'>{ts}search by group type{/ts}</a>)</span></label>
         {$form.group.html}
-        {literal}
-        <script type="text/javascript">
-        cj("select#group").crmasmSelect({
-            respectParents: true
-        });
-
-
-        </script>
-        {/literal}
     </div>
     <div id='grouptypeselect'>
-      <label>{ts}Group Type(s){/ts}<span class="crm-clear-link"> ( <a id='searchbygroup'>{ts}search by group{/ts}</a>)</span></label>
+      <label>{ts}Group Type(s){/ts} <span class="description"> (<a href="#" id='searchbygroup'>{ts}search by group{/ts}</a>)</span></label>
       {$form.group_type.html}
         {literal}
         <script type="text/javascript">
-        cj("select#group_type").crmasmSelect({
-            respectParents: true
-        });
+        CRM.$(function($) {
+          function showGroupSearch() {
+            $('#grouptypeselect').hide();
+            $('#groupselect').show();
+            $('#group_type').select2('val', '');
+            return false;
+          }
+          function showGroupTypeSearch() {
+            $('#groupselect').hide();
+            $('#grouptypeselect').show();
+            $('#group').select2('val', '');
+            return false;
+          }
+          $('#searchbygrouptype').click(showGroupTypeSearch);
+          $('#searchbygroup').click(showGroupSearch);
 
-        function showGroupSearch(){
-            cj('#grouptypeselect').hide();
-            cj('#groupselect').show();
-            cj('#group_type').val('') ;
-            cj('#crmasmList2 li').remove();
-            cj('#crmasmSelect2').children().removeClass('asmOptionDisabled').removeAttr('disabled');
-        }
-        function showGroupTypeSearch(){
-            cj('#groupselect').hide();
-            cj('#grouptypeselect').show();
-            cj('#group').val('') ;
-            cj('#crmasmList1 li').remove();
-            cj('#crmasmSelect1').children().removeClass('asmOptionDisabled').removeAttr('disabled');
-        }
-
-        cj(function(){
-          cj('#searchbygrouptype').click(function() {
-              showGroupTypeSearch();
-          });
-          cj('#searchbygroup').click(function() {
-              showGroupSearch();
-          });
-
-          if (cj('#group_type').val() ) {
+          if ($('#group_type').val() ) {
             showGroupTypeSearch();
           }
           else {
@@ -143,23 +117,14 @@
     {if $form.contact_tags}
       <td><label>{ts}Select Tag(s){/ts}</label>
         {$form.contact_tags.html}
-        {literal}
-        <script type="text/javascript">
-
-        cj("select#contact_tags").crmasmSelect({
-            respectParents: true
-        });
-
-        </script>
-        {/literal}
       </td>
     {else}
       <td>&nbsp;</td>
     {/if}
     {if $isTagset}
-      <td colspan="2">{include file="CRM/common/Tag.tpl"}</td>
+      <td colspan="2">{include file="CRM/common/Tagset.tpl"}</td>
     {/if}
-    <td>{$form.tag_search.label}  {help id="id-all-tags"}<br />{$form.tag_search.html|crmReplace:class:big}</td>
+    <td>{$form.tag_search.label}  {help id="id-all-tags"}<br />{$form.tag_search.html}</td>
     {if ! $isTagset}
       <td colspan="2">&nbsp;</td>
     {/if}
@@ -203,10 +168,8 @@
       </table>
       {literal}
         <script type="text/javascript">
-          cj("select#privacy_options").crmasmSelect();
           cj("select#privacy_options").change(function() {
-            var items = cj(this).siblings('ul.crmasmList').find('li').length;
-            if (items > 1) {
+            if (cj(this).val() && cj(this).val().length > 1) {
               cj('#privacy-operator-wrapper').show();
             } else {
               cj('#privacy-operator-wrapper').hide();
@@ -229,7 +192,7 @@
     </td>
     <td>
       {if $form.uf_user}
-          {$form.uf_user.label} {$form.uf_user.html} <span class="crm-clear-link">(<a href="#" title="unselect" onclick="unselectRadio('uf_user', 'Advanced'); return false;" >{ts}clear{/ts}</a>)</span>
+          {$form.uf_user.label} {$form.uf_user.html}
           <div class="description font-italic">
               {ts 1=$config->userFramework}Does the contact have a %1 Account?{/ts}
           </div>
