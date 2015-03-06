@@ -509,15 +509,25 @@ LIMIT 1;";
     ) {
       $input['net_amount'] = $input['amount'] - $input['fee_amount'];
     }
-    $addLineItems = FALSE;
+    // This complete transaction function is being overloaded to create new contributions too.
+    // here we record if it is a new contribution.
+    // @todo separate the 2 more appropriately.
+    $isNewContribution = FALSE;
     if (empty($contribution->id)) {
-      $addLineItems = TRUE;
+      $isNewContribution = TRUE;
     }
 
     $contribution->contribution_status_id = 1;
     $contribution->is_test = $input['is_test'];
-    $contribution->fee_amount = CRM_Utils_Array::value('fee_amount', $input, 0);
-    $contribution->net_amount = CRM_Utils_Array::value('net_amount', $input, 0);
+
+    // CRM-15960 If we don't have a value we 'want' for the amounts, leave it to the BAO to sort out.
+    if (isset($input['net_amount'])) {
+      $contribution->fee_amount = CRM_Utils_Array::value('fee_amount', $input, 0);
+    }
+    if (isset($input['net_amount'])) {
+      $contribution->net_amount = $input['net_amount'];
+    }
+
     $contribution->trxn_id = $input['trxn_id'];
     $contribution->receive_date = CRM_Utils_Date::isoToMysql($contribution->receive_date);
     $contribution->thankyou_date = CRM_Utils_Date::isoToMysql($contribution->thankyou_date);
@@ -532,16 +542,16 @@ LIMIT 1;";
       $contribution->payment_instrument_id = $input['payment_instrument_id'];
     }
 
-    if ($contribution->id) {
+    if (!empty($contribution->id)) {
       $contributionId['id'] = $contribution->id;
       $input['prevContribution'] = CRM_Contribute_BAO_Contribution::getValues($contributionId, CRM_Core_DAO::$_nullArray, CRM_Core_DAO::$_nullArray);
     }
     $contribution->save();
 
-    //add lineitems for recurring payments
-    if (!empty($objects['contributionRecur']) && $objects['contributionRecur']->id) {
-      if ($addLineItems) {
-        $input ['line_item'] = $this->addRecurLineItems($objects['contributionRecur']->id, $contribution);
+    //add line items for recurring payments
+    if (!empty($contribution->contribution_recur_id)) {
+      if ($isNewContribution) {
+        $input['line_item'] = $this->addRecurLineItems($contribution->contribution_recur_id, $contribution);
       }
       else {
         // this is just to prevent e-notices when we call recordFinancialAccounts - per comments on that line - intention is somewhat unclear
