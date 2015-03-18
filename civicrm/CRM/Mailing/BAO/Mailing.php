@@ -1267,6 +1267,9 @@ ORDER BY   civicrm_email.is_bulkmail DESC
     );
     $mailParams['toEmail'] = $email;
 
+    // Add job ID to mailParams for external email delivery service to utilise
+    $mailParams['job_id'] = $job_id;
+
     CRM_Utils_Hook::alterMailParams($mailParams, 'civimail');
 
     // CRM-10699 support custom email headers
@@ -1607,6 +1610,7 @@ ORDER BY   civicrm_email.is_bulkmail DESC
 
     /* Create the mailing group record */
     $mg = new CRM_Mailing_DAO_MailingGroup();
+    $groupTypes = array('include' => 'Include', 'exclude' => 'Exclude', 'base' => 'Base');
     foreach (array('groups', 'mailings') as $entity) {
       foreach (array('include', 'exclude', 'base') as $type) {
         if (isset($params[$entity]) && !empty($params[$entity][$type]) &&
@@ -1616,7 +1620,7 @@ ORDER BY   civicrm_email.is_bulkmail DESC
             $mg->mailing_id   = $mailing->id;
             $mg->entity_table = ($entity == 'groups') ? $groupTableName : $mailingTableName;
             $mg->entity_id    = $entityId;
-            $mg->group_type   = $type;
+            $mg->group_type   = $groupTypes[$type];
             $mg->save();
           }
         }
