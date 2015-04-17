@@ -1,9 +1,9 @@
 <?php
 /*
 +--------------------------------------------------------------------+
-| CiviCRM version 4.5                                                |
+| CiviCRM version 4.6                                                |
 +--------------------------------------------------------------------+
-| Copyright CiviCRM LLC (c) 2004-2014                                |
+| Copyright CiviCRM LLC (c) 2004-2015                                |
 +--------------------------------------------------------------------+
 | This file is a part of CiviCRM.                                    |
 |                                                                    |
@@ -27,7 +27,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -35,7 +35,8 @@ class CRM_Core_DAO_AllCoreTables
 {
   static private $tables = null;
   static private $daoToClass = null;
-  static private function init($fresh = FALSE)
+  static private $entityTypes = null;
+  static public function init($fresh = FALSE)
   {
     static $init = FALSE;
     if ($init && !$fresh) return;
@@ -115,6 +116,11 @@ class CRM_Core_DAO_AllCoreTables
         'class' => 'CRM_Core_DAO_ActionMapping',
         'table' => 'civicrm_action_mapping',
       ) ,
+      'CRM_Core_DAO_RecurringEntity' => array(
+        'name' => 'RecurringEntity',
+        'class' => 'CRM_Core_DAO_RecurringEntity',
+        'table' => 'civicrm_recurring_entity',
+      ) ,
       'CRM_ACL_DAO_ACL' => array(
         'name' => 'ACL',
         'class' => 'CRM_ACL_DAO_ACL',
@@ -164,6 +170,11 @@ class CRM_Core_DAO_AllCoreTables
         'name' => 'Component',
         'class' => 'CRM_Mailing_DAO_Component',
         'table' => 'civicrm_mailing_component',
+      ) ,
+      'CRM_Mailing_DAO_MailingAB' => array(
+        'name' => 'MailingAB',
+        'class' => 'CRM_Mailing_DAO_MailingAB',
+        'table' => 'civicrm_mailing_abtest',
       ) ,
       'CRM_Mailing_DAO_BounceType' => array(
         'name' => 'BounceType',
@@ -777,6 +788,7 @@ class CRM_Core_DAO_AllCoreTables
       ) ,
     );
     CRM_Utils_Hook::entityTypes($entityTypes);
+    self::$entityTypes = array();
     self::$tables = array();
     self::$daoToClass = array();
     foreach($entityTypes as $entityType) {
@@ -784,10 +796,23 @@ class CRM_Core_DAO_AllCoreTables
     }
     $init = TRUE;
   }
-  static private function registerEntityType($daoName, $className, $tableName)
+  /**
+   * (Quasi-Private) Do not call externally (except for unit-testing)
+   */
+  static public function registerEntityType($daoName, $className, $tableName)
   {
     self::$daoToClass[$daoName] = $className;
     self::$tables[$tableName] = $className;
+    self::$entityTypes[$className] = array(
+      'name' => $daoName,
+      'class' => $className,
+      'table' => $tableName,
+    );
+  }
+  static public function get()
+  {
+    self::init();
+    return self::$entityTypes;
   }
   static public function tables()
   {

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.5                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -23,12 +23,12 @@
  | GNU Affero General Public License or the licensing of CiviCRM,     |
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
  +--------------------------------------------------------------------+
-*/
+ */
 
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -40,18 +40,19 @@ class CRM_Contact_Form_Search_Custom_ContribSYBNT extends CRM_Contact_Form_Searc
   /**
    * @param $formValues
    */
-  function __construct(&$formValues) {
+  public function __construct(&$formValues) {
     $this->_formValues = $formValues;
     $this->_permissionedComponent = 'CiviContribute';
 
     $this->_columns = array(
       ts('Contact ID') => 'contact_id',
       ts('Name') => 'display_name',
-      ts('Donation Count') => 'donation_count',
-      ts('Donation Amount') => 'donation_amount',
+      ts('Contribution Count') => 'donation_count',
+      ts('Contribution Amount') => 'donation_amount',
     );
 
-    $this->_amounts = array('min_amount_1' => ts('Min Amount One'),
+    $this->_amounts = array(
+      'min_amount_1' => ts('Min Amount One'),
       'max_amount_1' => ts('Max Amount One'),
       'min_amount_2' => ts('Min Amount Two'),
       'max_amount_2' => ts('Max Amount Two'),
@@ -59,7 +60,8 @@ class CRM_Contact_Form_Search_Custom_ContribSYBNT extends CRM_Contact_Form_Searc
       'exclude_max_amount' => ts('Exclusion Max Amount'),
     );
 
-    $this->_dates = array('start_date_1' => ts('Start Date One'),
+    $this->_dates = array(
+      'start_date_1' => ts('Start Date One'),
       'end_date_1' => ts('End Date One'),
       'start_date_2' => ts('Start Date Two'),
       'end_date_2' => ts('End Date Two'),
@@ -85,9 +87,9 @@ class CRM_Contact_Form_Search_Custom_ContribSYBNT extends CRM_Contact_Form_Searc
   }
 
   /**
-   * @param $form
+   * @param CRM_Core_Form $form
    */
-  function buildForm(&$form) {
+  public function buildForm(&$form) {
 
     foreach ($this->_amounts as $name => $title) {
       $form->add('text',
@@ -115,7 +117,7 @@ class CRM_Contact_Form_Search_Custom_ContribSYBNT extends CRM_Contact_Form_Searc
   /**
    * @return mixed
    */
-  function count() {
+  public function count() {
     $sql = $this->all();
 
     $dao = CRM_Core_DAO::executeQuery($sql);
@@ -130,7 +132,7 @@ class CRM_Contact_Form_Search_Custom_ContribSYBNT extends CRM_Contact_Form_Searc
    *
    * @return string
    */
-  function contactIDs($offset = 0, $rowcount = 0, $sort = NULL, $returnSQL = TRUE) {
+  public function contactIDs($offset = 0, $rowcount = 0, $sort = NULL, $returnSQL = TRUE) {
     return $this->all($offset, $rowcount, $sort, FALSE, TRUE);
   }
 
@@ -143,7 +145,7 @@ class CRM_Contact_Form_Search_Custom_ContribSYBNT extends CRM_Contact_Form_Searc
    *
    * @return string
    */
-  function all(
+  public function all(
     $offset = 0,
     $rowcount = 0,
     $sort = NULL,
@@ -190,7 +192,6 @@ GROUP BY   contact_a.id
 ORDER BY   donation_amount desc
 ";
 
-
     if ($justIDs) {
       CRM_Core_DAO::executeQuery("DROP TEMPORARY TABLE IF EXISTS CustomSearch_SYBNT_temp");
       $query = "CREATE TEMPORARY TABLE CustomSearch_SYBNT_temp AS ({$sql})";
@@ -204,7 +205,7 @@ ORDER BY   donation_amount desc
   /**
    * @return string
    */
-  function select() {
+  public function select() {
     if (!empty($this->start_date_2) || !empty($this->end_date_2)) {
       return "
 sum(contrib_1.total_amount) + sum(contrib_2.total_amount) AS donation_amount,
@@ -222,7 +223,7 @@ count(contrib_1.id) AS donation_count
   /**
    * @return null|string
    */
-  function from() {
+  public function from() {
     $from = NULL;
     if (!empty($this->start_date_2) || !empty($this->end_date_2)) {
       $from .= " LEFT JOIN civicrm_contribution contrib_2 ON contrib_2.contact_id = contact_a.id ";
@@ -243,7 +244,7 @@ count(contrib_1.id) AS donation_count
    *
    * @return string
    */
-  function where($includeContactIDs = FALSE) {
+  public function where($includeContactIDs = FALSE) {
     $clauses = array();
 
     if (!empty($this->start_date_1)) {
@@ -344,7 +345,7 @@ AND      c.receive_date < {$this->start_date_1}
    *
    * @return string
    */
-  function having($includeContactIDs = FALSE) {
+  public function having($includeContactIDs = FALSE) {
     $clauses = array();
     $min = CRM_Utils_Array::value('min_amount', $this->_formValues);
     if ($min) {
@@ -362,28 +363,28 @@ AND      c.receive_date < {$this->start_date_1}
   /**
    * @return array
    */
-  function &columns() {
+  public function &columns() {
     return $this->_columns;
   }
 
   /**
    * @return string
    */
-  function templateFile() {
+  public function templateFile() {
     return 'CRM/Contact/Form/Search/Custom/ContribSYBNT.tpl';
   }
 
   /**
    * @return null
    */
-  function summary() {
+  public function summary() {
     return NULL;
   }
 
   /**
    * @param $title
    */
-  function setTitle($title) {
+  public function setTitle($title) {
     if ($title) {
       CRM_Utils_System::setTitle($title);
     }
@@ -391,5 +392,5 @@ AND      c.receive_date < {$this->start_date_1}
       CRM_Utils_System::setTitle(ts('Search'));
     }
   }
-}
 
+}

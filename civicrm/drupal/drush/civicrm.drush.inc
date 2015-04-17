@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.4                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2013                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2013
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id$
  *
  */
@@ -788,7 +788,7 @@ function drush_civicrm_cacheclear() {
   $result = civicrm_api('System', 'flush', $params);
 
   if ($result['is_error']) {
-    drush_log(dt('An error occured: !message', array('!message' => $result['error_message'])), 'error');
+    drush_log(dt('An error occurred: !message', array('!message' => $result['error_message'])), 'error');
     return;
   }
 
@@ -812,7 +812,7 @@ function drush_civicrm_enable_debug() {
     $result = civicrm_api('Setting', 'create', array('version' => 3, $key => $val));
 
     if ($result['is_error']) {
-      drush_log(dt('An error occured: !message', array('!message' => $result['error_message'])), 'error');
+      drush_log(dt('An error occurred: !message', array('!message' => $result['error_message'])), 'error');
       return;
     }
   }
@@ -837,7 +837,7 @@ function drush_civicrm_disable_debug() {
     $result = civicrm_api('Setting', 'create', array('version' => 3, $key => $val));
 
     if ($result['is_error']) {
-      drush_log(dt('An error occured: !message', array('!message' => $result['error_message'])), 'error');
+      drush_log(dt('An error occurred: !message', array('!message' => $result['error_message'])), 'error');
       return;
     }
   }

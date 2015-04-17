@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.5                                                |
+ | CiviCRM version 4.6                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2014                                |
+ | Copyright CiviCRM LLC (c) 2004-2015                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -23,12 +23,12 @@
  | GNU Affero General Public License or the licensing of CiviCRM,     |
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
  +--------------------------------------------------------------------+
-*/
+ */
 
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2014
+ * @copyright CiviCRM LLC (c) 2004-2015
  * $Id: $
  *
  */
@@ -45,6 +45,7 @@ class CRM_Utils_Check_Security {
     switch ($config->userFramework) {
       case 'Joomla':
         return '/media/';
+
       default:
         return '/files/';
     }
@@ -80,7 +81,8 @@ class CRM_Utils_Check_Security {
    * is browseable or visible to search engines; it means it can be
    * requested directly.
    *
-   * @return array of messages
+   * @return array
+   *   Array of messages
    * @see CRM-14091
    */
   public function checkLogFileIsNotAccessible() {
@@ -128,7 +130,8 @@ class CRM_Utils_Check_Security {
    * Being retrievable doesn't mean the files are browseable or visible
    * to search engines; it only means they can be requested directly.
    *
-   * @return array of messages
+   * @return array
+   *   Array of messages
    * @see CRM-14091
    *
    * @TODO: Test with WordPress, Joomla.
@@ -148,8 +151,8 @@ class CRM_Utils_Check_Security {
         $messages[] = new CRM_Utils_Check_Message(
           'checkUploadsAreNotAccessible',
           ts('Files in the data directory (<a href="%3">%2</a>) should not be downloadable.'
-              . '<br />'
-              . '<a href="%1">Read more about this warning</a>',
+            . '<br />'
+            . '<a href="%1">Read more about this warning</a>',
             array(
               1 => $this->createDocUrl('checkUploadsAreNotAccessible'),
               2 => $privateDir,
@@ -173,7 +176,8 @@ class CRM_Utils_Check_Security {
    * MAY trigger false positives (if you have files named 'a', 'e'
    * we'll probably match that).
    *
-   * @return array of messages
+   * @return array
+   *   Array of messages
    * @see CRM-14091
    *
    * @TODO: Test with WordPress, Joomla.
@@ -241,8 +245,10 @@ class CRM_Utils_Check_Security {
   /**
    * Determine whether $url is a public, browsable listing for $dir
    *
-   * @param string $dir local dir path
-   * @param string $url public URL
+   * @param string $dir
+   *   Local dir path.
+   * @param string $url
+   *   Public URL.
    * @return bool
    */
   public function isBrowsable($dir, $url) {
@@ -268,8 +274,10 @@ class CRM_Utils_Check_Security {
    * Determine whether $url is a public version of $dir in which files
    * are remotely accessible.
    *
-   * @param string $dir local dir path
-   * @param string $url public URL
+   * @param string $dir
+   *   Local dir path.
+   * @param string $url
+   *   Public URL.
    * @return bool
    */
   public function isDirAccessible($dir, $url) {
@@ -310,8 +318,10 @@ class CRM_Utils_Check_Security {
   /**
    * Make a guess about the URL that corresponds to $targetDir.
    *
-   * @param string $targetDir local path to a directory
-   * @return string a guessed URL for $realDir
+   * @param string $targetDir
+   *   Local path to a directory.
+   * @return string
+   *   a guessed URL for $realDir
    */
   public function guessUrl($targetDir) {
     $filePathMarker = $this->getFilePathMarker();
@@ -321,4 +331,5 @@ class CRM_Utils_Check_Security {
     list ($ignore, $heuristicSuffix) = explode($filePathMarker, str_replace('\\', '/', $targetDir));
     return $heuristicBaseUrl . $filePathMarker . $heuristicSuffix;
   }
+
 }

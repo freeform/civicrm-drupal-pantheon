@@ -1,7 +1,7 @@
 -- +--------------------------------------------------------------------+
--- | CiviCRM version 4.5                                                |
+-- | CiviCRM version 4.6                                                |
 -- +--------------------------------------------------------------------+
--- | Copyright CiviCRM LLC (c) 2004-2014                                |
+-- | Copyright CiviCRM LLC (c) 2004-2015                                |
 -- +--------------------------------------------------------------------+
 -- | This file is a part of CiviCRM.                                    |
 -- |                                                                    |
@@ -28,9 +28,9 @@
 
 
 -- +--------------------------------------------------------------------+
--- | CiviCRM version 4.5                                                |
+-- | CiviCRM version 4.6                                                |
 -- +--------------------------------------------------------------------+
--- | Copyright CiviCRM LLC (c) 2004-2014                                |
+-- | Copyright CiviCRM LLC (c) 2004-2015                                |
 -- +--------------------------------------------------------------------+
 -- | This file is a part of CiviCRM.                                    |
 -- |                                                                    |
@@ -184,6 +184,7 @@ DROP TABLE IF EXISTS `civicrm_currency`;
 DROP TABLE IF EXISTS `civicrm_premiums`;
 DROP TABLE IF EXISTS `civicrm_mailing_bounce_pattern`;
 DROP TABLE IF EXISTS `civicrm_mailing_bounce_type`;
+DROP TABLE IF EXISTS `civicrm_mailing_abtest`;
 DROP TABLE IF EXISTS `civicrm_mailing_component`;
 DROP TABLE IF EXISTS `civicrm_entity_batch`;
 DROP TABLE IF EXISTS `civicrm_batch`;
@@ -194,6 +195,7 @@ DROP TABLE IF EXISTS `civicrm_acl_contact_cache`;
 DROP TABLE IF EXISTS `civicrm_contact`;
 DROP TABLE IF EXISTS `civicrm_acl_entity_role`;
 DROP TABLE IF EXISTS `civicrm_acl`;
+DROP TABLE IF EXISTS `civicrm_recurring_entity`;
 DROP TABLE IF EXISTS `civicrm_action_mapping`;
 DROP TABLE IF EXISTS `civicrm_prevnext_cache`;
 DROP TABLE IF EXISTS `civicrm_persistent`;
@@ -586,6 +588,26 @@ CREATE TABLE `civicrm_action_mapping` (
 
 -- /*******************************************************
 -- *
+-- * civicrm_recurring_entity
+-- *
+-- *******************************************************/
+CREATE TABLE `civicrm_recurring_entity` (
+
+
+     `id` int unsigned NOT NULL AUTO_INCREMENT  ,
+     `parent_id` int unsigned NOT NULL   COMMENT 'Recurring Entity Parent ID',
+     `entity_id` int unsigned    COMMENT 'Recurring Entity Child ID',
+     `entity_table` varchar(64) NOT NULL   COMMENT 'Physical tablename for entity, e.g. civicrm_event',
+     `mode` tinyint NOT NULL  DEFAULT 1 COMMENT '1-this entity, 2-this and the following entities, 3-all the entities' 
+,
+    PRIMARY KEY ( `id` )
+ 
+ 
+ 
+)  ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci  ;
+
+-- /*******************************************************
+-- *
 -- * civicrm_acl
 -- *
 -- * Access Control List
@@ -664,7 +686,7 @@ CREATE TABLE `civicrm_contact` (
      `do_not_trade` tinyint   DEFAULT 0 ,
      `is_opt_out` tinyint NOT NULL  DEFAULT 0 COMMENT 'Has the contact opted out from receiving all bulk email from the organization or site domain?',
      `legal_identifier` varchar(32)    COMMENT 'May be used for SSN, EIN/TIN, Household ID (census) or other applicable unique legal/government ID.\n    ',
-     `external_identifier` varchar(32)    COMMENT 'Unique trusted external ID (generally from a legacy app/datasource). Particularly useful for deduping operations.',
+     `external_identifier` varchar(64)    COMMENT 'Unique trusted external ID (generally from a legacy app/datasource). Particularly useful for deduping operations.',
      `sort_name` varchar(128)    COMMENT 'Name used for sorting different contact types',
      `display_name` varchar(128)    COMMENT 'Formatted name representing preferred format for display/print/other output.',
      `nick_name` varchar(128)    COMMENT 'Nickname.',
@@ -966,6 +988,37 @@ CREATE TABLE `civicrm_mailing_component` (
  
  
  
+)  ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci  ;
+
+-- /*******************************************************
+-- *
+-- * civicrm_mailing_abtest
+-- *
+-- * Stores information about abtesting
+-- *
+-- *******************************************************/
+CREATE TABLE `civicrm_mailing_abtest` (
+
+
+     `id` int unsigned NOT NULL AUTO_INCREMENT  ,
+     `name` varchar(128)    COMMENT 'Name of the A/B test',
+     `status` varchar(32)    COMMENT 'Status',
+     `mailing_id_a` int unsigned    COMMENT 'The first experimental mailing (\"A\" condition)',
+     `mailing_id_b` int unsigned    COMMENT 'The second experimental mailing (\"B\" condition)',
+     `mailing_id_c` int unsigned    COMMENT 'The final, general mailing (derived from A or B)',
+     `domain_id` int unsigned    COMMENT 'Which site is this mailing for',
+     `testing_criteria` varchar(32)    ,
+     `winner_criteria` varchar(32)    ,
+     `specific_url` varchar(255)    COMMENT 'What specific url to track',
+     `declare_winning_time` datetime    COMMENT 'In how much time to declare winner',
+     `group_percentage` int unsigned    ,
+     `created_id` int unsigned    COMMENT 'FK to Contact ID',
+     `created_date` datetime    COMMENT 'When was this item created' 
+,
+    PRIMARY KEY ( `id` )
+ 
+ 
+,          CONSTRAINT FK_civicrm_mailing_abtest_created_id FOREIGN KEY (`created_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL  
 )  ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci  ;
 
 -- /*******************************************************
@@ -1666,7 +1719,8 @@ CREATE TABLE `civicrm_pcp` (
      `is_honor_roll` int unsigned   DEFAULT 0 ,
      `goal_amount` decimal(20,2)    COMMENT 'Goal amount of this Personal Campaign Page.',
      `currency` varchar(3)   DEFAULT NULL COMMENT '3 character string, value from config setting or input via user.',
-     `is_active` tinyint   DEFAULT 0 COMMENT 'Is Personal Campaign Page enabled/active?' 
+     `is_active` tinyint   DEFAULT 0 COMMENT 'Is Personal Campaign Page enabled/active?',
+     `is_notify` tinyint   DEFAULT 0 COMMENT 'Notify owner via email when someone donates to page?' 
 ,
     PRIMARY KEY ( `id` )
  
@@ -2716,6 +2770,7 @@ CREATE TABLE `civicrm_mailing` (
      `resubscribe_id` int unsigned    ,
      `optout_id` int unsigned    COMMENT 'FK to the opt-out component.',
      `name` varchar(128)    COMMENT 'Mailing Name.',
+     `mailing_type` varchar(32)    COMMENT 'differentiate between standalone mailings, A/B tests, and A/B final-winner',
      `from_name` varchar(128)    COMMENT 'From Header of mailing',
      `from_email` varchar(128)    COMMENT 'From Email of mailing',
      `replyto_email` varchar(128)    COMMENT 'Reply-To Email of mailing',
@@ -2742,7 +2797,9 @@ CREATE TABLE `civicrm_mailing` (
      `campaign_id` int unsigned    COMMENT 'The campaign for which this mailing has been initiated.',
      `dedupe_email` tinyint   DEFAULT 0 COMMENT 'Remove duplicate emails?',
      `sms_provider_id` int unsigned    ,
-     `hash` varchar(16)    COMMENT 'Key for validating requests related to this mailing.' 
+     `hash` varchar(16)    COMMENT 'Key for validating requests related to this mailing.',
+     `location_type_id` int unsigned    COMMENT 'With email_selection_method, determines which email address to use',
+     `email_selection_method` varchar(20)   DEFAULT 'automatic' COMMENT 'With location_type_id, determine how to choose the email address to use.' 
 ,
     PRIMARY KEY ( `id` )
  
@@ -2750,7 +2807,7 @@ CREATE TABLE `civicrm_mailing` (
         hash
   )
   
-,          CONSTRAINT FK_civicrm_mailing_domain_id FOREIGN KEY (`domain_id`) REFERENCES `civicrm_domain`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_header_id FOREIGN KEY (`header_id`) REFERENCES `civicrm_mailing_component`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_footer_id FOREIGN KEY (`footer_id`) REFERENCES `civicrm_mailing_component`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_reply_id FOREIGN KEY (`reply_id`) REFERENCES `civicrm_mailing_component`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_unsubscribe_id FOREIGN KEY (`unsubscribe_id`) REFERENCES `civicrm_mailing_component`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_optout_id FOREIGN KEY (`optout_id`) REFERENCES `civicrm_mailing_component`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_msg_template_id FOREIGN KEY (`msg_template_id`) REFERENCES `civicrm_msg_template`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_created_id FOREIGN KEY (`created_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_scheduled_id FOREIGN KEY (`scheduled_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_approver_id FOREIGN KEY (`approver_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_campaign_id FOREIGN KEY (`campaign_id`) REFERENCES `civicrm_campaign`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_sms_provider_id FOREIGN KEY (`sms_provider_id`) REFERENCES `civicrm_sms_provider`(`id`) ON DELETE SET NULL  
+,          CONSTRAINT FK_civicrm_mailing_domain_id FOREIGN KEY (`domain_id`) REFERENCES `civicrm_domain`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_header_id FOREIGN KEY (`header_id`) REFERENCES `civicrm_mailing_component`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_footer_id FOREIGN KEY (`footer_id`) REFERENCES `civicrm_mailing_component`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_reply_id FOREIGN KEY (`reply_id`) REFERENCES `civicrm_mailing_component`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_unsubscribe_id FOREIGN KEY (`unsubscribe_id`) REFERENCES `civicrm_mailing_component`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_optout_id FOREIGN KEY (`optout_id`) REFERENCES `civicrm_mailing_component`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_msg_template_id FOREIGN KEY (`msg_template_id`) REFERENCES `civicrm_msg_template`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_created_id FOREIGN KEY (`created_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_scheduled_id FOREIGN KEY (`scheduled_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_approver_id FOREIGN KEY (`approver_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_campaign_id FOREIGN KEY (`campaign_id`) REFERENCES `civicrm_campaign`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_sms_provider_id FOREIGN KEY (`sms_provider_id`) REFERENCES `civicrm_sms_provider`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_mailing_location_type_id FOREIGN KEY (`location_type_id`) REFERENCES `civicrm_location_type`(`id`) ON DELETE SET NULL  
 )  ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci  ;
 
 -- /*******************************************************
@@ -2788,7 +2845,7 @@ CREATE TABLE `civicrm_mailing_trackable_url` (
 
 
      `id` int unsigned NOT NULL AUTO_INCREMENT  ,
-     `url` varchar(255) NOT NULL   COMMENT 'The URL to be tracked.',
+     `url` text NOT NULL   COMMENT 'The URL to be tracked.',
      `mailing_id` int unsigned NOT NULL   COMMENT 'FK to the mailing' 
 ,
     PRIMARY KEY ( `id` )
@@ -3135,7 +3192,8 @@ CREATE TABLE `civicrm_contribution_page` (
      `created_date` datetime    COMMENT 'Date and time that contribution page was created.',
      `currency` varchar(3)   DEFAULT NULL COMMENT '3 character string, value from config setting or input via user.',
      `campaign_id` int unsigned    COMMENT 'The campaign for which we are collecting contributions with this page.',
-     `is_share` tinyint   DEFAULT 1 COMMENT 'Can people share the contribution page through social media?' 
+     `is_share` tinyint   DEFAULT 1 COMMENT 'Can people share the contribution page through social media?',
+     `is_billing_required` tinyint   DEFAULT 0 COMMENT 'if true - billing block is required for online contribution page' 
 ,
     PRIMARY KEY ( `id` )
  
@@ -3329,7 +3387,7 @@ CREATE TABLE `civicrm_membership_block` (
      `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Membership Id',
      `entity_table` varchar(64)    COMMENT 'Name for Membership Status',
      `entity_id` int unsigned NOT NULL   COMMENT 'FK to civicrm_contribution_page.id',
-     `membership_types` varchar(255)    COMMENT 'Membership types to be exposed by this block',
+     `membership_types` varchar(1024)    COMMENT 'Membership types to be exposed by this block',
      `membership_type_default` int unsigned    COMMENT 'Optional foreign key to membership_type',
      `display_min_fee` tinyint   DEFAULT 1 COMMENT 'Display minimum membership fee',
      `is_separate_payment` tinyint   DEFAULT 1 COMMENT 'Should membership transactions be processed separately',
@@ -3765,7 +3823,7 @@ CREATE TABLE `civicrm_action_schedule` (
      `name` varchar(64)    COMMENT 'Name of the action(reminder)',
      `title` varchar(64)    COMMENT 'Title of the action(reminder)',
      `recipient` varchar(64)    COMMENT 'Recipient',
-     `limit_to` tinyint   DEFAULT 1 COMMENT 'Is this the recipient criteria limited to OR in addition to?',
+     `limit_to` tinyint    COMMENT 'Is this the recipient criteria limited to OR in addition to?',
      `entity_value` varchar(255)    COMMENT 'Entity value',
      `entity_status` varchar(64)    COMMENT 'Entity status',
      `start_action_offset` int unsigned    COMMENT 'Reminder Interval.',
@@ -3795,7 +3853,8 @@ CREATE TABLE `civicrm_action_schedule` (
      `from_name` varchar(255)    COMMENT 'Name in \"from\" field',
      `from_email` varchar(255)    COMMENT 'Email address in \"from\" field',
      `mode` varchar(128)   DEFAULT "Email" COMMENT 'Send the message as email or sms or both.',
-     `sms_provider_id` int unsigned     
+     `sms_provider_id` int unsigned    ,
+     `used_for` varchar(64)    COMMENT 'Used for repeating entity' 
 ,
     PRIMARY KEY ( `id` )
  
@@ -3821,7 +3880,8 @@ CREATE TABLE `civicrm_action_log` (
      `action_date_time` datetime    COMMENT 'date time that the action was performed on.',
      `is_error` tinyint   DEFAULT 0 COMMENT 'Was there any error sending the reminder?',
      `message` text    COMMENT 'Description / text in case there was an error encountered.',
-     `repetition_number` int unsigned    COMMENT 'Keeps track of the sequence number of this repetition.' 
+     `repetition_number` int unsigned    COMMENT 'Keeps track of the sequence number of this repetition.',
+     `reference_date` date   DEFAULT NULL COMMENT 'Stores the date from the entity which triggered this reminder action (e.g. membership.end_date for most membership renewal reminders)' 
 ,
     PRIMARY KEY ( `id` )
  
@@ -4168,7 +4228,7 @@ CREATE TABLE `civicrm_price_field` (
      `active_on` datetime   DEFAULT NULL COMMENT 'If non-zero, do not show this field before the date specified',
      `expire_on` datetime   DEFAULT NULL COMMENT 'If non-zero, do not show this field after the date specified',
      `javascript` varchar(255)    COMMENT 'Optional scripting attributes for field',
-     `visibility_id` int unsigned   DEFAULT 1 COMMENT 'Implicit FK to civicrm_option_group with name = \\\'visibility\\\'' 
+     `visibility_id` int unsigned   DEFAULT 1 COMMENT 'Implicit FK to civicrm_option_group with name = \'visibility\'' 
 ,
     PRIMARY KEY ( `id` )
  
@@ -4225,6 +4285,7 @@ CREATE TABLE `civicrm_pcp_block` (
      `target_entity_type` varchar(255) NOT NULL  DEFAULT 'contribute' COMMENT 'The type of entity that this pcp targets',
      `target_entity_id` int unsigned NOT NULL   COMMENT 'The entity that this pcp targets',
      `supporter_profile_id` int unsigned   DEFAULT NULL COMMENT 'FK to civicrm_uf_group.id. Does Personal Campaign Page require manual activation by administrator? (is inactive by default after setup)?',
+     `owner_notify_id` int unsigned   DEFAULT 0 COMMENT 'FK to civicrm_option_group with name = PCP owner notifications',
      `is_approval_needed` tinyint   DEFAULT NULL COMMENT 'Does Personal Campaign Page require manual activation by administrator? (is inactive by default after setup)?',
      `is_tellfriend_enabled` tinyint   DEFAULT NULL COMMENT 'Does Personal Campaign Page allow using tell a friend?',
      `tellfriend_limit` int unsigned   DEFAULT NULL COMMENT 'Maximum recipient fields allowed in tell a friend',
@@ -4385,7 +4446,9 @@ CREATE TABLE `civicrm_contribution` (
      `contribution_status_id` int unsigned   DEFAULT 1 ,
      `address_id` int unsigned    COMMENT 'Conditional foreign key to civicrm_address.id. We insert an address record for each contribution when we have associated billing name and address data.',
      `check_number` varchar(255)    ,
-     `campaign_id` int unsigned    COMMENT 'The campaign for which this contribution has been triggered.' 
+     `campaign_id` int unsigned    COMMENT 'The campaign for which this contribution has been triggered.',
+     `creditnote_id` varchar(255)    COMMENT 'unique credit note id, system generated or passed in',
+     `tax_amount` decimal(20,2)    COMMENT 'Total tax amount of this contribution.' 
 ,
     PRIMARY KEY ( `id` )
  
@@ -4586,7 +4649,8 @@ CREATE TABLE `civicrm_event` (
      `is_confirm_enabled` tinyint   DEFAULT 1 COMMENT 'If false, the event booking confirmation screen gets skipped',
      `parent_event_id` int unsigned   DEFAULT NULL COMMENT 'Implicit FK to civicrm_event: parent event',
      `slot_label_id` int unsigned   DEFAULT NULL COMMENT 'Subevent slot label. Implicit FK to civicrm_option_value where option_group = conference_slot.',
-     `dedupe_rule_group_id` int unsigned   DEFAULT NULL COMMENT 'Rule to use when matching registrations for this event' 
+     `dedupe_rule_group_id` int unsigned   DEFAULT NULL COMMENT 'Rule to use when matching registrations for this event',
+     `is_billing_required` tinyint   DEFAULT 0 COMMENT 'if true than billing block is required this event' 
 ,
     PRIMARY KEY ( `id` )
  
@@ -4730,13 +4794,14 @@ CREATE TABLE `civicrm_line_item` (
      `contribution_id` int unsigned    COMMENT 'FK to civicrm_contribution',
      `price_field_id` int unsigned    COMMENT 'FK to civicrm_price_field',
      `label` varchar(255)   DEFAULT NULL COMMENT 'descriptive label for item - from price_field_value.label',
-     `qty` int unsigned NOT NULL   COMMENT 'How many items ordered',
+     `qty` decimal(20,2) NOT NULL   COMMENT 'How many items ordered',
      `unit_price` decimal(20,2) NOT NULL   COMMENT 'price of each item',
      `line_total` decimal(20,2) NOT NULL   COMMENT 'qty * unit_price',
      `participant_count` int unsigned   DEFAULT NULL COMMENT 'Participant count for field',
      `price_field_value_id` int unsigned   DEFAULT NULL COMMENT 'FK to civicrm_price_field_value',
      `financial_type_id` int unsigned   DEFAULT NULL COMMENT 'FK to Financial Type.',
-     `deductible_amount` decimal(20,2) NOT NULL  DEFAULT 0.0 COMMENT 'Tax-deductible portion of the amount' 
+     `deductible_amount` decimal(20,2) NOT NULL  DEFAULT 0.0 COMMENT 'Tax-deductible portion of the amount',
+     `tax_amount` decimal(20,2)    COMMENT 'tax of each item' 
 ,
     PRIMARY KEY ( `id` )
  

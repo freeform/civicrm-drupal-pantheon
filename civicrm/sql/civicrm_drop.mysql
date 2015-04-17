@@ -1,7 +1,7 @@
 -- +--------------------------------------------------------------------+
--- | CiviCRM version 4.5                                                |
+-- | CiviCRM version 4.6                                                |
 -- +--------------------------------------------------------------------+
--- | Copyright CiviCRM LLC (c) 2004-2014                                |
+-- | Copyright CiviCRM LLC (c) 2004-2015                                |
 -- +--------------------------------------------------------------------+
 -- | This file is a part of CiviCRM.                                    |
 -- |                                                                    |
@@ -155,6 +155,7 @@ DROP TABLE IF EXISTS `civicrm_currency`;
 DROP TABLE IF EXISTS `civicrm_premiums`;
 DROP TABLE IF EXISTS `civicrm_mailing_bounce_pattern`;
 DROP TABLE IF EXISTS `civicrm_mailing_bounce_type`;
+DROP TABLE IF EXISTS `civicrm_mailing_abtest`;
 DROP TABLE IF EXISTS `civicrm_mailing_component`;
 DROP TABLE IF EXISTS `civicrm_entity_batch`;
 DROP TABLE IF EXISTS `civicrm_batch`;
@@ -165,6 +166,7 @@ DROP TABLE IF EXISTS `civicrm_acl_contact_cache`;
 DROP TABLE IF EXISTS `civicrm_contact`;
 DROP TABLE IF EXISTS `civicrm_acl_entity_role`;
 DROP TABLE IF EXISTS `civicrm_acl`;
+DROP TABLE IF EXISTS `civicrm_recurring_entity`;
 DROP TABLE IF EXISTS `civicrm_action_mapping`;
 DROP TABLE IF EXISTS `civicrm_prevnext_cache`;
 DROP TABLE IF EXISTS `civicrm_persistent`;
