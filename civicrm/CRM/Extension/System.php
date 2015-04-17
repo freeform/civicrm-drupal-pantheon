@@ -84,7 +84,7 @@ class CRM_Extension_System {
    *   Missing values will be guessed based on $config.
    */
   public function __construct($parameters = array()) {
-    $config = CRM_Core_Config::singleton();
+    $config = CRM_Core_Config::singleton(FALSE);
     $configKeys = array(
       'extensionsDir',
       'extensionsURL',

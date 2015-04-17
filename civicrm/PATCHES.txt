@@ -5,6 +5,7 @@ The following patches have been applied to this project:
 - http://drupal.org/files/issues/1978838-pre-populate-db-settings-2.patch
 - http://drupal.org/files/2063371-add-modulePath-var-4-4.patch
 - https://drupal.org/files/issues/2177647-sessions-fix.patch
+- https://gist.github.com/herbdool/da8c263167005b98e41a/raw/036cd87234bc2bf29dec9f842d83b1d08f94b181/binding-fix-for-extension-v2.patch
 - http://drupal.org/files/issues/2130213-ignore-timezone-on-install-2.patch
 - https://drupal.org/files/issues/1844558-run-civicrm-from-profile-dir-config-3.patch
 - http://drupal.org/files/1967972-bootsrap-fixes.patch
