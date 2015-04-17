@@ -8,7 +8,7 @@ core = 7.34
 ; ====== CIVICRM RELATED =========
 
 libraries[civicrm][download][type] = get
-libraries[civicrm][download][url] = "https://download.civicrm.org/civicrm-4.5.8-drupal.tar.gz"
+libraries[civicrm][download][url] = "https://download.civicrm.org/civicrm-4.6.2-drupal.tar.gz"
 libraries[civicrm][destination] = modules
 libraries[civicrm][directory_name] = civicrm
 
@@ -17,11 +17,11 @@ libraries[civicrm][directory_name] = civicrm
 ; Move civicrm files to sites/default/files/private/civicrm
 ; https://civicrm.org/advisory/civi-sa-2014-001-risk-information-disclosure
 ; http://forum.civicrm.org/index.php?topic=31570.0
-libraries[civicrm][patch][eb813969b29f45d93781af8aefb821a463f3882b] = https://gist.githubusercontent.com/herbdool/1658b00a9291f24fa7df/raw/eb813969b29f45d93781af8aefb821a463f3882b/pantheon-settings-civicrm-4-5.patch
+libraries[civicrm][patch][pantheonsettings] = https://gist.githubusercontent.com/herbdool/1658b00a9291f24fa7df/raw/eb813969b29f45d93781af8aefb821a463f3882b/pantheon-settings-civicrm-4-5.patch
 ; Add Redis caching
-libraries[civicrm][patch][f33c4cf4e6eba73a75c6855a78c402cf2596cb56] = https://gist.github.com/herbdool/1034705c005981020d9a/raw/f33c4cf4e6eba73a75c6855a78c402cf2596cb56/redis-caching-civicrm-4-5.patch
+libraries[civicrm][patch][redis] = https://gist.githubusercontent.com/herbdool/ca6d963c93261f129acb/raw/cc9cedbcf04a71eff30ddf54bc05c3de3944c1cc/redis-caching-civi46.patch
 ; Redis caching settings for Pantheon
-libraries[civicrm][patch][f33c4cf4e6eba73a75c6855a78c402cf2596cb56] = https://gist.github.com/herbdool/ea8487a5698b62b6e5eb/raw/ee346c68827e4e5bb09c912ed04b3863bd394d1d/pantheon-redis-settings.patch
+libraries[civicrm][patch][redissettings] = https://gist.githubusercontent.com/herbdool/ea8487a5698b62b6e5eb/raw/ee346c68827e4e5bb09c912ed04b3863bd394d1d/pantheon-redis-settings.patch
 
 ; Required for install
 libraries[civicrm][patch][1978796] = http://drupal.org/files/1978796-session.save-as_file.patch
@@ -32,7 +32,7 @@ libraries[civicrm][patch][2063371] = http://drupal.org/files/2063371-add-moduleP
 ; Required for extern urls to work (e.g. ipn.php, soap.php)
 libraries[civicrm][patch][2177647] = https://drupal.org/files/issues/2177647-sessions-fix.patch
 ; May be necessary where extension, etc paths are cached but Pantheon changes binding
-libraries[civicrm][patch][2347897] = https://drupal.org/files/issues/2347897-binding-fix-for-extensions.patch
+libraries[civicrm][patch][2347897] = https://gist.githubusercontent.com/herbdool/da8c263167005b98e41a/raw/036cd87234bc2bf29dec9f842d83b1d08f94b181/binding-fix-for-extension-v2.patch
 ; Related to https://issues.civicrm.org/jira/browse/CRM-9683
 libraries[civicrm][patch][2130213] = http://drupal.org/files/issues/2130213-ignore-timezone-on-install-2.patch
 
