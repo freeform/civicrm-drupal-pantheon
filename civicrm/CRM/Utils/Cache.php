@@ -106,6 +106,7 @@ class CRM_Utils_Cache {
         $defaults = array();
         break;
 
+      case 'Redis':
       case 'Memcache':
       case 'Memcached':
         $defaults = array(

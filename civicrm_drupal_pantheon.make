@@ -8,7 +8,7 @@ core = 7.34
 ; ====== CIVICRM RELATED =========
 
 libraries[civicrm][download][type] = get
-libraries[civicrm][download][url] = "https://download.civicrm.org/civicrm-4.4.13-drupal.tar.gz"
+libraries[civicrm][download][url] = "https://download.civicrm.org/civicrm-4.4.14-drupal.tar.gz"
 libraries[civicrm][destination] = modules
 libraries[civicrm][directory_name] = civicrm
 
@@ -18,6 +18,8 @@ libraries[civicrm][directory_name] = civicrm
 ; https://civicrm.org/advisory/civi-sa-2014-001-risk-information-disclosure
 ; http://forum.civicrm.org/index.php?topic=31570.0
 libraries[civicrm][patch][2195947] = https://www.drupal.org/files/issues/2195947-pantheon-settings-4-4-files-security-2.patch
+; Allows for using Redis caching on the Pantheon platform
+libraries[civicrm][patch][2468687] = https://www.drupal.org/files/issues/civicrm_starterkit-redis-caching-2468687-3-Civi44.patch
 
 ; Required for install
 libraries[civicrm][patch][1978796] = http://drupal.org/files/1978796-session.save-as_file.patch
