@@ -1,6 +1,7 @@
 The following patches have been applied to this project:
 - https://www.drupal.org/files/issues/2195947-pantheon-settings-4-4-files-security-2.patch
 - https://www.drupal.org/files/issues/civicrm_starterkit-redis-caching-2468687-3-Civi44.patch
+- ./skip-config-cache.patch
 - http://drupal.org/files/1978796-session.save-as_file.patch
 - http://drupal.org/files/issues/1978838-pre-populate-db-settings-2.patch
 - http://drupal.org/files/2063371-add-modulePath-var-4-4.patch

@@ -20,6 +20,9 @@ libraries[civicrm][directory_name] = civicrm
 libraries[civicrm][patch][2195947] = https://www.drupal.org/files/issues/2195947-pantheon-settings-4-4-files-security-2.patch
 ; Allows for using Redis caching on the Pantheon platform
 libraries[civicrm][patch][2468687] = https://www.drupal.org/files/issues/civicrm_starterkit-redis-caching-2468687-3-Civi44.patch
+; Skip config cache on Pantheon
+libraries[civicrm][patch][config] = ./skip-config-cache.patch
+
 
 ; Required for install
 libraries[civicrm][patch][1978796] = http://drupal.org/files/1978796-session.save-as_file.patch
