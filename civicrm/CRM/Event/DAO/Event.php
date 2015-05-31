@@ -517,11 +517,6 @@ class CRM_Event_DAO_Event extends CRM_Core_DAO
           'title' => ts('Event ID') ,
           'description' => 'Event',
           'required' => true,
-          'pseudoconstant' => array(
-            'table' => 'civicrm_event',
-            'keyColumn' => 'id',
-            'labelColumn' => 'title',
-          )
         ) ,
         'event_title' => array(
           'name' => 'title',

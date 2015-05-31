@@ -1,12 +1,12 @@
 The following patches have been applied to this project:
-- https://gist.githubusercontent.com/herbdool/1658b00a9291f24fa7df/raw/eb813969b29f45d93781af8aefb821a463f3882b/pantheon-settings-civicrm-4-5.patch
-- https://gist.githubusercontent.com/herbdool/ca6d963c93261f129acb/raw/cc9cedbcf04a71eff30ddf54bc05c3de3944c1cc/redis-caching-civi46.patch
-- https://gist.github.com/herbdool/ea8487a5698b62b6e5eb/raw/ee346c68827e4e5bb09c912ed04b3863bd394d1d/pantheon-redis-settings.patch
 - http://drupal.org/files/1978796-session.save-as_file.patch
-- http://drupal.org/files/issues/1978838-pre-populate-db-settings-2.patch
 - http://drupal.org/files/2063371-add-modulePath-var-4-4.patch
 - https://drupal.org/files/issues/2177647-sessions-fix.patch
-- https://gist.github.com/herbdool/da8c263167005b98e41a/raw/036cd87234bc2bf29dec9f842d83b1d08f94b181/binding-fix-for-extension-v2.patch
+- ./patches/binding-fix-for-extension-v2.patch
+- ./patches/pantheon-settings-civicrm-4-5.patch
+- ./patches/redis-caching-civi46.patch
+- ./patches/skip-config-cache.patch
+- http://drupal.org/files/issues/1978838-pre-populate-db-settings-2.patch
 - http://drupal.org/files/issues/2130213-ignore-timezone-on-install-2.patch
 - https://drupal.org/files/issues/1844558-run-civicrm-from-profile-dir-config-3.patch
 - http://drupal.org/files/1967972-bootsrap-fixes.patch

@@ -76,6 +76,7 @@ DROP TABLE IF EXISTS `civicrm_case_contact`;
 DROP TABLE IF EXISTS `civicrm_case`;
 DROP TABLE IF EXISTS `civicrm_membership_block`;
 DROP TABLE IF EXISTS `civicrm_membership_type`;
+DROP TABLE IF EXISTS `civicrm_payment_token`;
 DROP TABLE IF EXISTS `civicrm_payment_processor`;
 DROP TABLE IF EXISTS `civicrm_contribution_widget`;
 DROP TABLE IF EXISTS `civicrm_premiums_product`;

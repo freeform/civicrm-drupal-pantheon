@@ -159,6 +159,12 @@ class CRM_Contribute_DAO_ContributionRecur extends CRM_Core_DAO
    */
   public $processor_id;
   /**
+   * Optionally used to store a link to a payment token used for this recurring contribution.
+   *
+   * @var int unsigned
+   */
+  public $payment_token_id;
+  /**
    * unique transaction id. may be processor id, bank id + trans id, or account number + check number... depending on payment_method
    *
    * @var string
@@ -261,6 +267,7 @@ class CRM_Contribute_DAO_ContributionRecur extends CRM_Core_DAO
     if (!self::$_links) {
       self::$_links = static ::createReferenceColumns(__CLASS__);
       self::$_links[] = new CRM_Core_Reference_Basic(self::getTableName() , 'contact_id', 'civicrm_contact', 'id');
+      self::$_links[] = new CRM_Core_Reference_Basic(self::getTableName() , 'payment_token_id', 'civicrm_payment_token', 'id');
       self::$_links[] = new CRM_Core_Reference_Basic(self::getTableName() , 'payment_processor_id', 'civicrm_payment_processor', 'id');
       self::$_links[] = new CRM_Core_Reference_Basic(self::getTableName() , 'financial_type_id', 'civicrm_financial_type', 'id');
       self::$_links[] = new CRM_Core_Reference_Basic(self::getTableName() , 'campaign_id', 'civicrm_campaign', 'id');
@@ -389,6 +396,13 @@ class CRM_Contribute_DAO_ContributionRecur extends CRM_Core_DAO
           'description' => 'Possibly needed to store a unique identifier for this recurring payment order - if this is available from the processor??',
           'maxlength' => 255,
           'size' => CRM_Utils_Type::HUGE,
+        ) ,
+        'payment_token_id' => array(
+          'name' => 'payment_token_id',
+          'type' => CRM_Utils_Type::T_INT,
+          'title' => ts('Payment Token ID') ,
+          'description' => 'Optionally used to store a link to a payment token used for this recurring contribution.',
+          'FKClassName' => 'CRM_Financial_DAO_PaymentToken',
         ) ,
         'trxn_id' => array(
           'name' => 'trxn_id',
@@ -551,6 +565,7 @@ class CRM_Contribute_DAO_ContributionRecur extends CRM_Core_DAO
         'cancel_date' => 'cancel_date',
         'end_date' => 'end_date',
         'processor_id' => 'processor_id',
+        'payment_token_id' => 'payment_token_id',
         'trxn_id' => 'trxn_id',
         'invoice_id' => 'invoice_id',
         'contribution_status_id' => 'contribution_status_id',

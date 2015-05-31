@@ -105,6 +105,7 @@ DROP TABLE IF EXISTS `civicrm_case_contact`;
 DROP TABLE IF EXISTS `civicrm_case`;
 DROP TABLE IF EXISTS `civicrm_membership_block`;
 DROP TABLE IF EXISTS `civicrm_membership_type`;
+DROP TABLE IF EXISTS `civicrm_payment_token`;
 DROP TABLE IF EXISTS `civicrm_payment_processor`;
 DROP TABLE IF EXISTS `civicrm_contribution_widget`;
 DROP TABLE IF EXISTS `civicrm_premiums_product`;
@@ -3335,6 +3336,36 @@ CREATE TABLE `civicrm_payment_processor` (
 
 -- /*******************************************************
 -- *
+-- * civicrm_payment_token
+-- *
+-- * Payment Token
+-- *
+-- *******************************************************/
+CREATE TABLE `civicrm_payment_token` (
+
+
+     `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Payment Token ID',
+     `contact_id` int unsigned NOT NULL   COMMENT 'FK to Contact ID for the owner of the token',
+     `payment_processor_id` int unsigned NOT NULL   ,
+     `token` varchar(255) NOT NULL   COMMENT 'Externally provided token string',
+     `created_date` timestamp   DEFAULT CURRENT_TIMESTAMP COMMENT 'Date created',
+     `created_id` int unsigned    COMMENT 'Contact ID of token creator',
+     `expiry_date` datetime    COMMENT 'Date this token expires',
+     `email` varchar(255)    COMMENT 'Email at the time of token creation. Useful for fraud forensics',
+     `billing_first_name` varchar(255)    COMMENT 'Billing first name at the time of token creation. Useful for fraud forensics',
+     `billing_middle_name` varchar(255)    COMMENT 'Billing middle name at the time of token creation. Useful for fraud forensics',
+     `billing_last_name` varchar(255)    COMMENT 'Billing last name at the time of token creation. Useful for fraud forensics',
+     `masked_account_number` varchar(255)    COMMENT 'Holds the part of the card number or account details that may be retained or displayed',
+     `ip_address` varchar(255)    COMMENT 'IP used when creating the token. Useful for fraud forensics' 
+,
+    PRIMARY KEY ( `id` )
+ 
+ 
+,          CONSTRAINT FK_civicrm_payment_token_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE CASCADE,          CONSTRAINT FK_civicrm_payment_token_payment_processor_id FOREIGN KEY (`payment_processor_id`) REFERENCES `civicrm_payment_processor`(`id`) ON DELETE RESTRICT,          CONSTRAINT FK_civicrm_payment_token_created_id FOREIGN KEY (`created_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE SET NULL  
+)  ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci  ;
+
+-- /*******************************************************
+-- *
 -- * civicrm_membership_type
 -- *
 -- * Sites can configure multiple types of memberships. They encode the owner organization, fee, and the rules needed to set start and end (expire) dates when a member signs up for that type.
@@ -3965,6 +3996,7 @@ CREATE TABLE `civicrm_contribution_recur` (
      `cancel_date` datetime    COMMENT 'Date this recurring contribution was cancelled by contributor- if we can get access to it',
      `end_date` datetime    COMMENT 'Date this recurring contribution finished successfully',
      `processor_id` varchar(255)    COMMENT 'Possibly needed to store a unique identifier for this recurring payment order - if this is available from the processor??',
+     `payment_token_id` int unsigned    COMMENT 'Optionally used to store a link to a payment token used for this recurring contribution.',
      `trxn_id` varchar(255)    COMMENT 'unique transaction id. may be processor id, bank id + trans id, or account number + check number... depending on payment_method',
      `invoice_id` varchar(255)    COMMENT 'unique invoice id, system generated or passed in',
      `contribution_status_id` int unsigned   DEFAULT 1 ,
@@ -3995,7 +4027,7 @@ CREATE TABLE `civicrm_contribution_recur` (
         payment_instrument_id
   )
   
-,          CONSTRAINT FK_civicrm_contribution_recur_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE CASCADE,          CONSTRAINT FK_civicrm_contribution_recur_payment_processor_id FOREIGN KEY (`payment_processor_id`) REFERENCES `civicrm_payment_processor`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_contribution_recur_financial_type_id FOREIGN KEY (`financial_type_id`) REFERENCES `civicrm_financial_type`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_contribution_recur_campaign_id FOREIGN KEY (`campaign_id`) REFERENCES `civicrm_campaign`(`id`) ON DELETE SET NULL  
+,          CONSTRAINT FK_civicrm_contribution_recur_contact_id FOREIGN KEY (`contact_id`) REFERENCES `civicrm_contact`(`id`) ON DELETE CASCADE,          CONSTRAINT FK_civicrm_contribution_recur_payment_token_id FOREIGN KEY (`payment_token_id`) REFERENCES `civicrm_payment_token`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_contribution_recur_payment_processor_id FOREIGN KEY (`payment_processor_id`) REFERENCES `civicrm_payment_processor`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_contribution_recur_financial_type_id FOREIGN KEY (`financial_type_id`) REFERENCES `civicrm_financial_type`(`id`) ON DELETE SET NULL,          CONSTRAINT FK_civicrm_contribution_recur_campaign_id FOREIGN KEY (`campaign_id`) REFERENCES `civicrm_campaign`(`id`) ON DELETE SET NULL  
 )  ENGINE=InnoDB DEFAULT CHARACTER SET utf8 COLLATE utf8_unicode_ci  ;
 
 -- /*******************************************************

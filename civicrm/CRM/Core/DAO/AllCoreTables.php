@@ -571,6 +571,11 @@ class CRM_Core_DAO_AllCoreTables
         'class' => 'CRM_Financial_DAO_PaymentProcessor',
         'table' => 'civicrm_payment_processor',
       ) ,
+      'CRM_Financial_DAO_PaymentToken' => array(
+        'name' => 'PaymentToken',
+        'class' => 'CRM_Financial_DAO_PaymentToken',
+        'table' => 'civicrm_payment_token',
+      ) ,
       'CRM_Member_DAO_MembershipType' => array(
         'name' => 'MembershipType',
         'class' => 'CRM_Member_DAO_MembershipType',

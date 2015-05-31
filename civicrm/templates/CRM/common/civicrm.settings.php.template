@@ -281,22 +281,6 @@ if (!defined('CIVICRM_DOMAIN_ID')) {
  */
 
 /**
-* Redis Caching
-* Using Redis Caching via an extention instead of database -- uncomment below to use.
-* based on https://github.com/ChrisChinchilla/com.schwartzmedia.rediscache
-*/
-
-if (!empty($pantheon_conf['redis_client_host'])) {
-  define( 'CIVICRM_DB_CACHE_CLASS', 'Redis' );
-  define( 'CIVICRM_DB_CACHE_HOST', $pantheon_conf['redis_client_host'] );
-  define( 'CIVICRM_DB_CACHE_PORT', $pantheon_conf['redis_client_port'] );
-  define( 'CIVICRM_DB_CACHE_PASSWORD', $pantheon_conf['redis_client_password'] );
-  define( 'CIVICRM_DB_CACHE_TIMEOUT', 3600 );
-  define( 'CIVICRM_DB_CACHE_PREFIX', 'pantheon-redis-civicrm:' );
-
-} else {
-
-/**
  * If you have a memcache server configured and want CiviCRM to make use of it,
  * set the following constant.  You should only set this once you have your memcache
  * server up and working, because CiviCRM will not start up if your server is
@@ -347,8 +331,6 @@ if (!defined('CIVICRM_DB_CACHE_TIMEOUT')) {
 if (!defined('CIVICRM_MEMCACHE_PREFIX')) {
   define( 'CIVICRM_MEMCACHE_PREFIX', '' );
 }
-
-} // end Pantheon Redis check
 
 /**
  * If you have multilingual site and you are using the "inherit CMS language"

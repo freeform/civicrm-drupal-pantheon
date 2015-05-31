@@ -4272,7 +4272,21 @@ INSERT INTO civicrm_state_province (id, country_id, abbreviation, name) VALUES
 (NULL, 1193, "209", "Sveta Trojica v Slovenskih goricah"),
 (NULL, 1193, "210", "Sveti Jurij v Slovenskih goricah"),
 (NULL, 1193, "211", "Sveti Tomaž"),
-(NULL, 1193, "212", "Vodice");
+(NULL, 1193, "212", "Vodice"),
+
+-- CRM-16452 Missing administrative divisions for Georgia
+(NULL, 1081, "AB", "Abkhazia"),
+(NULL, 1081, "AJ", "Adjara"),
+(NULL, 1081, "TB", "Tbilisi"),
+(NULL, 1081, "GU", "Guria"),
+(NULL, 1081, "IM", "Imereti"),
+(NULL, 1081, "KA", "Kakheti"),
+(NULL, 1081, "KK", "Kvemo Kartli"),
+(NULL, 1081, "MM", "Mtskheta-Mtianeti"),
+(NULL, 1081, "RL", "Racha-Lechkhumi and Kvemo Svaneti"),
+(NULL, 1081, "SZ", "Samegrelo-Zemo Svaneti"),
+(NULL, 1081, "SJ", "Samtskhe-Javakheti"),
+(NULL, 1081, "SK", "Shida Kartli");
 -- +--------------------------------------------------------------------+
 -- | CiviCRM version 4.6                                                |
 -- +--------------------------------------------------------------------+
@@ -6158,8 +6172,8 @@ INSERT INTO civicrm_uf_field
        (  9,           'postal_code',           1,           0,           6,      'User and User Admin Only',  0,           0,             3,             'Postal Code',              'Contact',      NULL,   NULL),
        (  9,           'country',               1,           0,           7,      'User and User Admin Only',  0,           0,             3,             'Country',                  'Contact',      NULL,   NULL),
        (  9,           'state_province',        1,           0,           8,      'User and User Admin Only',  0,           0,             3,             'State/Province',         'Contact',      NULL,   NULL),
-       ( 10,     'financial_type',              1, 1, 1, 'User and User Admin Only', 0, 0, NULL, 'Type', 'Contribution', NULL, NULL ),
-       ( 10,     'total_amount',                1, 1, 2, 'User and User Admin Only', 0, 0, NULL, 'Amount', 'Contribution', NULL, NULL ),
+       ( 10,     'financial_type',              0, 1, 1, 'User and User Admin Only', 0, 0, NULL, 'Financial Type', 'Contribution', NULL, NULL ),
+       ( 10,     'total_amount',                0, 1, 2, 'User and User Admin Only', 0, 0, NULL, 'Amount', 'Contribution', NULL, NULL ),
        ( 10,     'contribution_status_id',      1, 1, 3, 'User and User Admin Only', 0, 0, NULL, 'Status', 'Contribution', NULL, NULL ),
        ( 10,     'receive_date',                1, 1, 4, 'User and User Admin Only', 0, 0, NULL, 'Received', 'Contribution', NULL, NULL ),
        ( 10,     'contribution_source',         0, 0, 5, 'User and User Admin Only', 0, 0, NULL, 'Source', 'Contribution', NULL, NULL ),
@@ -6169,14 +6183,14 @@ INSERT INTO civicrm_uf_field
        ( 10,     'invoice_id',                  0, 0, 9, 'User and User Admin Only', 0, 0, NULL, 'Invoice ID', 'Contribution', NULL, NULL ),
        ( 10,     'soft_credit',                 0, 0, 10, 'User and User Admin Only', 0, 0, NULL, 'Soft Credit', 'Contribution', NULL, NULL ),
        ( 10,     'soft_credit_type',            0, 0, 11, 'User and User Admin Only', 0, 0, NULL, 'Soft Credit Type', 'Contribution', NULL, NULL ),
-       ( 11,     'membership_type',             1, 1, 1, 'User and User Admin Only', 0, 0, NULL, 'Type', 'Membership', NULL, NULL ),
+       ( 11,     'membership_type',             1, 1, 1, 'User and User Admin Only', 0, 0, NULL, 'Membership Type', 'Membership', NULL, NULL ),
        ( 11,     'join_date',                   1, 1, 2, 'User and User Admin Only', 0, 0, NULL, 'Member Since', 'Membership', NULL, NULL ),
        ( 11,     'membership_start_date',       0, 1, 3, 'User and User Admin Only', 0, 0, NULL, 'Start Date', 'Membership', NULL, NULL ),
        ( 11,     'membership_end_date',         0, 1, 4, 'User and User Admin Only', 0, 0, NULL, 'End Date', 'Membership', NULL, NULL ),
        ( 11,     'membership_source',           0, 0, 5, 'User and User Admin Only', 0, 0, NULL, 'Source', 'Membership', NULL, NULL ),
        ( 11,     'send_receipt',                0, 0, 6, 'User and User Admin Only', 0, 0, NULL, 'Send Receipt', 'Membership', NULL, NULL ),
-       ( 11,     'financial_type',              1, 1, 7, 'User and User Admin Only', 0, 0, NULL, 'Financial Type', 'Membership', NULL, NULL ),
-       ( 11,     'total_amount',                1, 1, 8, 'User and User Admin Only', 0, 0, NULL, 'Amount', 'Membership', NULL, NULL ),
+       ( 11,     'financial_type',              0, 1, 7, 'User and User Admin Only', 0, 0, NULL, 'Financial Type', 'Membership', NULL, NULL ),
+       ( 11,     'total_amount',                0, 1, 8, 'User and User Admin Only', 0, 0, NULL, 'Amount', 'Membership', NULL, NULL ),
        ( 11,     'receive_date',                1, 1, 9, 'User and User Admin Only', 0, 0, NULL, 'Received', 'Membership', NULL, NULL ),
        ( 11,     'payment_instrument',          0, 0, 10, 'User and User Admin Only', 0, 0, NULL, 'Paid By', 'Membership', NULL, NULL ),
        ( 11,     'check_number',                0, 0, 11, 'User and User Admin Only', 0, 0, NULL, 'Check Number', 'Membership', NULL, NULL ),
@@ -14089,7 +14103,7 @@ You were registered by: {$payer.name}
 
 {/if}
 {/if}
------------------------------------------------------------{if $pricesetFieldsCount }--------------------{/if}
+-----------------------------------------------------------{if $pricesetFieldsCount }-----------------------------------------------------{/if}
 
 {capture assign=ts_item}{ts}Item{/ts}{/capture}
 {capture assign=ts_qty}{ts}Qty{/ts}{/capture}
@@ -14102,14 +14116,18 @@ You were registered by: {$payer.name}
 {capture assign=ts_total}{ts}Total{/ts}{/capture}
 {if $pricesetFieldsCount }{capture assign=ts_participant_total}{ts}Total Participants{/ts}{/capture}{/if}
 {$ts_item|string_format:"%-30s"} {$ts_qty|string_format:"%5s"} {$ts_each|string_format:"%10s"} {if $dataArray} {$ts_subtotal|string_format:"%10s"} {$ts_taxRate|string_format:"%10s"} {$ts_taxAmount|string_format:"%10s"} {/if} {$ts_total|string_format:"%10s"} {$ts_participant_total|string_format:"%10s"}
------------------------------------------------------------{if $pricesetFieldsCount }--------------------{/if}
+-----------------------------------------------------------{if $pricesetFieldsCount }-----------------------------------------------------{/if}
 
 {foreach from=$value item=line}
 {if $pricesetFieldsCount }{capture assign=ts_participant_count}{$line.participant_count}{/capture}{/if}
 {capture assign=ts_item}{if $line.html_type eq \'Text\'}{$line.label}{else}{$line.field_title} - {$line.label}{/if} {if $line.description} {$line.description}{/if}{/capture}{$ts_item|truncate:30:"..."|string_format:"%-30s"} {$line.qty|string_format:"%5s"} {$line.unit_price|crmMoney:$currency|string_format:"%10s"} {if $dataArray} {$line.unit_price*$line.qty|crmMoney:$currency|string_format:"%10s"} {if $line.tax_rate != "" || $line.tax_amount != ""}  {$line.tax_rate|string_format:"%.2f"} %  {$line.tax_amount|crmMoney:$currency|string_format:"%10s"} {else}                  {/if}  {/if} {$line.line_total+$line.tax_amount|crmMoney:$currency|string_format:"%10s"}{$ts_participant_count|string_format:"%10s"}
 {/foreach}
+----------------------------------------------------------------------------------------------------------------
+{if $individual}{ts}Participant Total{/ts} {$individual.$priceset.totalAmtWithTax-$individual.$priceset.totalTaxAmt|crmMoney:$currency|string_format:"%29s"} {$individual.$priceset.totalTaxAmt|crmMoney:$currency|string_format:"%33s"} {$individual.$priceset.totalAmtWithTax|crmMoney:$currency|string_format:"%12s"}{/if}
 {/if}
+{""|string_format:"%120s"}
 {/foreach}
+{""|string_format:"%120s"}
 
 {if $dataArray}
 {ts}Amount before Tax{/ts}: {$totalAmount-$totalTaxAmount|crmMoney:$currency}
@@ -14273,9 +14291,13 @@ You were registered by: {$payer.name}
 {capture assign=headerStyle}colspan="2" style="text-align: left; padding: 4px; border-bottom: 1px solid #999; background-color: #eee;"{/capture}
 {capture assign=labelStyle }style="padding: 4px; border-bottom: 1px solid #999; background-color: #f7f7f7;"{/capture}
 {capture assign=valueStyle }style="padding: 4px; border-bottom: 1px solid #999;"{/capture}
+{capture assign=tdfirstStyle}style="width: 180px; padding-bottom: 15px;"{/capture}
+{capture assign=tdStyle}style="width: 100px;"{/capture}
+{capture assign=participantTotal}style="margin: 0.5em 0 0.5em;padding: 0.5em;background-color: #999999;font-weight: bold;color: #FAFAFA;border-radius: 2px;"{/capture}
+
 
 <center>
- <table width="500" border="0" cellpadding="0" cellspacing="0" id="crm-event_receipt" style="font-family: Arial, Verdana, sans-serif; text-align: left;">
+ <table width="700" border="0" cellpadding="0" cellspacing="0" id="crm-event_receipt" style="font-family: Arial, Verdana, sans-serif; text-align: left;">
 
   <!-- BEGIN HEADER -->
   <!-- You can add table row(s) here with logo or other header elements -->
@@ -14316,7 +14338,7 @@ You were registered by: {$payer.name}
   </tr>
   <tr>
    <td>
-    <table width="500" style="border: 1px solid #999; margin: 1em 0em 1em; border-collapse: collapse;">
+    <table width="700" style="border: 1px solid #999; margin: 1em 0em 1em; border-collapse: collapse;">
      <tr>
       <th {$headerStyle}>
        {ts}Event Information and Location{/ts}
@@ -14486,24 +14508,24 @@ You were registered by: {$payer.name}
             </tr>
             {foreach from=$value item=line}
              <tr>
-              <td>
+              <td {$tdfirstStyle}>
               {if $line.html_type eq \'Text\'}{$line.label}{else}{$line.field_title} - {$line.label}{/if} {if $line.description}<div>{$line.description|truncate:30:"..."}</div>{/if}
               </td>
-              <td>
+              <td {$tdStyle} align="middle">
                {$line.qty}
               </td>
-              <td>
+              <td {$tdStyle}>
                {$line.unit_price|crmMoney:$currency}
               </td>
               {if $dataArray}
-               <td>
+               <td {$tdStyle}>
                 {$line.unit_price*$line.qty|crmMoney}
                </td>
                {if $line.tax_rate != "" || $line.tax_amount != ""}
-                <td>
+                <td {$tdStyle}>
                  {$line.tax_rate|string_format:"%.2f"}%
                 </td>
-                <td>
+                <td {$tdStyle}>
                  {$line.tax_amount|crmMoney}
                 </td>
                {else}
@@ -14511,12 +14533,20 @@ You were registered by: {$payer.name}
                 <td></td>
                {/if}
               {/if}
-              <td>
+              <td {$tdStyle}>
                {$line.line_total+$line.tax_amount|crmMoney:$currency}
               </td>
-        {if $pricesetFieldsCount }<td>{$line.participant_count}</td> {/if}
+        {if $pricesetFieldsCount }<td {$tdStyle}>{$line.participant_count}</td> {/if}
              </tr>
             {/foreach}
+            {if $individual}
+              <tr {$participantTotal}>
+                <td colspan=3>{ts}Participant Total{/ts}</td>
+                <td  colspan=2>{$individual.$priceset.totalAmtWithTax-$individual.$priceset.totalTaxAmt|crmMoney}</td>
+                <td  colspan=1>{$individual.$priceset.totalTaxAmt|crmMoney}</td>
+                <td  colspan=2>{$individual.$priceset.totalAmtWithTax|crmMoney}</td>
+              </tr>
+            {/if}
            </table>
           </td>
          </tr>
@@ -14897,7 +14927,7 @@ You were registered by: {$payer.name}
 
 {/if}
 {/if}
------------------------------------------------------------{if $pricesetFieldsCount }--------------------{/if}
+-----------------------------------------------------------{if $pricesetFieldsCount }-----------------------------------------------------{/if}
 
 {capture assign=ts_item}{ts}Item{/ts}{/capture}
 {capture assign=ts_qty}{ts}Qty{/ts}{/capture}
@@ -14910,14 +14940,18 @@ You were registered by: {$payer.name}
 {capture assign=ts_total}{ts}Total{/ts}{/capture}
 {if $pricesetFieldsCount }{capture assign=ts_participant_total}{ts}Total Participants{/ts}{/capture}{/if}
 {$ts_item|string_format:"%-30s"} {$ts_qty|string_format:"%5s"} {$ts_each|string_format:"%10s"} {if $dataArray} {$ts_subtotal|string_format:"%10s"} {$ts_taxRate|string_format:"%10s"} {$ts_taxAmount|string_format:"%10s"} {/if} {$ts_total|string_format:"%10s"} {$ts_participant_total|string_format:"%10s"}
------------------------------------------------------------{if $pricesetFieldsCount }--------------------{/if}
+-----------------------------------------------------------{if $pricesetFieldsCount }-----------------------------------------------------{/if}
 
 {foreach from=$value item=line}
 {if $pricesetFieldsCount }{capture assign=ts_participant_count}{$line.participant_count}{/capture}{/if}
 {capture assign=ts_item}{if $line.html_type eq \'Text\'}{$line.label}{else}{$line.field_title} - {$line.label}{/if} {if $line.description} {$line.description}{/if}{/capture}{$ts_item|truncate:30:"..."|string_format:"%-30s"} {$line.qty|string_format:"%5s"} {$line.unit_price|crmMoney:$currency|string_format:"%10s"} {if $dataArray} {$line.unit_price*$line.qty|crmMoney:$currency|string_format:"%10s"} {if $line.tax_rate != "" || $line.tax_amount != ""}  {$line.tax_rate|string_format:"%.2f"} %  {$line.tax_amount|crmMoney:$currency|string_format:"%10s"} {else}                  {/if}  {/if} {$line.line_total+$line.tax_amount|crmMoney:$currency|string_format:"%10s"}{$ts_participant_count|string_format:"%10s"}
 {/foreach}
+----------------------------------------------------------------------------------------------------------------
+{if $individual}{ts}Participant Total{/ts} {$individual.$priceset.totalAmtWithTax-$individual.$priceset.totalTaxAmt|crmMoney:$currency|string_format:"%29s"} {$individual.$priceset.totalTaxAmt|crmMoney:$currency|string_format:"%33s"} {$individual.$priceset.totalAmtWithTax|crmMoney:$currency|string_format:"%12s"}{/if}
 {/if}
+{""|string_format:"%120s"}
 {/foreach}
+{""|string_format:"%120s"}
 
 {if $dataArray}
 {ts}Amount before Tax{/ts}: {$totalAmount-$totalTaxAmount|crmMoney:$currency}
@@ -15081,9 +15115,13 @@ You were registered by: {$payer.name}
 {capture assign=headerStyle}colspan="2" style="text-align: left; padding: 4px; border-bottom: 1px solid #999; background-color: #eee;"{/capture}
 {capture assign=labelStyle }style="padding: 4px; border-bottom: 1px solid #999; background-color: #f7f7f7;"{/capture}
 {capture assign=valueStyle }style="padding: 4px; border-bottom: 1px solid #999;"{/capture}
+{capture assign=tdfirstStyle}style="width: 180px; padding-bottom: 15px;"{/capture}
+{capture assign=tdStyle}style="width: 100px;"{/capture}
+{capture assign=participantTotal}style="margin: 0.5em 0 0.5em;padding: 0.5em;background-color: #999999;font-weight: bold;color: #FAFAFA;border-radius: 2px;"{/capture}
+
 
 <center>
- <table width="500" border="0" cellpadding="0" cellspacing="0" id="crm-event_receipt" style="font-family: Arial, Verdana, sans-serif; text-align: left;">
+ <table width="700" border="0" cellpadding="0" cellspacing="0" id="crm-event_receipt" style="font-family: Arial, Verdana, sans-serif; text-align: left;">
 
   <!-- BEGIN HEADER -->
   <!-- You can add table row(s) here with logo or other header elements -->
@@ -15124,7 +15162,7 @@ You were registered by: {$payer.name}
   </tr>
   <tr>
    <td>
-    <table width="500" style="border: 1px solid #999; margin: 1em 0em 1em; border-collapse: collapse;">
+    <table width="700" style="border: 1px solid #999; margin: 1em 0em 1em; border-collapse: collapse;">
      <tr>
       <th {$headerStyle}>
        {ts}Event Information and Location{/ts}
@@ -15294,24 +15332,24 @@ You were registered by: {$payer.name}
             </tr>
             {foreach from=$value item=line}
              <tr>
-              <td>
+              <td {$tdfirstStyle}>
               {if $line.html_type eq \'Text\'}{$line.label}{else}{$line.field_title} - {$line.label}{/if} {if $line.description}<div>{$line.description|truncate:30:"..."}</div>{/if}
               </td>
-              <td>
+              <td {$tdStyle} align="middle">
                {$line.qty}
               </td>
-              <td>
+              <td {$tdStyle}>
                {$line.unit_price|crmMoney:$currency}
               </td>
               {if $dataArray}
-               <td>
+               <td {$tdStyle}>
                 {$line.unit_price*$line.qty|crmMoney}
                </td>
                {if $line.tax_rate != "" || $line.tax_amount != ""}
-                <td>
+                <td {$tdStyle}>
                  {$line.tax_rate|string_format:"%.2f"}%
                 </td>
-                <td>
+                <td {$tdStyle}>
                  {$line.tax_amount|crmMoney}
                 </td>
                {else}
@@ -15319,12 +15357,20 @@ You were registered by: {$payer.name}
                 <td></td>
                {/if}
               {/if}
-              <td>
+              <td {$tdStyle}>
                {$line.line_total+$line.tax_amount|crmMoney:$currency}
               </td>
-        {if $pricesetFieldsCount }<td>{$line.participant_count}</td> {/if}
+        {if $pricesetFieldsCount }<td {$tdStyle}>{$line.participant_count}</td> {/if}
              </tr>
             {/foreach}
+            {if $individual}
+              <tr {$participantTotal}>
+                <td colspan=3>{ts}Participant Total{/ts}</td>
+                <td  colspan=2>{$individual.$priceset.totalAmtWithTax-$individual.$priceset.totalTaxAmt|crmMoney}</td>
+                <td  colspan=1>{$individual.$priceset.totalTaxAmt|crmMoney}</td>
+                <td  colspan=2>{$individual.$priceset.totalAmtWithTax|crmMoney}</td>
+              </tr>
+            {/if}
            </table>
           </td>
          </tr>
@@ -23650,4 +23696,4 @@ INSERT INTO `civicrm_report_instance`
 VALUES
     (  @domainID, 'Survey Details', 'survey/detail', 'Detailed report for canvassing, phone-banking, walk lists or other surveys.', 'access CiviReport', 'a:39:{s:6:"fields";a:2:{s:9:"sort_name";s:1:"1";s:6:"result";s:1:"1";}s:22:"assignee_contact_id_op";s:2:"eq";s:25:"assignee_contact_id_value";s:0:"";s:12:"sort_name_op";s:3:"has";s:15:"sort_name_value";s:0:"";s:17:"street_number_min";s:0:"";s:17:"street_number_max";s:0:"";s:16:"street_number_op";s:3:"lte";s:19:"street_number_value";s:0:"";s:14:"street_name_op";s:3:"has";s:17:"street_name_value";s:0:"";s:15:"postal_code_min";s:0:"";s:15:"postal_code_max";s:0:"";s:14:"postal_code_op";s:3:"lte";s:17:"postal_code_value";s:0:"";s:7:"city_op";s:3:"has";s:10:"city_value";s:0:"";s:20:"state_province_id_op";s:2:"in";s:23:"state_province_id_value";a:0:{}s:13:"country_id_op";s:2:"in";s:16:"country_id_value";a:0:{}s:12:"survey_id_op";s:2:"in";s:15:"survey_id_value";a:0:{}s:12:"status_id_op";s:2:"eq";s:15:"status_id_value";s:1:"1";s:11:"custom_1_op";s:2:"in";s:14:"custom_1_value";a:0:{}s:11:"custom_2_op";s:2:"in";s:14:"custom_2_value";a:0:{}s:17:"custom_3_relative";s:1:"0";s:13:"custom_3_from";s:0:"";s:11:"custom_3_to";s:0:"";s:11:"description";s:75:"Detailed report for canvassing, phone-banking, walk lists or other surveys.";s:13:"email_subject";s:0:"";s:8:"email_to";s:0:"";s:8:"email_cc";s:0:"";s:10:"permission";s:17:"access CiviReport";s:6:"groups";s:0:"";s:9:"domain_id";i:1;}');
 
-UPDATE civicrm_domain SET version = '4.6.2';
+UPDATE civicrm_domain SET version = '4.6.3';
