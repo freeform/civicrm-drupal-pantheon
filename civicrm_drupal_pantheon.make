@@ -29,7 +29,8 @@ libraries[civicrm][patch][1978796] = http://drupal.org/files/1978796-session.sav
 libraries[civicrm][patch][2468687] = https://www.drupal.org/files/issues/civicrm_starterkit-redis-caching-2468687-3-Civi44.patch
 ; Skip config cache on Pantheon
 libraries[civicrm][patch][config] = ./patches/skip-config-cache.patch
-
+; Use Drupal cache functions to use Redis for storing compiled Smarty templates
+[libraries[civicrm][patch][smartyredis] = ./patches/civi-smarty-redis-integration-ojkelly-85e04b6.patch
 
 ; REQUIRED FOR INSTALL
 ; Populate with Pantheon environment settings on install

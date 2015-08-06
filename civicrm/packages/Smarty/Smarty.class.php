@@ -138,7 +138,7 @@ class Smarty
      *
      * @var boolean
      */
-    var $compile_check   =  true;
+    var $compile_check   =  false;
 
     /**
      * This forces templates to compile every time. Useful for development
@@ -175,7 +175,7 @@ class Smarty
      *
      * @var integer
      */
-    var $cache_lifetime  =  3600;
+    var $cache_lifetime  =  14400;
 
     /**
      * Only used when $caching is enabled. If true, then If-Modified-Since headers
@@ -1018,16 +1018,8 @@ class Smarty
      */
     function clear_compiled_tpl($tpl_file = null, $compile_id = null, $exp_time = null)
     {
-        if (!isset($compile_id)) {
-            $compile_id = $this->compile_id;
-        }
-        $_params = array('auto_base' => $this->compile_dir,
-                        'auto_source' => $tpl_file,
-                        'auto_id' => $compile_id,
-                        'exp_time' => $exp_time,
-                        'extensions' => array('.inc', '.php'));
-        require_once(SMARTY_CORE_DIR . 'core.rm_auto.php');
-        return smarty_core_rm_auto($_params, $this);
+        cache_clear_all(NULL, 'smarty');
+        return TRUE;
     }
 
     /**
@@ -1254,14 +1246,26 @@ class Smarty
             if ($this->_is_compiled($resource_name, $_smarty_compile_path)
                     || $this->_compile_resource($resource_name, $_smarty_compile_path))
             {
-                include($_smarty_compile_path);
+                $get = cache_get($_smarty_compile_path, 'smarty');
+                if ($get) {
+                  _eval('?>' . $get->data . '<?php ');
+                }
+                else {
+                  watchdog('smarty error 1', 'not in cache: ' . $_smarty_compile_path);
+                }
             }
         } else {
             ob_start();
             if ($this->_is_compiled($resource_name, $_smarty_compile_path)
                     || $this->_compile_resource($resource_name, $_smarty_compile_path))
             {
-                include($_smarty_compile_path);
+                $get = cache_get($_smarty_compile_path, 'smarty');
+                if ($get) {
+                  _eval('?>' . $get->data . '<?php ');
+                }
+                else {
+                  watchdog('smarty error 2', 'not in cache: ' . $_smarty_compile_path);
+                }
             }
             $_smarty_results = ob_get_contents();
             ob_end_clean();
@@ -1515,18 +1519,6 @@ class Smarty
                                                   $resource_name,
                                                   $this->_compile_id );
         $compilePath .= '.php';
-
-        //for 'string:' resource smarty might going to fail to create
-        //compile file, so make sure we should have valid path, CRM-5890
-        $matches = array( );
-        if ( preg_match( '/^(\s+)?string:/', $resource_name, $matches ) ) {
-            if ( !$this->validateCompilePath( $compilePath ) ) {
-                $compilePath = $this->_get_auto_filename( $this->compile_dir,
-                                                          time().rand(),
-                                                          $this->_compile_id );
-                $compilePath .= '.php';
-            }
-        }
 
         return $compilePath;
     }
@@ -1904,7 +1896,13 @@ class Smarty
         if ($this->_is_compiled($params['smarty_include_tpl_file'], $_smarty_compile_path)
             || $this->_compile_resource($params['smarty_include_tpl_file'], $_smarty_compile_path))
         {
-            include($_smarty_compile_path);
+            $get = cache_get($_smarty_compile_path, 'smarty');
+            if ($get) {
+                _eval('?>' . $get->data . '<?php ');
+            }
+            else {
+                watchdog('smarty error 5', 'not in cache: ' . $_smarty_compile_path);
+            }
         }
 
         // pop the local vars off the front of the stack
