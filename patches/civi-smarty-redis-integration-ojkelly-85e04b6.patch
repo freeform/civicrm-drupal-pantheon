@@ -1,7 +1,7 @@
-diff --git a/civicrm/CRM/Core/Smarty.php b/civicrm/CRM/Core/Smarty.php
+diff --git a/CRM/Core/Smarty.php b/CRM/Core/Smarty.php
 index 6422ca2..6975e54 100644
---- a/civicrm/CRM/Core/Smarty.php
-+++ b/civicrm/CRM/Core/Smarty.php
+--- a/CRM/Core/Smarty.php
++++ b/CRM/Core/Smarty.php
 @@ -92,6 +92,7 @@ class CRM_Core_Smarty extends Smarty {
      else {
        $this->template_dir = $config->templateDir;
@@ -20,10 +20,10 @@ index 6422ca2..6975e54 100644
  
      //Check for safe mode CRM-2207
      if (ini_get('safe_mode')) {
-diff --git a/civicrm/packages/Smarty/Smarty.class.php b/civicrm/packages/Smarty/Smarty.class.php
+diff --git a/packages/Smarty/Smarty.class.php b/packages/Smarty/Smarty.class.php
 index dac9329..c98ece6 100644
---- a/civicrm/packages/Smarty/Smarty.class.php
-+++ b/civicrm/packages/Smarty/Smarty.class.php
+--- a/packages/Smarty/Smarty.class.php
++++ b/packages/Smarty/Smarty.class.php
 @@ -138,7 +138,7 @@ class Smarty
       *
       * @var boolean
