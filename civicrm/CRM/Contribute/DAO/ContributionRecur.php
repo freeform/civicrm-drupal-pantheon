@@ -369,7 +369,7 @@ class CRM_Contribute_DAO_ContributionRecur extends CRM_Core_DAO
         'processor_id' => array(
           'name' => 'processor_id',
           'type' => CRM_Utils_Type::T_STRING,
-          'title' => ts('Payment Processor') ,
+          'title' => ts('Processor ID') ,
           'maxlength' => 255,
           'size' => CRM_Utils_Type::HUGE,
         ) ,

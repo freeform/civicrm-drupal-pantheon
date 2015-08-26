@@ -1,8 +1,9 @@
 name = CiviGroup Roles Sync
 description = Sync Drupal Roles to CiviCRM Groups.
 package = CiviCRM
+project = civicrm
 core = 7.x
-version = 4.4.15
+version = 4.4.19
 dependencies[] = civicrm
 configure = admin/config/civicrm/civicrm_group_roles
 files[] = civicrm_group_roles.module

@@ -1,8 +1,9 @@
 name = CiviCRM Theme
 description =  Define alternate themes for CiviCRM.
 core = 7.x
-version = 4.4.15
+version = 4.4.19
 package = CiviCRM
+project = civicrm
 
 dependencies[] = civicrm
 
