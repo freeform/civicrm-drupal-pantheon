@@ -575,7 +575,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
 
     $billingPanes = array();
     if ($this->_mode) {
-      if (CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE) == TRUE) {
+      if (CRM_Core_Payment_Form::buildPaymentForm($this, $this->_paymentProcessor, FALSE, TRUE) == TRUE) {
         $buildRecurBlock = TRUE;
         foreach ($this->billingPane as $name => $label) {
           if (!empty($this->billingFieldSets[$name]['fields'])) {
@@ -591,6 +591,15 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     }
     if (empty($this->_recurPaymentProcessors)) {
       $buildRecurBlock = FALSE;
+    }
+    if ($this->_ppID) {
+      foreach ($this->_paymentProcessors as $processor) {
+        if (!empty($processor['is_recur']) && !empty($processor['object']) && $processor['object']->supports('recurContributionsForPledges')) {
+          $buildRecurBlock = TRUE;
+          break;
+        }
+        $buildRecurBlock = FALSE;
+      }
     }
     if ($buildRecurBlock) {
       CRM_Contribute_Form_Contribution_Main::buildRecur($this);
@@ -797,11 +806,14 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       $hasPriceSets = FALSE;
       if ($buildPriceSet) {
         $hasPriceSets = TRUE;
+        // CRM-16451: set financial type of 'Price Set' in back office contribution
+        // instead of selecting manually
+        $financialTypeIds = CRM_Price_BAO_PriceSet::getAssoc(FALSE, 'CiviContribute', 'financial_type_id');
         $element = $this->add('select', 'price_set_id', ts('Choose price set'),
           array(
             '' => ts('Choose price set'),
           ) + $priceSets,
-          NULL, array('onchange' => "buildAmount( this.value );")
+          NULL, array('onchange' => "buildAmount( this.value, " . json_encode($financialTypeIds) . ");")
         );
         if ($this->_online && !($this->_action & CRM_Core_Action::UPDATE)) {
           $element->freeze();
@@ -917,7 +929,6 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
    */
   public static function formRule($fields, $files, $self) {
     $errors = array();
-
     // Check for Credit Card Contribution.
     if ($self->_mode) {
       if (empty($fields['payment_processor_id'])) {
@@ -950,16 +961,26 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
           $sum = CRM_Utils_Money::format($sum - $self->_values['tax_amount'], NULL, '%a');
         }
       }
-      if (CRM_Utils_Rule::cleanMoney($fields['total_amount']) != $sum) {
+      if (CRM_Utils_Rule::cleanMoney($fields['total_amount']) != CRM_Utils_Rule::cleanMoney($sum)) {
         $errors['total_amount'] = ts('The sum of fee amount and net amount must be equal to total amount');
       }
     }
+
+    //CRM-16285 - Function to handle validation errors on form, for recurring contribution field.
+    CRM_Contribute_BAO_ContributionRecur::validateRecurContribution($fields, $files, $self, $errors);
+
     // Form rule for status http://wiki.civicrm.org/confluence/display/CRM/CiviAccounts+4.3+Data+Flow
-    if ($self->_id && $self->_values['contribution_status_id'] != $fields['contribution_status_id']) {
+    if (($self->_action & CRM_Core_Action::UPDATE)
+      && $self->_id
+      && $self->_values['contribution_status_id'] != $fields['contribution_status_id']
+    ) {
       CRM_Contribute_BAO_Contribution::checkStatusValidation($self->_values, $fields, $errors);
     }
     // CRM-16015, add form-rule to restrict change of financial type if using price field of different financial type
-    if ($self->_id && $self->_values['financial_type_id'] != $fields['financial_type_id']) {
+    if (($self->_action & CRM_Core_Action::UPDATE)
+      && $self->_id
+      && $self->_values['financial_type_id'] != $fields['financial_type_id']
+    ) {
       CRM_Contribute_BAO_Contribution::checkFinancialTypeChange(NULL, $self->_id, $errors);
     }
     //FIXME FOR NEW DATA FLOW http://wiki.civicrm.org/confluence/display/CRM/CiviAccounts+4.3+Data+Flow
@@ -1088,8 +1109,13 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       }
 
       if ($this->_priceSetId && CRM_Core_DAO::getFieldValue('CRM_Price_DAO_PriceSet', $this->_priceSetId, 'is_quick_config')) {
-        $lineItems[$itemId]['unit_price'] = $lineItems[$itemId]['line_total'] = CRM_Utils_Rule::cleanMoney(CRM_Utils_Array::value('total_amount', $submittedValues));
-
+        //CRM-16833: Ensure tax is applied only once for membership conribution, when status changed.(e.g Pending to Completed).
+        $componentDetails = CRM_Contribute_BAO_Contribution::getComponentDetails($this->_id);
+        if (!CRM_Utils_Array::value('membership', $componentDetails) || !CRM_Utils_Array::value('participant', $componentDetails)) {
+          if (!($this->_action & CRM_Core_Action::UPDATE && (($this->_defaults['contribution_status_id'] != $submittedValues['contribution_status_id'])))) {
+            $lineItems[$itemId]['unit_price'] = $lineItems[$itemId]['line_total'] = CRM_Utils_Rule::cleanMoney(CRM_Utils_Array::value('total_amount', $submittedValues));
+          }
+        }
         // Update line total and total amount with tax on edit.
         $financialItemsId = CRM_Core_PseudoConstant::getTaxRates();
         if (array_key_exists($submittedValues['financial_type_id'], $financialItemsId)) {
@@ -1146,7 +1172,7 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
     $isEmpty = array_keys(array_flip($submittedValues['soft_credit_contact_id']));
     if ($this->_id && count($isEmpty) == 1 && key($isEmpty) == NULL) {
       //Delete existing soft credit records if soft credit list is empty on update
-      CRM_Contribute_BAO_ContributionSoft::del(array('contribution_id' => $this->_id));
+      CRM_Contribute_BAO_ContributionSoft::del(array('contribution_id' => $this->_id, 'pcp_id' => 0));
     }
     else {
       //build soft credit params
@@ -1195,13 +1221,9 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
         $params[$f] = CRM_Utils_Array::value($f, $formValues);
       }
 
-      if (!empty($pcp)) {
-        $params['pcp'] = $pcp;
-      }
-      if (!empty($softParams)) {
-        $params['soft_credit'] = $softParams;
-        $params['soft_credit_ids'] = $softIDs;
-      }
+      $params['pcp'] = !empty($pcp) ? $pcp : NULL;
+      $params['soft_credit'] = !empty($softParams) ? $softParams : array();
+      $params['soft_credit_ids'] = !empty($softIDs) ? $softIDs : array();
 
       // CRM-5740 if priceset is used, no need to cleanup money.
       if ($priceSetId) {
@@ -1752,8 +1774,25 @@ class CRM_Contribute_Form_Contribution extends CRM_Contribute_Form_AbstractEditP
       );
     }
 
-    // Send receipt mail.
-    if ($contribution->id && !empty($this->_params['is_email_receipt'])) {
+    if (!empty($paymentParams['is_recur']) && is_array($result) && CRM_Utils_Array::value('payment_status_id', $result) == 1) {
+      try {
+        civicrm_api3('contribution', 'completetransaction', array(
+          'id' => $contribution->id,
+          'trxn_id' => CRM_Utils_Array::value('trxn_id', $result),
+          'is_transactional' => FALSE,
+        ));
+        // This has not been set to 1 in the DB - declare it here also
+        $contribution->contribution_status_id = 1;
+      }
+      catch (CiviCRM_API3_Exception $e) {
+        if ($e->getErrorCode() != 'contribution_completed') {
+          throw new CRM_Core_Exception('Failed to update contribution in database');
+        }
+      }
+    }
+    // Send receipt mail. (if the complete transaction ran it will have sent it - so avoid 2
+    // with the elseif. CRM-16926
+    elseif ($contribution->id && !empty($this->_params['is_email_receipt'])) {
       $this->_params['trxn_id'] = CRM_Utils_Array::value('trxn_id', $result);
       $this->_params['contact_id'] = $this->_contactID;
       $this->_params['contribution_id'] = $contribution->id;

@@ -158,11 +158,11 @@ var submitcount = 0;
 function submitOnce(obj, formId, procText) {
   // if named button clicked, change text
   if (obj.value != null) {
-    obj.value = procText + " ...";
+    cj('input[name=' + obj.name + ']').val(procText + " ...");
   }
   cj(obj).closest('form').attr('data-warn-changes', 'false');
   if (document.getElementById) { // disable submit button for newer browsers
-    obj.disabled = true;
+    cj('input[name=' + obj.name + ']').attr("disabled", true);
     document.getElementById(formId).submit();
     return true;
   }
@@ -362,6 +362,13 @@ CRM.strings = CRM.strings || {};
    * @param options object
    */
   $.fn.crmSelect2 = function(options) {
+    if (options === 'destroy') {
+      return $(this).each(function() {
+        $(this)
+          .removeClass('crm-ajax-select')
+          .select2('destroy');
+      });
+    }
     return $(this).each(function () {
       var
         $el = $(this),
@@ -396,6 +403,15 @@ CRM.strings = CRM.strings || {};
    * @param options object
    */
   $.fn.crmEntityRef = function(options) {
+    if (options === 'destroy') {
+      return $(this).each(function() {
+        var entity = $(this).data('api-entity') || '';
+        $(this)
+          .off('.crmEntity')
+          .removeClass('crm-form-entityref crm-' + entity.toLowerCase() + '-ref')
+          .crmSelect2('destroy');
+      });
+    }
     options = options || {};
     options.select = options.select || {};
     return $(this).each(function() {
@@ -1269,6 +1285,9 @@ CRM.strings = CRM.strings || {};
         CRM.confirm({
           title: ts('Preview'),
           resizable: true,
+          // Prevent overlap with the menubar
+          maxHeight: $(window).height() - 30,
+          position: {my: 'center', at: 'center center+15', of: window},
           message: '<div class="crm-custom-image-popup"><img style="max-width: 100%" src="' + $(this).attr('href') + '"></div>',
           options: null
         });

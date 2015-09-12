@@ -229,8 +229,14 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
             $fldValue = CRM_Utils_Array::value($fldName, $fields);
             $fldType = CRM_Utils_Array::value('type', $fldValue);
             $type = CRM_Utils_Type::typeToString($fldType);
+
+            if (strstr($v[1], 'IN')) {
+              if (empty($v[2])) {
+                $errorMsg["value[$v[3]][$v[4]]"] = ts("Please enter a value.");
+              }
+            }
             // Check Empty values for Integer Or Boolean Or Date type For operators other than IS NULL and IS NOT NULL.
-            if (!in_array($v[1],
+            elseif (!in_array($v[1],
               array('IS NULL', 'IS NOT NULL', 'IS EMPTY', 'IS NOT EMPTY'))
             ) {
               if ((($type == 'Int' || $type == 'Boolean') && !is_array($v[2]) && !trim($v[2])) && $v[2] != '0') {
@@ -244,17 +250,17 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
 
           if ($type && empty($errorMsg)) {
             // check for valid format while using IN Operator
-            if ($v[1] == 'IN') {
+            if (strstr($v[1], 'IN')) {
               if (!is_array($v[2])) {
                 $inVal = trim($v[2]);
                 //checking for format to avoid db errors
                 if ($type == 'Int') {
-                  if (!preg_match('/^[(]([A-Za-z0-9\,]+)[)]$/', $inVal)) {
+                  if (!preg_match('/^[A-Za-z0-9\,]+$/', $inVal)) {
                     $errorMsg["value[$v[3]][$v[4]]"] = ts("Please enter correct Data (in valid format).");
                   }
                 }
                 else {
-                  if (!(substr($inVal, 0, 1) == '(' && substr($inVal, -1, 1) == ')') && !preg_match('/^[(]([A-Za-z0-9åäöÅÄÖüÜœŒæÆøØ\,\s]+)[)]$/', $inVal)) {
+                  if (!preg_match('/^[A-Za-z0-9åäöÅÄÖüÜœŒæÆøØ()\,\s]+$/', $inVal)) {
                     $errorMsg["value[$v[3]][$v[4]]"] = ts("Please enter correct Data (in valid format).");
                   }
                 }
@@ -263,9 +269,17 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
               // Validate each value in parenthesis to avoid db errors
               if (empty($errorMsg)) {
                 $parenValues = array();
-                $parenValues = is_array($v[2]) ? $v[2] : explode(',', trim($inVal, "(..)"));
+                $parenValues = is_array($v[2]) ? (array_key_exists($v[1], $v[2])) ? $v[2][$v[1]] : $v[2] : explode(',', trim($inVal, "(..)"));
                 foreach ($parenValues as $val) {
-                  $val = trim($val);
+                  if ($type == 'Date' || $type == 'Timestamp') {
+                    $val = CRM_Utils_Date::processDate($val);
+                    if ($type == 'Date') {
+                      $val = substr($val, 0, 8);
+                    }
+                  }
+                  else {
+                    $val = trim($val);
+                  }
                   if (!$val && $val != '0') {
                     $errorMsg["value[$v[3]][$v[4]]"] = ts("Please enter the values correctly.");
                   }

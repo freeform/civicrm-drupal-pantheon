@@ -262,9 +262,17 @@ class CRM_Member_BAO_Membership extends CRM_Member_DAO_Membership {
         $excludeIsAdmin = TRUE;
       }
 
-      $calcStatus = CRM_Member_BAO_MembershipStatus::getMembershipStatusByDate($start_date, $end_date, $join_date,
-        'today', $excludeIsAdmin, CRM_Utils_Array::value('membership_type_id', $params), $params
-      );
+      //CRM-15829 UPDATES
+      // When adding memberships to a contact and If a status is pending then there is no need to perform these calculations. Otherwise it will errernously not realise the pending state and set ot to NEW or GRACE depending on the date ranges.
+      if (isset($params['status_id']) && $params['status_id'] == 5) {
+        $calcStatus['id'] = $params['status_id'];
+      }
+      else {
+        $calcStatus = CRM_Member_BAO_MembershipStatus::getMembershipStatusByDate($start_date, $end_date, $join_date,
+          'today', $excludeIsAdmin, CRM_Utils_Array::value('membership_type_id', $params), $params
+        );
+      }
+
       if (empty($calcStatus)) {
         // Redirect the form in case of error
         // @todo this redirect in the BAO layer is really bad & should be moved to the form layer
@@ -830,7 +838,7 @@ INNER JOIN  civicrm_membership_type type ON ( type.id = membership.membership_ty
           }
           elseif ($memType['is_active']) {
             $javascriptMethod = NULL;
-            $allowAutoRenewOpt = 1;
+            $allowAutoRenewOpt = (int) $memType['auto_renew'];
             if (is_array($form->_paymentProcessors)) {
               foreach ($form->_paymentProcessors as $id => $val) {
                 if (!$val['is_recur']) {
@@ -1441,10 +1449,16 @@ AND civicrm_membership.is_test = %2";
       $form->_values['contribution_id'] = $membershipContributionID;
     }
 
-    // Do not send an email if Recurring transaction is done via Direct Mode
-    // Email will we sent when the IPN is received.
+    // Refer to CRM-16737. Payment processors 'should' return payment_status_id
+    // to denote the outcome of the transaction.
+    //
+    // In 4.7 trxn_id will no longer denote the outcome & all processor transactions must return an array
+    // containing payment_status_id.
+    // In 4.6 support (such as there was) for other ways of denoting payment outcome is retained but the use
+    // of payment_status_id is strongly encouraged.
     if (!empty($form->_params['is_recur']) && $form->_contributeMode == 'direct') {
-      if (!empty($membershipContribution->trxn_id)) {
+      if (!empty($membershipContribution->trxn_id) && !isset($membershipContribution->payment_status_id)
+        || (!empty($membershipContribution->payment_status_id) && $membershipContribution->payment_status_id == 1)) {
         try {
           civicrm_api3('contribution', 'completetransaction', array(
             'id' => $membershipContribution->id,
@@ -1457,6 +1471,8 @@ AND civicrm_membership.is_test = %2";
           CRM_Core_Error::debug_log_message('contribution ' . $membershipContribution->id . ' not completed with trxn_id ' . $membershipContribution->trxn_id . ' and message ' . $e->getMessage());
         }
       }
+      // Do not send an email if Recurring transaction is done via Direct Mode
+      // Email will we sent when the IPN is received.
       return;
     }
 
@@ -1533,7 +1549,8 @@ AND civicrm_membership.is_test = %2";
     $modifiedID = NULL,
     $customFieldsFormatted = NULL,
     $numRenewTerms = 1,
-    $membershipID = NULL
+    $membershipID = NULL,
+    $pending = FALSE
   ) {
     $statusFormat = '%Y-%m-%d';
     $format = '%Y%m%d';
@@ -1549,7 +1566,7 @@ AND civicrm_membership.is_test = %2";
     $membershipTypeDetails = CRM_Member_BAO_MembershipType::getMembershipTypeDetails($membershipTypeID);
 
     // check is it pending. - CRM-4555
-    list($pending, $contributionRecurID, $changeToday, $membershipSource, $isPayLater, $campaignId) = self::extractFormValues($form, $changeToday, $membershipTypeDetails);
+    list($pending, $contributionRecurID, $changeToday, $membershipSource, $isPayLater, $campaignId) = self::extractFormValues($form, $changeToday, $membershipTypeDetails, $pending);
     list($membership, $renewalMode, $dates) = self::renewMembership($contactID, $membershipTypeID, $is_test, $changeToday, $modifiedID, $customFieldsFormatted, $numRenewTerms, $membershipID, $pending, $allStatus, $membershipTypeDetails, $contributionRecurID, $format, $membershipSource, $ids, $statusFormat, $isPayLater, $campaignId);
     $form->set('renewal_mode', $renewalMode);
     if (!empty($dates)) {
@@ -1891,6 +1908,10 @@ WHERE  civicrm_membership.contact_id = civicrm_contact.id
 
         // we should not created contribution record for related contacts, CRM-3371
         unset($params['contribution_status_id']);
+
+        //CRM-16857: Do not create multiple line-items for inherited membership through priceset.
+        unset($params['lineItems']);
+        unset($params['line_item']);
 
         if (($params['status_id'] == $deceasedStatusId) || ($params['status_id'] == $expiredStatusId)) {
           // related membership is not active so does not count towards maximum
@@ -2299,11 +2320,19 @@ INNER JOIN  civicrm_contact contact ON ( contact.id = membership.contact_id AND 
    * @return array
    */
   public static function createOrRenewMembership($membershipParams, $contactID, $customFieldsFormatted, $membershipID, $memType, $isTest, $numTerms, $membershipContribution, &$form) {
+    if (!empty($membershipContribution)) {
+      // CRM-16737 contribution_status_id is the deprecated return parameter from the payment processor. Use
+      // payment_status_id.
+      $pending = ($membershipContribution->contribution_status_id == 2) ? TRUE : FALSE;
+      if (isset($membershipContribution->payment_status_id)) {
+        $pending = ($membershipContribution->payment_status_id == 2) ? TRUE : $pending;
+      }
+    }
     $membership = self::renewMembershipFormWrapper($contactID, $memType,
       $isTest, $form, NULL,
       CRM_Utils_Array::value('cms_contactID', $membershipParams),
       $customFieldsFormatted, $numTerms,
-      $membershipID
+      $membershipID, $pending
     );
 
     if (!empty($membershipContribution)) {
@@ -2340,8 +2369,7 @@ INNER JOIN  civicrm_contact contact ON ( contact.id = membership.contact_id AND 
    *
    * @return array
    */
-  public static function extractFormValues($form, $changeToday, $membershipTypeDetails) {
-    $pending = FALSE;
+  public static function extractFormValues($form, $changeToday, $membershipTypeDetails, $pending = FALSE) {
     //@todo this is a BAO function & should not inspect the form - the form should do this
     // & pass required params to the BAO
     if (CRM_Utils_Array::value('minimum_fee', $membershipTypeDetails) > 0.0) {

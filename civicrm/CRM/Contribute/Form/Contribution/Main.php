@@ -333,30 +333,30 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
         foreach ($this->_priceSet['fields'] as $key => $val) {
           foreach ($val['options'] as $keys => $values) {
             $opMemTypeId = CRM_Utils_Array::value('membership_type_id', $values);
-            if ($opMemTypeId &&
+            $priceFieldName = 'price_' . $values['price_field_id'];
+            $priceFieldValue = CRM_Price_BAO_PriceSet::getPriceFieldValueFromURL($this, $priceFieldName);
+            if (!empty($priceFieldValue)) {
+              CRM_Price_BAO_PriceSet::setDefaultPriceSetField($priceFieldName, $priceFieldValue, $val['html_type'], $this->_defaults);
+              // break here to prevent overwriting of default due to 'is_default'
+              // option configuration or setting of current membership or
+              // membership for related organization.
+              // The value sent via URL get's higher priority.
+              break;
+            }
+            elseif ($opMemTypeId &&
               in_array($opMemTypeId, $this->_currentMemberships) &&
               !in_array($opMemTypeId, $selectedCurrentMemTypes)
             ) {
-              if ($val['html_type'] == 'CheckBox') {
-                $this->_defaults["price_{$key}"][$keys] = 1;
-              }
-              else {
-                $this->_defaults["price_{$key}"] = $keys;
-              }
+              CRM_Price_BAO_PriceSet::setDefaultPriceSetField($priceFieldName, $keys, $val['html_type'], $this->_defaults);
               $selectedCurrentMemTypes[] = $values['membership_type_id'];
             }
             elseif (!empty($values['is_default']) &&
               !$opMemTypeId &&
-              (!isset($this->_defaults["price_{$key}"]) ||
-                ($val['html_type'] == 'CheckBox' && !isset($this->_defaults["price_{$key}"][$keys]))
-              )
-            ) {
-              if ($val['html_type'] == 'CheckBox') {
-                $this->_defaults["price_{$key}"][$keys] = 1;
-              }
-              else {
-                $this->_defaults["price_{$key}"] = $keys;
-              }
+              (!isset($this->_defaults[$priceFieldName]) ||
+                ($val['html_type'] == 'CheckBox' &&
+                !isset($this->_defaults[$priceFieldName][$keys]))
+              )) {
+                CRM_Price_BAO_PriceSet::setDefaultPriceSetField($priceFieldName, $keys, $val['html_type'], $this->_defaults);
             }
           }
         }
@@ -459,9 +459,10 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
     }
 
     $contactID = $this->getContactID();
-    if ($this->getContactID() === '0') {
+    if ($this->getContactID() === 0) {
       $this->addCidZeroOptions($onlinePaymentProcessorEnabled);
     }
+
     //build pledge block.
     $this->_useForMember = 0;
     //don't build membership block when pledge_id is passed
@@ -976,14 +977,8 @@ class CRM_Contribute_Form_Contribution_Main extends CRM_Contribute_Form_Contribu
       }
     }
 
-    if (!empty($fields['is_recur'])) {
-      if ($fields['frequency_interval'] <= 0) {
-        $errors['frequency_interval'] = ts('Please enter a number for how often you want to make this recurring contribution (EXAMPLE: Every 3 months).');
-      }
-      if ($fields['frequency_unit'] == '0') {
-        $errors['frequency_unit'] = ts('Please select a period (e.g. months, years ...) for how often you want to make this recurring contribution (EXAMPLE: Every 3 MONTHS).');
-      }
-    }
+    //CRM-16285 - Function to handle validation errors on form, for recurring contribution field.
+    CRM_Contribute_BAO_ContributionRecur::validateRecurContribution($fields, $files, $self, $errors);
 
     if (!empty($fields['is_recur']) &&
       CRM_Utils_Array::value('payment_processor', $fields) == 0

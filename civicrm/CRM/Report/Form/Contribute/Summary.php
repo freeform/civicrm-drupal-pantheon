@@ -29,8 +29,6 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
  */
 class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
   protected $_addressField = FALSE;
@@ -46,6 +44,7 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
   public $_drilldownReport = array('contribute/detail' => 'Link to Detail Report');
 
   /**
+   * Class constructor.
    */
   public function __construct() {
 
@@ -118,6 +117,9 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
         'dao' => 'CRM_Contribute_DAO_Contribution',
           //'bao'           => 'CRM_Contribute_BAO_Contribution',
         'fields' => array(
+          'contribution_status_id' => array(
+            'title' => ts('Contribution Status'),
+          ),
           'contribution_source' => array('title' => ts('Source')),
           'currency' => array(
             'required' => TRUE,
@@ -127,8 +129,8 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
             'title' => ts('Contribution Amount Stats'),
             'default' => TRUE,
             'statistics' => array(
-              'sum' => ts('Contribution Aggregate'),
               'count' => ts('Contributions'),
+              'sum' => ts('Contribution Aggregate'),
               'avg' => ts('Contribution Avg'),
             ),
           ),
@@ -191,6 +193,13 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
             'chart' => TRUE,
           ),
           'contribution_source' => NULL,
+          'contribution_status_id' => array(
+            'title' => ts('Contribution Status'),
+            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
+            'options' => CRM_Contribute_PseudoConstant::contributionStatus(),
+            'default' => array(1),
+            'type' => CRM_Utils_Type::T_INT,
+          ),
         ),
       ),
       'civicrm_contribution_soft' => array(
@@ -200,8 +209,8 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
             'title' => ts('Soft Credit Amount Stats'),
             'name' => 'amount',
             'statistics' => array(
-              'sum' => ts('Soft Credit Aggregate'),
               'count' => ts('Soft Credits'),
+              'sum' => ts('Soft Credit Aggregate'),
               'avg' => ts('Soft Credit Avg'),
             ),
           ),
@@ -260,19 +269,9 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     parent::__construct();
   }
 
-  public function preProcess() {
-    parent::preProcess();
-  }
-
   /**
-   * @param bool $freeze
-   *
-   * @return array
+   * Set select clause.
    */
-  public function setDefaultValues($freeze = TRUE) {
-    return parent::setDefaultValues($freeze);
-  }
-
   public function select() {
     $select = array();
     $this->_columnHeaders = array();
@@ -372,27 +371,20 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
   }
 
   /**
-   * @param $fields
-   * @param $files
-   * @param $self
+   * Set form rules.
+   *
+   * @param array $fields
+   * @param array $files
+   * @param CRM_Report_Form_Contribute_Summary $self
    *
    * @return array
    */
   public static function formRule($fields, $files, $self) {
-    $errors = $grouping = array();
-    //check for searching combination of dispaly columns and
-    //grouping criteria
+    // Check for searching combination of display columns and
+    // grouping criteria
     $ignoreFields = array('total_amount', 'sort_name');
     $errors = $self->customDataFormRule($fields, $ignoreFields);
 
-    if (empty($fields['group_bys']['receive_date'])) {
-      if (!empty($fields['receive_date_relative']) ||
-        CRM_Utils_Date::isDate($fields['receive_date_from']) ||
-        CRM_Utils_Date::isDate($fields['receive_date_to'])
-      ) {
-        $errors['receive_date_relative'] = ts("Do not use filter on Date if group by Receive Date is not used ");
-      }
-    }
     if (empty($fields['fields']['total_amount'])) {
       foreach (array(
                  'total_count_value',
@@ -408,6 +400,11 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     return $errors;
   }
 
+  /**
+   * Set from clause.
+   *
+   * @param string $entity
+   */
   public function from($entity = NULL) {
     $softCreditJoinType = "LEFT";
     if (!empty($this->_params['fields']['soft_amount']) &&
@@ -448,11 +445,14 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     }
   }
 
+  /**
+   * Set group by clause.
+   */
   public function groupBy() {
     $this->_groupBy = "";
     $append = FALSE;
-    if (is_array($this->_params['group_bys']) &&
-      !empty($this->_params['group_bys'])
+    if (!empty($this->_params['group_bys']) &&
+      is_array($this->_params['group_bys'])
     ) {
       foreach ($this->_columns as $tableName => $table) {
         if (array_key_exists('group_bys', $table)) {
@@ -497,6 +497,9 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     }
   }
 
+  /**
+   * Store having clauses as an array.
+   */
   public function storeWhereHavingClauseArray() {
     parent::storeWhereHavingClauseArray();
     if (empty($this->_params['fields']['soft_amount']) &&
@@ -511,7 +514,9 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
   }
 
   /**
-   * @param $rows
+   * Set statistics.
+   *
+   * @param array $rows
    *
    * @return array
    */
@@ -519,9 +524,7 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     $statistics = parent::statistics($rows);
 
     $softCredit = CRM_Utils_Array::value('soft_amount', $this->_params['fields']);
-    $onlySoftCredit = $softCredit &&
-      !CRM_Utils_Array::value('total_amount', $this->_params['fields']);
-    $totalAmount = $average = $softTotalAmount = $softAverage = array();
+    $onlySoftCredit = $softCredit && !CRM_Utils_Array::value('total_amount', $this->_params['fields']);
     $group = "\nGROUP BY {$this->_aliases['civicrm_contribution']}.currency";
 
     $this->from('contribution');
@@ -600,11 +603,20 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
     return $statistics;
   }
 
+  /**
+   * Post process function.
+   */
   public function postProcess() {
     $this->buildACLClause($this->_aliases['civicrm_contact']);
     parent::postProcess();
   }
 
+  /**
+   * Build table rows for output.
+   *
+   * @param string $sql
+   * @param array $rows
+   */
   public function buildRows($sql, &$rows) {
     $dao = CRM_Core_DAO::executeQuery($sql);
     if (!is_array($rows)) {
@@ -613,7 +625,7 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
 
     // use this method to modify $this->_columnHeaders
     $this->modifyColumnHeaders();
-
+    $contriRows = array();
     $unselectedSectionColumns = $this->unselectedSectionColumns();
 
     //CRM-16338 if both soft-credit and contribution are enabled then process the contribution's
@@ -663,7 +675,9 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
   }
 
   /**
-   * @param $rows
+   * Build chart.
+   *
+   * @param array $rows
    */
   public function buildChart(&$rows) {
     $graphRows = array();
@@ -724,6 +738,7 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
    */
   public function alterDisplay(&$rows) {
     $entryFound = FALSE;
+    $contributionStatus = CRM_Contribute_PseudoConstant::contributionStatus();
 
     foreach ($rows as $rowNum => $row) {
       // make count columns point to detail report
@@ -793,6 +808,12 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
         );
         $rows[$rowNum]['civicrm_contact_sort_name_link'] = $url;
         $rows[$rowNum]['civicrm_contact_sort_name_hover'] = ts("Lists detailed contribution(s) for this record.");
+        $entryFound = TRUE;
+      }
+
+      // convert contribution status id to status name
+      if ($value = CRM_Utils_Array::value('civicrm_contribution_contribution_status_id', $row)) {
+        $rows[$rowNum]['civicrm_contribution_contribution_status_id'] = $contributionStatus[$value];
         $entryFound = TRUE;
       }
 

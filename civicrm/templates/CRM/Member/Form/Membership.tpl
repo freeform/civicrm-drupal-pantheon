@@ -277,12 +277,12 @@
         {if $emailExists and $outBound_option != 2 }
           <tr id="send-receipt" class="crm-membership-form-block-send_receipt">
             <td class="label">{$form.send_receipt.label}</td><td>{$form.send_receipt.html}<br />
-            <span class="description">{ts 1=$emailExists}Automatically email a membership confirmation and receipt to %1?{/ts}</span></td>
+            <span class="description">{ts 1=$emailExists}Automatically email a membership confirmation and receipt to %1 ?{/ts} {ts}OR if the payment is from a different contact, this email will only go to them.{/ts}</span></td>
           </tr>
           {elseif $context eq 'standalone' and $outBound_option != 2 }
           <tr id="email-receipt" style="display:none;">
             <td class="label">{$form.send_receipt.label}</td><td>{$form.send_receipt.html}<br />
-            <span class="description">{ts}Automatically email a membership confirmation and receipt to {/ts}<span id="email-address"></span>?</span></td>
+            <span class="description">{ts}Automatically email a membership confirmation and receipt to {/ts}<span id="email-address"></span>? {ts}OR if the payment is from a different contact, this email will only go to them.{/ts}</span></td>
           </tr>
         {/if}
         <tr id="fromEmail" style="display:none;">
@@ -354,6 +354,7 @@
       function setPaymentBlock(mode, checkboxEvent) {
         var memType = parseInt(cj('#membership_type_id_1').val( ));
         var isPriceSet = 0;
+        var existingAmount = {/literal}{if !empty($onlinePendingContributionId)}1{else}0{/if}{literal};
 
         if ( cj('#price_set_id').length > 0 && cj('#price_set_id').val() ) {
           isPriceSet = 1;
@@ -364,7 +365,7 @@
         }
 
         var allMemberships = {/literal}{$allMembershipInfo}{literal};
-        if ( !mode ) {
+        if (!mode) {
           //check the record_contribution checkbox if membership is a paid one
           {/literal}{if $action eq 1}{literal}
           if (!checkboxEvent) {
@@ -400,13 +401,16 @@
           cj("#total_amount").val(CRM.formatMoney(feeTotal, true));
         }
         else {
-    if (taxRate) {
+          if (taxRate) {
             var feeTotal = parseFloat(Number((taxRate/100) * allMemberships[memType]['total_amount'])+Number(allMemberships[memType]['total_amount_numeric'])).toFixed(2);
-      cj("#total_amount").val(CRM.formatMoney(feeTotal, true));
+            cj("#total_amount").val(CRM.formatMoney(feeTotal, true));
           }
           else {
-      var feeTotal = allMemberships[memType]['total_amount'];
-      cj("#total_amount").val( allMemberships[memType]['total_amount'] );
+            var feeTotal = allMemberships[memType]['total_amount'];
+            if (!existingAmount) {
+              // CRM-16680 don't set amount if there is an existing contribution.
+              cj("#total_amount").val(allMemberships[memType]['total_amount']);
+            }
           }
         }
         var taxMessage = taxRate!=undefined ? 'Includes '+taxTerm+' amount of '+currency+' '+taxAmount:'';

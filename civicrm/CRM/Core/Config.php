@@ -730,8 +730,9 @@ class CRM_Core_Config extends CRM_Core_Config_Variables {
     // cleanup templates_c directory
     $this->cleanup(1, FALSE);
 
-    // clear db caching
+    // clear all caches
     self::clearDBCache();
+    CRM_Utils_System::flushCache();
 
     if ($sessionReset) {
       $session = CRM_Core_Session::singleton();

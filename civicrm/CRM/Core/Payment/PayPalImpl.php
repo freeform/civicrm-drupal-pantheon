@@ -86,6 +86,22 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
   }
 
   /**
+   * Can recurring contributions be set against pledges.
+   *
+   * In practice all processors that use the baseIPN function to finish transactions or
+   * call the completetransaction api support this by looking up previous contributions in the
+   * series and, if there is a prior contribution against a pledge, and the pledge is not complete,
+   * adding the new payment to the pledge.
+   *
+   * However, only enabling for processors it has been tested against.
+   *
+   * @return bool
+   */
+  protected function supportsRecurContributionsForPledges() {
+    return TRUE;
+  }
+
+  /**
    * Express checkout code. Check PayPal documentation for more information
    *
    * @param array $params
@@ -467,6 +483,20 @@ class CRM_Core_Payment_PayPalImpl extends CRM_Core_Payment {
       return TRUE;
     }
     return FALSE;
+  }
+
+  /**
+   * Process incoming notification.
+   *
+   * This is only supported for paypal pro at the moment & no specific plans to add this path to core
+   * for paypal standard as the goal must be to separate the 2.
+   *
+   * We don't need to handle paypal standard using this path as there has never been any historic support
+   * for paypal standard to call civicrm/payment/ipn as a path.
+   */
+  static public function handlePaymentNotification() {
+    $paypalIPN = new CRM_Core_Payment_PayPalProIPN($_REQUEST);
+    $paypalIPN->main();
   }
 
   /**

@@ -370,14 +370,11 @@ class CRM_Contribute_BAO_Contribution extends CRM_Contribute_DAO_Contribution {
     // Handle soft credit and / or link to personal campaign page
     $softIDs = CRM_Contribute_BAO_ContributionSoft::getSoftCreditIds($contribution->id);
 
-    //Delete PCP against this contribution and create new on submitted PCP information
     $pcpId = CRM_Contribute_BAO_ContributionSoft::getSoftCreditIds($contribution->id, TRUE);
-    if ($pcpId) {
-      $deleteParams = array('id' => $pcpId);
-      CRM_Contribute_BAO_ContributionSoft::del($deleteParams);
-    }
+
     if ($pcp = CRM_Utils_Array::value('pcp', $params)) {
       $softParams = array();
+      $softParams['id'] = $pcpId ? $pcpId : NULL;
       $softParams['contribution_id'] = $contribution->id;
       $softParams['pcp_id'] = $pcp['pcp_made_through_id'];
       $softParams['contact_id'] = CRM_Core_DAO::getFieldValue('CRM_PCP_DAO_PCP',
@@ -391,12 +388,31 @@ class CRM_Contribute_BAO_Contribution extends CRM_Contribute_DAO_Contribution {
       $softParams['soft_credit_type_id'] = CRM_Core_OptionGroup::getValue('soft_credit_type', 'pcp', 'name');
       $contributionSoft = CRM_Contribute_BAO_ContributionSoft::add($softParams);
       //Send notification to owner for PCP
-      if ($contributionSoft->pcp_id) {
+      if ($contributionSoft->pcp_id && empty($pcpId)) {
         CRM_Contribute_Form_Contribution_Confirm::pcpNotifyOwner($contribution, $contributionSoft);
       }
     }
+    //Delete PCP against this contribution and create new on submitted PCP information
+    elseif (array_key_exists('pcp', $params) && $pcpId) {
+      $deleteParams = array('id' => $pcpId);
+      CRM_Contribute_BAO_ContributionSoft::del($deleteParams);
+    }
     if (isset($params['soft_credit'])) {
       $softParams = $params['soft_credit'];
+      foreach ($softParams as $softParam) {
+        if (!empty($softIDs)) {
+          $key = key($softIDs);
+          $softParam['id'] = $softIDs[$key];
+          unset($softIDs[$key]);
+        }
+        $softParam['contribution_id'] = $contribution->id;
+        $softParam['currency'] = $contribution->currency;
+        //case during Contribution Import when we assign soft contribution amount as contribution's total_amount by default
+        if (empty($softParam['amount'])) {
+          $softParam['amount'] = $contribution->total_amount;
+        }
+        CRM_Contribute_BAO_ContributionSoft::add($softParam);
+      }
 
       if (!empty($softIDs)) {
         foreach ($softIDs as $softID) {
@@ -405,16 +421,6 @@ class CRM_Contribute_BAO_Contribution extends CRM_Contribute_DAO_Contribution {
             CRM_Contribute_BAO_ContributionSoft::del($deleteParams);
           }
         }
-      }
-
-      foreach ($softParams as $softParam) {
-        $softParam['contribution_id'] = $contribution->id;
-        $softParam['currency'] = $contribution->currency;
-        //case during Contribution Import when we assign soft contribution amount as contribution's total_amount by default
-        if (empty($softParam['amount'])) {
-          $softParam['amount'] = $contribution->total_amount;
-        }
-        CRM_Contribute_BAO_ContributionSoft::add($softParam);
       }
     }
 
@@ -2336,7 +2342,7 @@ WHERE  contribution_id = %1 ";
         if (!empty($lineItem)) {
           $itemId = key($lineItem);
           foreach ($lineItem as &$eachItem) {
-            if (array_key_exists($eachItem['membership_type_id'], $this->_relatedObjects['membership'])) {
+            if (is_array($this->_relatedObjects['membership']) && array_key_exists($eachItem['membership_type_id'], $this->_relatedObjects['membership'])) {
               $eachItem['join_date'] = CRM_Utils_Date::customFormat($this->_relatedObjects['membership'][$eachItem['membership_type_id']]->join_date);
               $eachItem['start_date'] = CRM_Utils_Date::customFormat($this->_relatedObjects['membership'][$eachItem['membership_type_id']]->start_date);
               $eachItem['end_date'] = CRM_Utils_Date::customFormat($this->_relatedObjects['membership'][$eachItem['membership_type_id']]->end_date);
@@ -2736,7 +2742,7 @@ WHERE  contribution_id = %1 ";
         if (!empty($params['payment_processor'])) {
           $balanceTrxnParams['payment_processor_id'] = $params['payment_processor'];
         }
-        CRM_Core_BAO_FinancialTrxn::create($balanceTrxnParams);
+        $financialTxn = CRM_Core_BAO_FinancialTrxn::create($balanceTrxnParams);
       }
     }
 
@@ -2927,8 +2933,9 @@ WHERE  contribution_id = %1 ";
       CRM_Price_BAO_LineItem::processPriceSet($entityId, CRM_Utils_Array::value('line_item', $params), $params['contribution'], $entityTable, $update);
     }
 
-    // create batch entry if batch_id is passed
-    if (!empty($params['batch_id'])) {
+    // create batch entry if batch_id is passed and
+    // ensure no batch entry is been made on 'Pending' or 'Failed' contribution, CRM-16611
+    if (!empty($params['batch_id']) && !empty($financialTxn)) {
       $entityParams = array(
         'batch_id' => $params['batch_id'],
         'entity_table' => 'civicrm_financial_trxn',

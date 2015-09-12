@@ -425,7 +425,7 @@ WHERE      $mg.entity_table = '$group'
       }
 
       $smartGroupInclude = "
-INSERT IGNORE INTO I_$job_id (email_id, contact_id)
+REPLACE INTO I_$job_id (email_id, contact_id)
 SELECT     civicrm_email.id as email_id, c.id as contact_id
 FROM       civicrm_contact c
 INNER JOIN civicrm_email                ON civicrm_email.contact_id         = c.id
@@ -442,7 +442,7 @@ $order_by
 ";
       if ($mode == 'sms') {
         $smartGroupInclude = "
-INSERT IGNORE INTO I_$job_id (phone_id, contact_id)
+REPLACE INTO I_$job_id (phone_id, contact_id)
 SELECT     p.id as phone_id, c.id as contact_id
 FROM       civicrm_contact c
 INNER JOIN civicrm_phone p                ON p.contact_id         = c.id
@@ -1472,7 +1472,7 @@ ORDER BY   civicrm_email.is_bulkmail DESC
       if ($this->url_tracking) {
         $data = CRM_Mailing_BAO_TrackableURL::getTrackerURL($token, $this->id, $event_queue_id);
         if (!empty($html)) {
-          $data = htmlentities($data);
+          $data = htmlentities($data, ENT_NOQUOTES);
         }
       }
       else {
@@ -2906,17 +2906,13 @@ WHERE  civicrm_mailing_job.id = %1
     // CRM-8460
     $gotCronLock = FALSE;
 
-    if (property_exists($config, 'mailerJobsMax') && $config->mailerJobsMax && $config->mailerJobsMax > 1) {
+    if (property_exists($config, 'mailerJobsMax') && $config->mailerJobsMax && $config->mailerJobsMax > 0) {
       $lockArray = range(1, $config->mailerJobsMax);
       shuffle($lockArray);
 
       // check if we are using global locks
-      $serverWideLock = CRM_Core_BAO_Setting::getItem(
-        CRM_Core_BAO_Setting::MAILING_PREFERENCES_NAME,
-        'civimail_server_wide_lock'
-      );
       foreach ($lockArray as $lockID) {
-        $cronLock = new CRM_Core_Lock("civimail.cronjob.{$lockID}", NULL, $serverWideLock);
+        $cronLock = Civi\Core\Container::singleton()->get('lockManager')->acquire("worker.mailing.send.{$lockID}");
         if ($cronLock->isAcquired()) {
           $gotCronLock = TRUE;
           break;
@@ -2927,6 +2923,11 @@ WHERE  civicrm_mailing_job.id = %1
       if (!$gotCronLock) {
         CRM_Core_Error::debug_log_message('Returning early, since max number of cronjobs running');
         return TRUE;
+      }
+
+      if (getenv('CIVICRM_CRON_HOLD')) {
+        // In testing, we may need to simulate some slow activities.
+        sleep(getenv('CIVICRM_CRON_HOLD'));
       }
     }
 
