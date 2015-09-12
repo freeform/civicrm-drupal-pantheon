@@ -114,7 +114,7 @@ class CRM_Utils_Cache_Redis {
 		return TRUE;
 	}
 
-	function &get($key) {
+	function get($key) {
 		$result = $this->_cache->get($this->_prefix . $key);
 		return unserialize($result);
 	}

@@ -132,7 +132,7 @@ index 0000000..a44fc44
 +		return TRUE;
 +	}
 +
-+	function &get($key) {
++	function get($key) {
 +		$result = $this->_cache->get($this->_prefix . $key);
 +		return unserialize($result);
 +	}
