@@ -28,7 +28,7 @@ libraries[civicrm][patch][pantheonsettings] = ./patches/pantheon-settings-civicr
 ; Add Redis caching
 libraries[civicrm][patch][redis] = ./patches/redis-caching-civi46.patch
 ; Redis caching settings for Pantheon
-./patches/pantheon-redis-settings.patch
+libraries[civicrm][patch][redissettings] = ./patches/pantheon-redis-settings.patch
 ; Skip config cache on Pantheon
 libraries[civicrm][patch][config] = ./patches/skip-config-cache.patch
 
