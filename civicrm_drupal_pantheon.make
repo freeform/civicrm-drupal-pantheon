@@ -8,7 +8,7 @@ core = 7.37
 ; ====== CIVICRM RELATED =========
 
 libraries[civicrm][download][type] = get
-libraries[civicrm][download][url] = "https://download.civicrm.org/civicrm-4.4.15-drupal.tar.gz"
+libraries[civicrm][download][url] = "https://download.civicrm.org/civicrm-4.4.19-drupal.tar.gz"
 libraries[civicrm][destination] = modules
 libraries[civicrm][directory_name] = civicrm
 
@@ -37,7 +37,8 @@ libraries[civicrm][patch][2468687] = https://www.drupal.org/files/issues/civicrm
 libraries[civicrm][patch][config] = ./patches/skip-config-cache.patch
 
 ; Use Drupal cache functions to use Redis for storing compiled Smarty templates
-libraries[civicrm][patch][smartyredis] = ./patches/civi-smarty-redis-integration-ojkelly-85e04b6.patch
+libraries[civicrm][patch][smartyredisget] = ./patches/civi-smarty-redis-integration-ojkelly-85e04b6.patch
+libraries[civicrm][patch][smartyredisset] = ./patches/setting-redis-cache-with-smarty.patch
 
 ; REQUIRED FOR INSTALL
 ; Populate with Pantheon environment settings on install

@@ -1,0 +1,72 @@
+diff --git a/packages/Smarty/internals/core.write_compiled_resource.php b/packages/Smarty/internals/core.write_compiled_resource.php
+index b902eff..a3581de 100644
+--- a/packages/Smarty/internals/core.write_compiled_resource.php
++++ b/packages/Smarty/internals/core.write_compiled_resource.php
+@@ -14,16 +14,6 @@
+  */
+ function smarty_core_write_compiled_resource($params, &$smarty)
+ {
+-    if(!@is_writable($smarty->compile_dir)) {
+-        // compile_dir not writable, see if it exists
+-        if(!@is_dir($smarty->compile_dir)) {
+-            $smarty->trigger_error('the $compile_dir \'' . $smarty->compile_dir . '\' does not exist, or is not a directory.', E_USER_ERROR);
+-            return false;
+-        }
+-        $smarty->trigger_error('unable to write to $compile_dir \'' . realpath($smarty->compile_dir) . '\'. Be sure $compile_dir is writable by the web server user.', E_USER_ERROR);
+-        return false;
+-    }
+-
+     $_params = array('filename' => $params['compile_path'], 'contents' => $params['compiled_content'], 'create_dirs' => true);
+     require_once(SMARTY_CORE_DIR . 'core.write_file.php');
+     smarty_core_write_file($_params, $smarty);
+diff --git a/packages/Smarty/internals/core.write_file.php b/packages/Smarty/internals/core.write_file.php
+index 8a3a3b3..a3db367 100644
+--- a/packages/Smarty/internals/core.write_file.php
++++ b/packages/Smarty/internals/core.write_file.php
+@@ -13,40 +13,15 @@
+  * @param boolean $create_dirs
+  * @return boolean
+  */
+-function smarty_core_write_file($params, &$smarty)
+-{
+-    $_dirname = dirname($params['filename']);
++function smarty_core_write_file($params, &$smarty) {
++  // Modified for running from Redis
++    if ( function_exists('lock_acquire') && lock_acquire('smarty_core_write_file' . $params['filename'])) {
+ 
+-    if ($params['create_dirs']) {
+-        $_params = array('dir' => $_dirname);
+-        require_once(SMARTY_CORE_DIR . 'core.create_dir_structure.php');
+-        smarty_core_create_dir_structure($_params, $smarty);
+-    }
+-
+-    // write to tmp file, then rename it to avoid file locking race condition
+-    $_tmp_file = tempnam($_dirname, 'wrt');
+-
+-    if (!($fd = @fopen($_tmp_file, 'wb'))) {
+-        $_tmp_file = $_dirname . DIRECTORY_SEPARATOR . uniqid('wrt');
+-        if (!($fd = @fopen($_tmp_file, 'wb'))) {
+-            $smarty->trigger_error("problem writing temporary file '$_tmp_file'");
+-            return false;
+-        }
+-    }
+-
+-    fwrite($fd, $params['contents']);
+-    fclose($fd);
++        cache_set($params['filename'], $params['contents'], 'smarty');
+ 
+-    if (DIRECTORY_SEPARATOR == '\\' || !@rename($_tmp_file, $params['filename'])) {
+-        // On platforms and filesystems that cannot overwrite with rename() 
+-        // delete the file before renaming it -- because windows always suffers
+-        // this, it is short-circuited to avoid the initial rename() attempt
+-        @unlink($params['filename']);
+-        @rename($_tmp_file, $params['filename']);
++        lock_release('smarty_core_write_file' . $params['filename']);
++        return true;
+     }
+-    @chmod($params['filename'], $smarty->_file_perms);
+-
+-    return true;
+ }
+ 
+ /* vim: set expandtab: */
