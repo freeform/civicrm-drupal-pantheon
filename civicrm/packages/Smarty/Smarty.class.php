@@ -1248,7 +1248,7 @@ class Smarty
             {
                 $get = cache_get($_smarty_compile_path, 'smarty');
                 if ($get) {
-                  _eval('?>' . $get->data . '<?php ');
+                  eval('?>' . $get->data . '<?php ');
                 }
                 else {
                   watchdog('smarty error 1', 'not in cache: ' . $_smarty_compile_path);
@@ -1261,7 +1261,7 @@ class Smarty
             {
                 $get = cache_get($_smarty_compile_path, 'smarty');
                 if ($get) {
-                  _eval('?>' . $get->data . '<?php ');
+                  eval('?>' . $get->data . '<?php ');
                 }
                 else {
                   watchdog('smarty error 2', 'not in cache: ' . $_smarty_compile_path);
@@ -1898,7 +1898,7 @@ class Smarty
         {
             $get = cache_get($_smarty_compile_path, 'smarty');
             if ($get) {
-                _eval('?>' . $get->data . '<?php ');
+                eval('?>' . $get->data . '<?php ');
             }
             else {
                 watchdog('smarty error 5', 'not in cache: ' . $_smarty_compile_path);
