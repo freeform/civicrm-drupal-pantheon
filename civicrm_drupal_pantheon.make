@@ -24,10 +24,10 @@ libraries[civicrm][patch][2063371] = http://drupal.org/files/2063371-add-moduleP
 
 ; Required for extern urls to work (e.g. ipn.php, soap.php)
 libraries[civicrm][patch][2177647] = https://drupal.org/files/issues/2177647-sessions-fix.patch
+libraries[civicrm][patch][1978796] = http://drupal.org/files/1978796-session.save-as_file.patch
 
 ; May be necessary where extension, etc paths are cached but Pantheon changes binding
 libraries[civicrm][patch][2347897] = https://drupal.org/files/issues/2347897-binding-fix-for-extensions.patch
-libraries[civicrm][patch][1978796] = http://drupal.org/files/1978796-session.save-as_file.patch
 
 ; Allows for using Redis caching on the Pantheon platform
 libraries[civicrm][patch][2468687] = https://www.drupal.org/files/issues/civicrm_starterkit-redis-caching-2468687-3-Civi44.patch
@@ -39,6 +39,7 @@ libraries[civicrm][patch][config] = ./patches/skip-config-cache.patch
 ; Populate with Pantheon environment settings on install
 libraries[civicrm][patch][1978838] = http://drupal.org/files/issues/1978838-pre-populate-db-settings-2.patch
 
+; Ignore timezone on install
 ; Related to https://issues.civicrm.org/jira/browse/CRM-9683
 libraries[civicrm][patch][2130213] = http://drupal.org/files/issues/2130213-ignore-timezone-on-install-2.patch
 
