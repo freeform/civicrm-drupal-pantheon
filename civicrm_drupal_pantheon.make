@@ -23,10 +23,11 @@ libraries[civicrm][patch][2195947] = https://www.drupal.org/files/issues/2195947
 libraries[civicrm][patch][2063371] = http://drupal.org/files/2063371-add-modulePath-var-4-4.patch
 
 ; Required for extern urls to work (e.g. ipn.php, soap.php)
+; Questionable patch: https://pantheon.io/blog/fix-wordpress-php-session-problems-pantheon-script
 libraries[civicrm][patch][2177647] = https://drupal.org/files/issues/2177647-sessions-fix.patch
 libraries[civicrm][patch][1978796] = http://drupal.org/files/1978796-session.save-as_file.patch
 
-; May be necessary where extension, etc paths are cached but Pantheon changes binding
+; Seems to be required in addition to skipping caching config
 libraries[civicrm][patch][2347897] = https://drupal.org/files/issues/2347897-binding-fix-for-extensions.patch
 
 ; Allows for using Redis caching on the Pantheon platform
@@ -34,6 +35,10 @@ libraries[civicrm][patch][2468687] = https://www.drupal.org/files/issues/civicrm
 
 ; Skip config cache on Pantheon
 libraries[civicrm][patch][config] = ./patches/skip-config-cache.patch
+
+; Use Drupal cache functions to use Redis for storing compiled Smarty templates
+libraries[civicrm][patch][smartyredisget] = ./patches/civi-smarty-redis-integration-ojkelly-85e04b6.patch
+libraries[civicrm][patch][smartyredisset] = ./patches/setting-redis-cache-with-smarty.patch
 
 ; REQUIRED FOR INSTALL
 ; Populate with Pantheon environment settings on install
