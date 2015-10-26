@@ -1018,7 +1018,10 @@ class Smarty
      */
     function clear_compiled_tpl($tpl_file = null, $compile_id = null, $exp_time = null)
     {
-        cache_clear_all(NULL, 'smarty');
+        // Smarty in Redis
+        // Not clear if this ever gets called,
+        // deleting compiled templates happens in CRM_Core_Config::cleanup()
+        CRM_Utils_Cache::singleton()->flush();
         return TRUE;
     }
 
@@ -1110,6 +1113,9 @@ class Smarty
     function fetch($resource_name, $cache_id = null, $compile_id = null, $display = false)
     {
         static $_cache_info = array();
+
+        // Smarty in Redis
+        $cache = CRM_Utils_Cache::singleton();
 
         $_smarty_old_error_level = $this->debugging ? error_reporting() : error_reporting(isset($this->error_reporting)
                ? $this->error_reporting : error_reporting() & ~E_NOTICE);
@@ -1246,12 +1252,13 @@ class Smarty
             if ($this->_is_compiled($resource_name, $_smarty_compile_path)
                     || $this->_compile_resource($resource_name, $_smarty_compile_path))
             {
-                $get = cache_get($_smarty_compile_path, 'smarty');
+                // Smarty in Redis
+                $get = $cache->get($_smarty_compile_path);
                 if ($get) {
-                  eval('?>' . $get->data . '<?php ');
+                  eval('?>' . $get . '<?php ');
                 }
                 else {
-                  watchdog('smarty error 1', 'not in cache: ' . $_smarty_compile_path);
+                  CRM_Core_Error::debug( 'Smarty Error 1: Not in cache', $_smarty_compile_path);
                 }
             }
         } else {
@@ -1259,12 +1266,13 @@ class Smarty
             if ($this->_is_compiled($resource_name, $_smarty_compile_path)
                     || $this->_compile_resource($resource_name, $_smarty_compile_path))
             {
-                $get = cache_get($_smarty_compile_path, 'smarty');
+                // Smarty in Redis
+                $get = $cache->get($_smarty_compile_path);
                 if ($get) {
-                  eval('?>' . $get->data . '<?php ');
+                  eval('?>' . $get . '<?php ');
                 }
                 else {
-                  watchdog('smarty error 2', 'not in cache: ' . $_smarty_compile_path);
+                  CRM_Core_Error::debug( 'Smarty Error 2: Not in cache', $_smarty_compile_path);
                 }
             }
             $_smarty_results = ob_get_contents();
@@ -1896,12 +1904,14 @@ class Smarty
         if ($this->_is_compiled($params['smarty_include_tpl_file'], $_smarty_compile_path)
             || $this->_compile_resource($params['smarty_include_tpl_file'], $_smarty_compile_path))
         {
-            $get = cache_get($_smarty_compile_path, 'smarty');
+            // Smarty in Redis
+            $cache = CRM_Utils_Cache::singleton();
+            $get = $cache->get($_smarty_compile_path);
             if ($get) {
-                eval('?>' . $get->data . '<?php ');
+                eval('?>' . $get . '<?php ');
             }
             else {
-                watchdog('smarty error 5', 'not in cache: ' . $_smarty_compile_path);
+                CRM_Core_Error::debug( 'Smarty Error 5: Not in cache', $_smarty_compile_path);
             }
         }
 
