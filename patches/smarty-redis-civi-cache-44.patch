@@ -1,0 +1,219 @@
+diff --git a/CRM/Core/Smarty.php b/CRM/Core/Smarty.php
+index 6422ca2..6975e54 100644
+--- a/CRM/Core/Smarty.php
++++ b/CRM/Core/Smarty.php
+@@ -92,6 +92,7 @@ class CRM_Core_Smarty extends Smarty {
+     else {
+       $this->template_dir = $config->templateDir;
+     }
++    /* The following needs to be commented out so that Smarty can load from cache
+     $this->compile_dir = $config->templateCompileDir;
+ 
+     // check and ensure it is writable
+@@ -101,6 +102,9 @@ class CRM_Core_Smarty extends Smarty {
+       echo "CiviCRM does not have permission to write temp files in {$this->compile_dir}, Exiting";
+       exit();
+     }
++    */
++    // This is an arbitrary string but it is needed afaik
++    $this->compile_dir = 'redis/';
+ 
+     //Check for safe mode CRM-2207
+     if (ini_get('safe_mode')) {
+diff --git a/packages/Smarty/Smarty.class.php b/packages/Smarty/Smarty.class.php
+index dac9329..e61dfcd 100644
+--- a/packages/Smarty/Smarty.class.php
++++ b/packages/Smarty/Smarty.class.php
+@@ -138,7 +138,7 @@ class Smarty
+      *
+      * @var boolean
+      */
+-    var $compile_check   =  true;
++    var $compile_check   =  false;
+ 
+     /**
+      * This forces templates to compile every time. Useful for development
+@@ -175,7 +175,7 @@ class Smarty
+      *
+      * @var integer
+      */
+-    var $cache_lifetime  =  3600;
++    var $cache_lifetime  =  14400;
+ 
+     /**
+      * Only used when $caching is enabled. If true, then If-Modified-Since headers
+@@ -1018,16 +1018,11 @@ class Smarty
+      */
+     function clear_compiled_tpl($tpl_file = null, $compile_id = null, $exp_time = null)
+     {
+-        if (!isset($compile_id)) {
+-            $compile_id = $this->compile_id;
+-        }
+-        $_params = array('auto_base' => $this->compile_dir,
+-                        'auto_source' => $tpl_file,
+-                        'auto_id' => $compile_id,
+-                        'exp_time' => $exp_time,
+-                        'extensions' => array('.inc', '.php'));
+-        require_once(SMARTY_CORE_DIR . 'core.rm_auto.php');
+-        return smarty_core_rm_auto($_params, $this);
++        // Smarty in Redis
++        // Not clear if this ever gets called,
++        // deleting compiled templates happens in CRM_Core_Config::cleanup()
++        CRM_Utils_Cache::singleton()->flush();
++        return TRUE;
+     }
+ 
+     /**
+@@ -1119,6 +1114,9 @@ class Smarty
+     {
+         static $_cache_info = array();
+ 
++        // Smarty in Redis
++        $cache = CRM_Utils_Cache::singleton();
++
+         $_smarty_old_error_level = $this->debugging ? error_reporting() : error_reporting(isset($this->error_reporting)
+                ? $this->error_reporting : error_reporting() & ~E_NOTICE);
+ 
+@@ -1254,14 +1252,28 @@ class Smarty
+             if ($this->_is_compiled($resource_name, $_smarty_compile_path)
+                     || $this->_compile_resource($resource_name, $_smarty_compile_path))
+             {
+-                include($_smarty_compile_path);
++                // Smarty in Redis
++                $get = $cache->get($_smarty_compile_path);
++                if ($get) {
++                  eval('?>' . $get . '<?php ');
++                }
++                else {
++                  CRM_Core_Error::debug( 'Smarty Error 1: Not in cache', $_smarty_compile_path);
++                }
+             }
+         } else {
+             ob_start();
+             if ($this->_is_compiled($resource_name, $_smarty_compile_path)
+                     || $this->_compile_resource($resource_name, $_smarty_compile_path))
+             {
+-                include($_smarty_compile_path);
++                // Smarty in Redis
++                $get = $cache->get($_smarty_compile_path);
++                if ($get) {
++                  eval('?>' . $get . '<?php ');
++                }
++                else {
++                  CRM_Core_Error::debug( 'Smarty Error 2: Not in cache', $_smarty_compile_path);
++                }
+             }
+             $_smarty_results = ob_get_contents();
+             ob_end_clean();
+@@ -1516,18 +1528,6 @@ class Smarty
+                                                   $this->_compile_id );
+         $compilePath .= '.php';
+ 
+-        //for 'string:' resource smarty might going to fail to create
+-        //compile file, so make sure we should have valid path, CRM-5890
+-        $matches = array( );
+-        if ( preg_match( '/^(\s+)?string:/', $resource_name, $matches ) ) {
+-            if ( !$this->validateCompilePath( $compilePath ) ) {
+-                $compilePath = $this->_get_auto_filename( $this->compile_dir,
+-                                                          time().rand(),
+-                                                          $this->_compile_id );
+-                $compilePath .= '.php';
+-            }
+-        }
+-
+         return $compilePath;
+     }
+ 
+@@ -1904,7 +1904,15 @@ class Smarty
+         if ($this->_is_compiled($params['smarty_include_tpl_file'], $_smarty_compile_path)
+             || $this->_compile_resource($params['smarty_include_tpl_file'], $_smarty_compile_path))
+         {
+-            include($_smarty_compile_path);
++            // Smarty in Redis
++            $cache = CRM_Utils_Cache::singleton();
++            $get = $cache->get($_smarty_compile_path);
++            if ($get) {
++                eval('?>' . $get . '<?php ');
++            }
++            else {
++                CRM_Core_Error::debug( 'Smarty Error 5: Not in cache', $_smarty_compile_path);
++            }
+         }
+ 
+         // pop the local vars off the front of the stack
+diff --git a/packages/Smarty/internals/core.write_compiled_resource.php b/packages/Smarty/internals/core.write_compiled_resource.php
+index b902eff..f3a3c89 100644
+--- a/packages/Smarty/internals/core.write_compiled_resource.php
++++ b/packages/Smarty/internals/core.write_compiled_resource.php
+@@ -14,16 +14,8 @@
+  */
+ function smarty_core_write_compiled_resource($params, &$smarty)
+ {
+-    if(!@is_writable($smarty->compile_dir)) {
+-        // compile_dir not writable, see if it exists
+-        if(!@is_dir($smarty->compile_dir)) {
+-            $smarty->trigger_error('the $compile_dir \'' . $smarty->compile_dir . '\' does not exist, or is not a directory.', E_USER_ERROR);
+-            return false;
+-        }
+-        $smarty->trigger_error('unable to write to $compile_dir \'' . realpath($smarty->compile_dir) . '\'. Be sure $compile_dir is writable by the web server user.', E_USER_ERROR);
+-        return false;
+-    }
+-
++    // Smarty in Redis
++    // Exclude check that directory is writable
+     $_params = array('filename' => $params['compile_path'], 'contents' => $params['compiled_content'], 'create_dirs' => true);
+     require_once(SMARTY_CORE_DIR . 'core.write_file.php');
+     smarty_core_write_file($_params, $smarty);
+diff --git a/packages/Smarty/internals/core.write_file.php b/packages/Smarty/internals/core.write_file.php
+index 8a3a3b3..efa7b1c 100644
+--- a/packages/Smarty/internals/core.write_file.php
++++ b/packages/Smarty/internals/core.write_file.php
+@@ -15,40 +15,17 @@
+  */
+ function smarty_core_write_file($params, &$smarty)
+ {
+-    $_dirname = dirname($params['filename']);
++    // Smarty in Redis
++    if ( function_exists('lock_acquire') && lock_acquire('smarty_core_write_file' . $params['filename'])) {
+ 
+-    if ($params['create_dirs']) {
+-        $_params = array('dir' => $_dirname);
+-        require_once(SMARTY_CORE_DIR . 'core.create_dir_structure.php');
+-        smarty_core_create_dir_structure($_params, $smarty);
+-    }
+-
+-    // write to tmp file, then rename it to avoid file locking race condition
+-    $_tmp_file = tempnam($_dirname, 'wrt');
+-
+-    if (!($fd = @fopen($_tmp_file, 'wb'))) {
+-        $_tmp_file = $_dirname . DIRECTORY_SEPARATOR . uniqid('wrt');
+-        if (!($fd = @fopen($_tmp_file, 'wb'))) {
+-            $smarty->trigger_error("problem writing temporary file '$_tmp_file'");
+-            return false;
+-        }
+-    }
+-
+-    fwrite($fd, $params['contents']);
+-    fclose($fd);
++        $cache = CRM_Utils_Cache::singleton();
++        $cache->set($params['filename'], $params['contents']);
+ 
+-    if (DIRECTORY_SEPARATOR == '\\' || !@rename($_tmp_file, $params['filename'])) {
+-        // On platforms and filesystems that cannot overwrite with rename() 
+-        // delete the file before renaming it -- because windows always suffers
+-        // this, it is short-circuited to avoid the initial rename() attempt
+-        @unlink($params['filename']);
+-        @rename($_tmp_file, $params['filename']);
++        lock_release('smarty_core_write_file' . $params['filename']);
++        return true;
+     }
+-    @chmod($params['filename'], $smarty->_file_perms);
+-
+-    return true;
+ }
+ 
+ /* vim: set expandtab: */
+ 
+-?>
+\ No newline at end of file
++?>
