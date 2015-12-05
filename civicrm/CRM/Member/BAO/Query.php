@@ -292,6 +292,9 @@ class CRM_Member_BAO_Query {
         return;
 
       case 'member_campaign_id':
+        if (CRM_Utils_Array::value($op, $value)) {
+          $value = $value[$op];
+        }
         $campParams = array(
           'op' => $op,
           'campaign' => $value,
@@ -393,7 +396,7 @@ class CRM_Member_BAO_Query {
    * @param CRM_Core_Form $form
    */
   public static function buildSearchForm(&$form) {
-    $membershipStatus = CRM_Member_PseudoConstant::membershipStatus();
+    $membershipStatus = CRM_Member_PseudoConstant::membershipStatus(NULL, NULL, 'label', FALSE, FALSE);
     $form->add('select', 'membership_status_id', ts('Membership Status(s)'), $membershipStatus, FALSE,
       array('id' => 'membership_status_id', 'multiple' => 'multiple', 'class' => 'crm-select2')
     );

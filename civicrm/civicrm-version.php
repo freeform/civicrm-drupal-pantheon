@@ -1,7 +1,7 @@
 <?php
 function civicrmVersion( ) {
-  return array( 'version'  => '4.6.8',
+  return array( 'version'  => '4.6.10',
                 'cms'      => 'Drupal',
-                'revision' => '2717c8a526' );
+                'revision' => '3a0725b2d0' );
 }
 

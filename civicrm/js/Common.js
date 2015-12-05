@@ -421,7 +421,7 @@ CRM.strings = CRM.strings || {};
         selectParams = {};
       $el.data('api-entity', entity);
       $el.data('select-params', $.extend({}, $el.data('select-params') || {}, options.select));
-      $el.data('api-params', $.extend({}, $el.data('api-params') || {}, options.api));
+      $el.data('api-params', $.extend(true, {}, $el.data('api-params') || {}, options.api));
       $el.data('create-links', options.create || $el.data('create-links'));
       $el.addClass('crm-form-entityref crm-' + entity.toLowerCase() + '-ref');
       var settings = {
@@ -590,6 +590,9 @@ CRM.strings = CRM.strings || {};
     });
   }
 
+  /**
+   * @see http://wiki.civicrm.org/confluence/display/CRMDOC/crmDatepicker
+   */
   $.fn.crmDatepicker = function(options) {
     return $(this).each(function() {
       if ($(this).is('.crm-form-date-wrapper .crm-hidden-date')) {
@@ -603,7 +606,7 @@ CRM.strings = CRM.strings || {};
         $timeField = $(),
         $clearLink = $();
 
-      if (settings.allowClear !== undefined ? settings.allowClear : !$dataField.hasClass('required')) {
+      if (settings.allowClear !== undefined ? settings.allowClear : !$dataField.is('.required, [required]')) {
         $clearLink = $('<a class="crm-hover-button crm-clear-link" title="'+ ts('Clear') +'"><span class="icon ui-icon-close"></span></a>')
           .insertAfter($dataField);
       }
@@ -623,15 +626,15 @@ CRM.strings = CRM.strings || {};
         $dateField = $('<input>').insertAfter($dataField);
         copyAttributes($dataField, $dateField, ['placeholder', 'style', 'class', 'disabled']);
         $dateField.addClass('crm-form-text crm-form-date');
-        settings.dateFormat = settings.dateFormat || CRM.config.dateInputFormat;
-        settings.changeMonth = _.includes('m', settings.dateFormat);
-        settings.changeYear = _.includes('y', settings.dateFormat);
+        settings.date = typeof settings.date === 'string' ? settings.date : CRM.config.dateInputFormat;
+        settings.changeMonth = _.includes('m', settings.date);
+        settings.changeYear = _.includes('y', settings.date);
         $dateField.datepicker(settings).change(updateDataField);
       }
       // Rudimentary validation. TODO: Roll into use of jQUery validate and ui.datepicker.validation
       function isValidDate() {
         try {
-          $.datepicker.parseDate(settings.dateFormat, $dateField.val());
+          $.datepicker.parseDate(settings.date, $dateField.val());
           return true;
         } catch (e) {
           return false;

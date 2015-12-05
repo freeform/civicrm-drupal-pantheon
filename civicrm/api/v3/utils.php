@@ -231,7 +231,9 @@ function civicrm_api3_create_success($values = 1, $params = array(), $entity = N
     $result['count'] = (int) count($values);
 
     // Convert value-separated strings to array
-    _civicrm_api3_separate_values($values);
+    if ($action != 'getfields') {
+      _civicrm_api3_separate_values($values);
+    }
 
     if ($result['count'] == 1) {
       list($result['id']) = array_keys($values);
@@ -1901,6 +1903,9 @@ function _civicrm_api3_swap_out_aliases(&$apiRequest, $fields) {
     ) {
       $apiRequest['params'][$field] = $apiRequest['params'][$values['name']];
       // note that it would make sense to unset the original field here but tests need to be in place first
+      if ($field != 'domain_version') {
+        unset($apiRequest['params'][$values['name']]);
+      }
     }
     if (!isset($apiRequest['params'][$field])
       && $uniqueName

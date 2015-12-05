@@ -60,22 +60,14 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     $this->_columns = array(
       'civicrm_contact' => array(
         'dao' => 'CRM_Contact_DAO_Contact',
-        'fields' => array(
-          'sort_name' => array(
-            'title' => ts('Contact Name'),
-            'no_repeat' => TRUE,
-          ),
-          'postal_greeting_display' => array('title' => ts('Postal Greeting')),
-          'id' => array(
-            'no_display' => TRUE,
-            'required' => TRUE,
-          ),
-          'contact_type' => array(
-            'title' => ts('Contact Type'),
-          ),
-          'contact_sub_type' => array(
-            'title' => ts('Contact Subtype'),
-          ),
+        'fields' => array_merge(
+          $this->getBasicContactFields(),
+          array(
+            'sort_name' => array(
+              'title' => ts('Contact Name'),
+              'no_repeat' => TRUE,
+            ),
+          )
         ),
         'grouping' => 'contact-fields',
         'group_bys' => array(
@@ -528,6 +520,7 @@ class CRM_Report_Form_Contribute_Summary extends CRM_Report_Form {
     $group = "\nGROUP BY {$this->_aliases['civicrm_contribution']}.currency";
 
     $this->from('contribution');
+    $this->customDataFrom();
     $contriSQL = "SELECT
 COUNT({$this->_aliases['civicrm_contribution']}.total_amount )        as civicrm_contribution_total_amount_count,
 SUM({$this->_aliases['civicrm_contribution']}.total_amount )          as civicrm_contribution_total_amount_sum,
@@ -826,6 +819,7 @@ ROUND(AVG({$this->_aliases['civicrm_contribution_soft']}.amount), 2) as civicrm_
       }
 
       $entryFound = $this->alterDisplayAddressFields($row, $rows, $rowNum, 'contribute/detail', 'List all contribution(s) for this ') ? TRUE : $entryFound;
+      $entryFound = $this->alterDisplayContactFields($row, $rows, $rowNum, 'contribute/detail', 'List all contribution(s) for this ') ? TRUE : $entryFound;
 
       // skip looking further in rows, if first row itself doesn't
       // have the column we need
