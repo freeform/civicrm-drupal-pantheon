@@ -45,9 +45,9 @@ $config = CRM_Core_Config::singleton();
 CRM_Utils_System::loadBootStrap(array(), FALSE);
 
 $log = new CRM_Utils_SystemLogger();
-$log->alert('payment_notification processor_name=PayPal', $_REQUEST);
-$paypalIPN = new CRM_Core_Payment_PayPalProIPN($_REQUEST);
-
+$log->alert('payment_notification PayPal_Standard', $_REQUEST);
+$paypalIPN = new CRM_Core_Payment_PayPalIPN();
+// @todo upgrade standard per Pro
 
 try {
   $paypalIPN->main();

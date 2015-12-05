@@ -109,7 +109,7 @@ class CRM_Core_Smarty extends Smarty {
     }
     */
     // This is an arbitrary string but it is needed afaik
-    $this->compile_dir = 'redis/';
+    $this->compile_dir = 'smarty:';
 
     //Check for safe mode CRM-2207
     if (ini_get('safe_mode')) {

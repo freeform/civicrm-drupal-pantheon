@@ -9,6 +9,7 @@ core = 7.37
 
 libraries[civicrm][download][type] = get
 libraries[civicrm][download][url] = "https://download.civicrm.org/civicrm-4.6.8-drupal.tar.gz"
+;alt if main doesn't work: libraries[civicrm][download][url] = "http://downloads.sourceforge.net/project/civicrm/civicrm-stable/4.6.8/civicrm-4.6.8-drupal.tar.gz"
 libraries[civicrm][destination] = modules
 libraries[civicrm][directory_name] = civicrm
 
@@ -23,6 +24,9 @@ libraries[civicrm][patch][2063371] = http://drupal.org/files/2063371-add-moduleP
 
 ; Required for extern urls to work (e.g. ipn.php, soap.php)
 libraries[civicrm][patch][2177647] = https://drupal.org/files/issues/2177647-sessions-fix.patch
+libraries[civicrm][patch][externbootstrap] = ./patches/extern-cms-bootstrap.patch
+libraries[civicrm][patch][ipn] = ./patches/ipn.patch
+libraries[civicrm][patch][ipnstd] = ./patches/ipnStd.patch
 
 ; May be necessary where extension, etc paths are cached but Pantheon changes binding
 libraries[civicrm][patch][2347897] = ./patches/binding-fix-for-extension-v2.patch

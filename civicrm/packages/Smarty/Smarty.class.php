@@ -1258,7 +1258,7 @@ class Smarty
                   eval('?>' . $get . '<?php ');
                 }
                 else {
-                  CRM_Core_Error::debug( 'Smarty Error 1: Not in cache', $_smarty_compile_path);
+                  CRM_Core_Error::debug_log_message( 'Smarty in cache error 1: unable to read compiled template (for display): ' . $_smarty_compile_path);
                 }
             }
         } else {
@@ -1272,7 +1272,7 @@ class Smarty
                   eval('?>' . $get . '<?php ');
                 }
                 else {
-                  CRM_Core_Error::debug( 'Smarty Error 2: Not in cache', $_smarty_compile_path);
+                  CRM_Core_Error::debug_log_message( 'Smarty in cache error 2: unable to read compiled template (not for display): ' . $_smarty_compile_path);
                 }
             }
             $_smarty_results = ob_get_contents();
@@ -1911,7 +1911,7 @@ class Smarty
                 eval('?>' . $get . '<?php ');
             }
             else {
-                CRM_Core_Error::debug( 'Smarty Error 5: Not in cache', $_smarty_compile_path);
+                CRM_Core_Error::debug_log_message( 'Smarty in cache error 3: unable to read compiled template: ' . $_smarty_compile_path);
             }
         }
 
