@@ -37,7 +37,6 @@ libraries[civicrm][patch][2130213] = ./patches/ignore-timezone-on-install-47-213
 libraries[civicrm][patch][1844558] = ./patches/run-civicrm-from-profile-dir-1844558.patch
 libraries[civicrm][patch][1967972] = ./patches/bootstrap-fix-47-1967972.patch
 
-; Use CiviCRM cache functions to use Redis for storing compiled Smarty templates (Based on github.com/ojkelly commit 85e04b6)
-; [OPTIONAL AND HACKY] but CiviCRM works faster and fewer errors in trying to load templates
-; [NOT YET WORKING IN 4.7]
-; libraries[civicrm][patch][smartyredis] = ./patches/smarty-redis-civi-cache-46.patch
+; [OPTIONAL IF USING REDIS] Use CiviCRM cache functions to use Redis for storing compiled Smarty templates (Based on github.com/ojkelly commit 85e04b6)
+; Unconventional but CiviCRM works faster and fewer errors in trying to load templates
+; libraries[civicrm][patch][smartyredis] = ./patches/smarty-redis-civi-cache-47.patch

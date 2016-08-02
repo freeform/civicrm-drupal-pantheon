@@ -1,27 +1,28 @@
-diff --git a/CRM/Core/Smarty.php b/CRM/Core/Smarty.php
-index 6422ca2..6975e54 100644
 --- a/CRM/Core/Smarty.php
 +++ b/CRM/Core/Smarty.php
-@@ -92,6 +92,7 @@ class CRM_Core_Smarty extends Smarty {
+@@ -97,17 +97,11 @@ class CRM_Core_Smarty extends Smarty {
      else {
        $this->template_dir = $config->templateDir;
      }
-+    /* The following needs to be commented out so that Smarty can load from cache
-     $this->compile_dir = $config->templateCompileDir;
- 
-     // check and ensure it is writable
-@@ -101,6 +102,9 @@ class CRM_Core_Smarty extends Smarty {
-       echo "CiviCRM does not have permission to write temp files in {$this->compile_dir}, Exiting";
-       exit();
-     }
-+    */
-+    // This is an arbitrary string but it is needed afaik
+-    $this->compile_dir = CRM_Utils_File::addTrailingSlash(CRM_Utils_File::addTrailingSlash($config->templateCompileDir) . $this->getLocale());
+-    CRM_Utils_File::createDir($this->compile_dir);
+-    CRM_Utils_File::restrictAccess($this->compile_dir);
+-
+-    // check and ensure it is writable
+-    // else we sometime suppress errors quietly and this results
+-    // in blank emails etc
+-    if (!is_writable($this->compile_dir)) {
+-      echo "CiviCRM does not have permission to write temp files in {$this->compile_dir}, Exiting";
+-      exit();
+-    }
++    // Store Smarty in Redis
++    // Change functionality in Smarty package so that it writes/reads Smarty templates
++    // via Redis cache instead of a file directory
++    // This is an arbitrary string that is needed afaik
 +    $this->compile_dir = 'smarty:';
  
      //Check for safe mode CRM-2207
      if (ini_get('safe_mode')) {
-diff --git a/packages/Smarty/Smarty.class.php b/packages/Smarty/Smarty.class.php
-index dac9329..e61dfcd 100644
 --- a/packages/Smarty/Smarty.class.php
 +++ b/packages/Smarty/Smarty.class.php
 @@ -138,7 +138,7 @@ class Smarty
@@ -68,7 +69,7 @@ index dac9329..e61dfcd 100644
      {
          static $_cache_info = array();
  
-+        // Smarty in Redis
++        // Store Smarty in Redis
 +        $cache = CRM_Utils_Cache::singleton();
 +
          $_smarty_old_error_level = $this->debugging ? error_reporting() : error_reporting(isset($this->error_reporting)
@@ -79,7 +80,7 @@ index dac9329..e61dfcd 100644
                      || $this->_compile_resource($resource_name, $_smarty_compile_path))
              {
 -                include($_smarty_compile_path);
-+                // Smarty in Redis
++                // Store Smarty in Redis
 +                $get = $cache->get($_smarty_compile_path);
 +                if ($get) {
 +                  eval('?>' . $get . '<?php ');
@@ -94,7 +95,7 @@ index dac9329..e61dfcd 100644
                      || $this->_compile_resource($resource_name, $_smarty_compile_path))
              {
 -                include($_smarty_compile_path);
-+                // Smarty in Redis
++                // Store Smarty in Redis
 +                $get = $cache->get($_smarty_compile_path);
 +                if ($get) {
 +                  eval('?>' . $get . '<?php ');
@@ -105,10 +106,11 @@ index dac9329..e61dfcd 100644
              }
              $_smarty_results = ob_get_contents();
              ob_end_clean();
-@@ -1516,18 +1528,6 @@ class Smarty
+@@ -1515,18 +1527,9 @@ class Smarty
+                                                   $resource_name,
                                                    $this->_compile_id );
          $compilePath .= '.php';
- 
+-
 -        //for 'string:' resource smarty might going to fail to create
 -        //compile file, so make sure we should have valid path, CRM-5890
 -        $matches = array( );
@@ -120,16 +122,18 @@ index dac9329..e61dfcd 100644
 -                $compilePath .= '.php';
 -            }
 -        }
--
++
++        // Store Smarty in Redis
++        // Remove check for valid compiled path since isn't needed for Redis
+ 
          return $compilePath;
      }
- 
-@@ -1904,7 +1904,15 @@ class Smarty
+@@ -1904,7 +1907,15 @@ class Smarty
          if ($this->_is_compiled($params['smarty_include_tpl_file'], $_smarty_compile_path)
              || $this->_compile_resource($params['smarty_include_tpl_file'], $_smarty_compile_path))
          {
 -            include($_smarty_compile_path);
-+            // Smarty in Redis
++            // Store Smarty in Redis
 +            $cache = CRM_Utils_Cache::singleton();
 +            $get = $cache->get($_smarty_compile_path);
 +            if ($get) {
@@ -141,11 +145,9 @@ index dac9329..e61dfcd 100644
          }
  
          // pop the local vars off the front of the stack
-diff --git a/packages/Smarty/internals/core.write_compiled_resource.php b/packages/Smarty/internals/core.write_compiled_resource.php
-index b902eff..f3a3c89 100644
 --- a/packages/Smarty/internals/core.write_compiled_resource.php
 +++ b/packages/Smarty/internals/core.write_compiled_resource.php
-@@ -14,16 +14,8 @@
+@@ -14,15 +14,8 @@
   */
  function smarty_core_write_compiled_resource($params, &$smarty)
  {
@@ -158,14 +160,11 @@ index b902eff..f3a3c89 100644
 -        $smarty->trigger_error('unable to write to $compile_dir \'' . realpath($smarty->compile_dir) . '\'. Be sure $compile_dir is writable by the web server user.', E_USER_ERROR);
 -        return false;
 -    }
--
-+    // Smarty in Redis
++    // Store Smarty in Redis
 +    // Exclude check that directory is writable
+ 
      $_params = array('filename' => $params['compile_path'], 'contents' => $params['compiled_content'], 'create_dirs' => true);
      require_once(SMARTY_CORE_DIR . 'core.write_file.php');
-     smarty_core_write_file($_params, $smarty);
-diff --git a/packages/Smarty/internals/core.write_file.php b/packages/Smarty/internals/core.write_file.php
-index 8a3a3b3..efa7b1c 100644
 --- a/packages/Smarty/internals/core.write_file.php
 +++ b/packages/Smarty/internals/core.write_file.php
 @@ -15,40 +15,17 @@
@@ -173,7 +172,7 @@ index 8a3a3b3..efa7b1c 100644
  function smarty_core_write_file($params, &$smarty)
  {
 -    $_dirname = dirname($params['filename']);
-+    // Smarty in Redis
++    // Store Smarty in Redis
 +    if ( function_exists('lock_acquire') && lock_acquire('smarty_core_write_file' . $params['filename'])) {
  
 -    if ($params['create_dirs']) {
