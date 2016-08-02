@@ -67,13 +67,13 @@ class Container implements IntrospectableContainerInterface
      */
     protected $parameterBag;
 
-    protected $services;
-    protected $methodMap;
-    protected $aliases;
-    protected $scopes;
-    protected $scopeChildren;
-    protected $scopedServices;
-    protected $scopeStacks;
+    protected $services = array();
+    protected $methodMap = array();
+    protected $aliases = array();
+    protected $scopes = array();
+    protected $scopeChildren = array();
+    protected $scopedServices = array();
+    protected $scopeStacks = array();
     protected $loading = array();
 
     /**
@@ -85,14 +85,9 @@ class Container implements IntrospectableContainerInterface
      */
     public function __construct(ParameterBagInterface $parameterBag = null)
     {
-        $this->parameterBag = null === $parameterBag ? new ParameterBag() : $parameterBag;
+        $this->parameterBag = $parameterBag ?: new ParameterBag();
 
-        $this->services = array();
-        $this->aliases = array();
-        $this->scopes = array();
-        $this->scopeChildren = array();
-        $this->scopedServices = array();
-        $this->scopeStacks = array();
+        $this->set('service_container', $this);
     }
 
     /**
@@ -349,7 +344,7 @@ class Container implements IntrospectableContainerInterface
     }
 
     /**
-     * Returns true if the given service has actually been initialized
+     * Returns true if the given service has actually been initialized.
      *
      * @param string $id The service identifier
      *
@@ -392,7 +387,7 @@ class Container implements IntrospectableContainerInterface
     }
 
     /**
-     * This is called when you enter a scope
+     * This is called when you enter a scope.
      *
      * @param string $name
      *
@@ -517,7 +512,7 @@ class Container implements IntrospectableContainerInterface
     }
 
     /**
-     * Returns whether this container has a certain scope
+     * Returns whether this container has a certain scope.
      *
      * @param string $name The name of the scope
      *
@@ -531,7 +526,7 @@ class Container implements IntrospectableContainerInterface
     }
 
     /**
-     * Returns whether this scope is currently active
+     * Returns whether this scope is currently active.
      *
      * This does not actually check if the passed scope actually exists.
      *

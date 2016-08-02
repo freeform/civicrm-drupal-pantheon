@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,16 +28,41 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
- * class for managing a http request
- *
+ * Class for managing a http request
  */
 class CRM_Utils_Request {
+
+  /**
+   * Get a unique ID for the request.
+   *
+   * This unique ID is assigned to mysql when the connection is opened and is
+   * available in PHP.
+   *
+   * The intent is that it is available for logging purposes and for triggers.
+   *
+   * The resulting string is 17 characters long. This consists of 13 characters of uniqid
+   * and 4 more random characters.
+   *
+   * Uniqid is unique to the microsecond - to make it more unique we add 4 more characters
+   * but stop short of the full 23 character string that a prefix would generate.
+   *
+   * It is intended that this string will be saved to log tables so striking a balance between
+   * uniqueness and length is important. Note that I did check & lining up with byte values
+   * (e.g 16 characters) does not confer any benefits. Using a CHAR field rather than VARCHAR
+   * may improve speed, if indexed.
+   *
+   * @return string
+   */
+  public static function id() {
+    if (!isset(\Civi::$statics[__CLASS__]['id'])) {
+      \Civi::$statics[__CLASS__]['id'] = uniqid() . CRM_Utils_String::createRandom(CRM_Utils_String::ALPHANUMERIC, 4);
+    }
+    return \Civi::$statics[__CLASS__]['id'];
+  }
 
   /**
    * Retrieve a value from the request (GET/POST/REQUEST)
@@ -69,15 +94,15 @@ class CRM_Utils_Request {
     $value = NULL;
     switch ($method) {
       case 'GET':
-        $value = CRM_Utils_Array::value($name, $_GET);
+        $value = self::getValue($name, $_GET);
         break;
 
       case 'POST':
-        $value = CRM_Utils_Array::value($name, $_POST);
+        $value = self::getValue($name, $_POST);
         break;
 
       default:
-        $value = CRM_Utils_Array::value($name, $_REQUEST);
+        $value = self::getValue($name, $_REQUEST);
         break;
     }
 
@@ -109,6 +134,34 @@ class CRM_Utils_Request {
     }
 
     return $value;
+  }
+
+  /**
+   * @param string $name
+   *   Name of the variable to be retrieved.
+   *
+   * @param array $method - '$_GET', '$_POST' or '$_REQUEST'.
+   *
+   * @return mixed
+   *    The value of the variable
+   */
+  public static function getValue($name, $method) {
+    if (isset($method[$name])) {
+      return $method[$name];
+    }
+    // CRM-18384 - decode incorrect keys generated when &amp; is present in url
+    foreach ($method as $key => $value) {
+      if (strpos($key, 'amp;') !== FALSE) {
+        $method[str_replace('amp;', '', $key)] = $method[$key];
+        if (isset($method[$name])) {
+          return $method[$name];
+        }
+        else {
+          continue;
+        }
+      }
+    }
+    return NULL;
   }
 
   /**

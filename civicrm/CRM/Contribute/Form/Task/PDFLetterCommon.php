@@ -9,10 +9,7 @@ class CRM_Contribute_Form_Task_PDFLetterCommon extends CRM_Contact_Form_Task_PDF
   /**
    * Process the form after the input has been submitted and validated.
    *
-   *
    * @param CRM_Contribute_Form_Task $form
-   *
-   * @return void
    */
   public static function postProcess(&$form) {
     list($formValues, $categories, $html_message, $messageToken, $returnProperties) = self::processMessageTemplate($form);
@@ -52,8 +49,12 @@ class CRM_Contribute_Form_Task_PDFLetterCommon extends CRM_Contact_Form_Task_PDF
     // skip some contacts ?
     $skipOnHold = isset($form->skipOnHold) ? $form->skipOnHold : FALSE;
     $skipDeceased = isset($form->skipDeceased) ? $form->skipDeceased : TRUE;
-
-    list($contributions, $contacts) = self::buildContributionArray($groupBy, $form, $returnProperties, $skipOnHold, $skipDeceased, $messageToken, $task, $separator);
+    $contributionIDs = $form->getVar('_contributionIds');
+    if ($form->_includesSoftCredits) {
+      //@todo - comment on what is stored there
+      $contributionIDs = $form->getVar('_contributionContactIds');
+    }
+    list($contributions, $contacts) = self::buildContributionArray($groupBy, $contributionIDs, $returnProperties, $skipOnHold, $skipDeceased, $messageToken, $task, $separator, $form->_includesSoftCredits);
     $html = array();
     foreach ($contributions as $contributionId => $contribution) {
       $contact = &$contacts[$contribution['contact_id']];
@@ -207,23 +208,19 @@ class CRM_Contribute_Form_Task_PDFLetterCommon extends CRM_Contact_Form_Task_PDF
    * around contact_id of contribution_recur_id
    *
    * @param string $groupBy
-   * @param CRM_Contribute_Form_Task $form
+   * @param array $contributionIDs
    * @param array $returnProperties
    * @param bool $skipOnHold
    * @param bool $skipDeceased
    * @param array $messageToken
    * @param string $task
    * @param string $separator
+   * @param bool $isIncludeSoftCredits
    *
    * @return array
    */
-  public static function buildContributionArray($groupBy, $form, $returnProperties, $skipOnHold, $skipDeceased, $messageToken, $task, $separator) {
+  public static function buildContributionArray($groupBy, $contributionIDs, $returnProperties, $skipOnHold, $skipDeceased, $messageToken, $task, $separator, $isIncludeSoftCredits) {
     $contributions = $contacts = $notSent = array();
-    $contributionIDs = $form->getVar('_contributionIds');
-    if ($form->_includesSoftCredits) {
-      //@todo - comment on what is stored there
-      $contributionIDs = $form->getVar('_contributionContactIds');
-    }
     foreach ($contributionIDs as $item => $contributionId) {
       // get contribution information
       $contribution = CRM_Utils_Token::getContributionTokenDetails(array('contribution_id' => $contributionId),
@@ -233,7 +230,8 @@ class CRM_Contribute_Form_Task_PDFLetterCommon extends CRM_Contact_Form_Task_PDF
         $task
       );
       $contribution = $contributions[$contributionId] = $contribution[$contributionId];
-      if ($form->_includesSoftCredits) {
+
+      if ($isIncludeSoftCredits) {
         //@todo find out why this happens & add comments
         list($contactID) = explode('-', $item);
         $contactID = (int) $contactID;
@@ -242,15 +240,7 @@ class CRM_Contribute_Form_Task_PDFLetterCommon extends CRM_Contact_Form_Task_PDF
         $contactID = $contribution['contact_id'];
       }
       if (!isset($contacts[$contactID])) {
-        list($contact) = CRM_Utils_Token::getTokenDetails(array('contact_id' => $contactID),
-          $returnProperties,
-          $skipOnHold,
-          $skipDeceased,
-          NULL,
-          $messageToken,
-          $task
-        );
-        $contacts[$contactID] = $contact[$contactID];
+        $contacts[$contactID] = array();
         $contacts[$contactID]['contact_aggregate'] = 0;
         $contacts[$contactID]['combined'] = $contacts[$contactID]['contribution_ids'] = array();
       }
@@ -267,6 +257,22 @@ class CRM_Contribute_Form_Task_PDFLetterCommon extends CRM_Contact_Form_Task_PDF
         $contacts[$contactID]['combined'][$groupBy][$groupByID] = self::combineContributions($contacts[$contactID]['combined'][$groupBy][$groupByID], $contribution, $separator);
         $contacts[$contactID]['aggregates'][$groupBy][$groupByID] += $contribution['total_amount'];
       }
+    }
+    // Assign the available contributions before calling tokens so hooks parsing smarty can access it.
+    // Note that in core code you can only use smarty here if enable if for the whole site, incl
+    // CiviMail, with a big performance impact.
+    // Hooks allow more nuanced smarty usage here.
+    CRM_Core_Smarty::singleton()->assign('contributions', $contributions);
+    foreach ($contacts as $contactID => $contact) {
+      $tokenResolvedContacts = CRM_Utils_Token::getTokenDetails(array('contact_id' => $contactID),
+        $returnProperties,
+        $skipOnHold,
+        $skipDeceased,
+        NULL,
+        $messageToken,
+        $task
+      );
+      $contacts[$contactID] = array_merge($tokenResolvedContacts[0][$contactID], $contact);
     }
     return array($contributions, $contacts);
   }
@@ -337,7 +343,6 @@ class CRM_Contribute_Form_Task_PDFLetterCommon extends CRM_Contact_Form_Task_PDF
       $defaults = array(
         'toName' => $contact['display_name'],
         'toEmail' => $contact['email'],
-        'subject' => ts('Thank you for your contribution/s'),
         'text' => '',
         'html' => $html,
       );
@@ -345,6 +350,12 @@ class CRM_Contribute_Form_Task_PDFLetterCommon extends CRM_Contact_Form_Task_PDF
         $emails = CRM_Core_BAO_Email::getFromEmail();
         $emails = array_keys($emails);
         $defaults['from'] = array_pop($emails);
+      }
+      if (!empty($params['subject'])) {
+        $defaults['subject'] = $params['subject'];
+      }
+      else {
+        $defaults['subject'] = ts('Thank you for your contribution/s');
       }
       if ($is_pdf) {
         $defaults['html'] = ts('Please see attached');

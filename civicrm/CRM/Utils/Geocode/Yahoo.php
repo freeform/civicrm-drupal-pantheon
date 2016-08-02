@@ -1,9 +1,9 @@
 <?php
 /*
   +--------------------------------------------------------------------+
-  | CiviCRM version 4.6                                                |
+  | CiviCRM version 4.7                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2015                                |
+  | Copyright CiviCRM LLC (c) 2004-2016                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -130,6 +128,7 @@ class CRM_Utils_Geocode_Yahoo {
     $string = $request->getResponseBody();
     // see CRM-11359 for why we suppress errors with @
     $xml = @simplexml_load_string($string);
+    CRM_Utils_Hook::geocoderFormat('Yahoo', $values, $xml);
 
     if ($xml === FALSE) {
       // account blocked maybe?

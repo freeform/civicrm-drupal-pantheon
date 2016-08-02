@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -41,8 +39,6 @@ class CRM_Case_Form_Task_SearchTaskHookSample extends CRM_Case_Form_Task {
 
   /**
    * Build all the data structures needed to build the form.
-   *
-   * @return void
    */
   public function preProcess() {
     parent::preProcess();
@@ -61,7 +57,7 @@ INNER JOIN civicrm_contact ct ON ( cc.contact_id = ct.id)
 LEFT  JOIN civicrm_option_value ov ON (cs.status_id = ov.value AND ov.option_group_id = {$statusId} )
 WHERE cs.id IN ( {$caseIDs} )";
 
-    $dao = CRM_Core_DAO::executeQuery($query, CRM_Core_DAO::$_nullArray);
+    $dao = CRM_Core_DAO::executeQuery($query);
     while ($dao->fetch()) {
       $rows[] = array(
         'display_name' => $dao->display_name,
@@ -74,8 +70,6 @@ WHERE cs.id IN ( {$caseIDs} )";
 
   /**
    * Build the form object.
-   *
-   * @return void
    */
   public function buildQuickForm() {
     $this->addButtons(array(

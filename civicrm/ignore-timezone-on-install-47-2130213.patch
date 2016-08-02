@@ -1,0 +1,13 @@
+--- a/drupal/civicrm.module
++++ b/drupal/civicrm.module
+@@ -223,7 +223,9 @@
+       drupal_add_html_head($header);
+     }
+ 
+-    CRM_Core_Config::singleton()->userSystem->setMySQLTimeZone();
++    if (defined('MAINTENANCE_MODE') && MAINTENANCE_MODE != 'install') {
++      CRM_Core_Config::singleton()->userSystem->setMySQLTimeZone();
++    }
+   }
+ 
+   return TRUE;

@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -50,12 +50,8 @@ class CRM_Event_Form_Task_ParticipantStatus extends CRM_Event_Form_Task_Batch {
     );
 
     $this->assign('context', 'statusChange');
-
     # CRM-4321: display info on users being notified if any of the below statuses is enabled
-    $notifyingStatuses = array('Pending from waitlist', 'Pending from approval', 'Expired', 'Cancelled');
-    $notifyingStatuses = array_intersect($notifyingStatuses, CRM_Event_PseudoConstant::participantStatus());
-    $this->assign('notifyingStatuses', implode(', ', $notifyingStatuses));
-
+    parent::assignToTemplate();
     parent::buildQuickForm();
   }
 

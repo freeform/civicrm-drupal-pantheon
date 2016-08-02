@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -107,8 +107,15 @@ class CRM_Report_Form_Instance {
       array('onclick' => "return showHideByValue('is_navigation','','navigation_menu','table-row','radio',false);")
     );
 
+    $form->addElement('select', 'view_mode', ts('Configure link to...'), array(
+      'view' => ts('View Results'),
+      'criteria' => ts('Show Criteria'),
+    ));
+
     $form->addElement('checkbox', 'addToDashboard', ts('Available for Dashboard?'), NULL,
       array('onclick' => "return showHideByValue('addToDashboard','','limit_result','table-row','radio',false);"));
+    $form->addElement('checkbox', 'add_to_my_reports', ts('Add to My Reports?'), NULL);
+
     $form->addElement('checkbox', 'is_reserved', ts('Reserved Report?'));
     if (!CRM_Core_Permission::check('administer reserved reports')) {
       $form->freeze('is_reserved');
@@ -221,24 +228,56 @@ class CRM_Report_Form_Instance {
       $defaults['permission'] = $permissions['CiviReport: access CiviReport'];
     }
 
-    $config = CRM_Core_Config::singleton();
+    $userFrameworkResourceURL = CRM_Core_Config::singleton()->userFrameworkResourceURL;
+
+    // Add a special region for the default HTML header of printed reports.  It
+    // won't affect reports with customized headers, just ones with the default.
+    $printHeaderRegion = CRM_Core_Region::instance('default-report-header', FALSE);
+    $htmlHeader = ($printHeaderRegion) ? $printHeaderRegion->render('', FALSE) : '';
+
     $defaults['report_header'] = $report_header = "<html>
   <head>
     <title>CiviCRM Report</title>
     <meta http-equiv='Content-Type' content='text/html; charset=utf-8' />
-    <style type=\"text/css\">@import url({$config->userFrameworkResourceURL}css/print.css);</style>
+    <style type=\"text/css\">@import url({$userFrameworkResourceURL}css/print.css);</style>
+    {$htmlHeader}
   </head>
   <body><div id=\"crm-container\">";
 
-    $defaults['report_footer'] = $report_footer = "<p><img src=\"{$config->userFrameworkResourceURL}i/powered_by.png\" /></p></div></body>
+    $defaults['report_footer'] = $report_footer = "<p><img src=\"{$userFrameworkResourceURL}i/powered_by.png\" /></p></div></body>
 </html>
 ";
+
+    // CRM-17225 view_mode currently supports 'view' or 'criteria'.
+    // Prior to 4.7 'view' meant reset=1 in the url & if not set
+    // then show criteria.
+    // From 4.7 we will pro-actively set 'force=1' but still respect the old behaviour.
+    // we may look to add pdf, print_view, csv & various charts as these could simply
+    // be added to the url allowing us to conceptualise 'view right now' vs saved view
+    // & using a multiselect (option value?) could help here.
+    // Note that accessing reports without reset=1 in the url turns out to be
+    // dangerous as it seems to carry actions like 'delete' from one report to another.
+    $defaults['view_mode'] = 'view';
+    $output = CRM_Utils_Request::retrieve('output', 'String');
+    if ($output == 'criteria') {
+      $defaults['view_mode'] = 'criteria';
+    }
 
     if ($instanceID) {
       // this is already retrieved via Form.php
       $defaults['description'] = CRM_Utils_Array::value('description', $defaults);
-      $defaults['report_header'] = CRM_Utils_Array::value('header', $defaults);
-      $defaults['report_footer'] = CRM_Utils_Array::value('footer', $defaults);
+      if (!empty($defaults['header'])) {
+        $defaults['report_header'] = $defaults['header'];
+      }
+      if (!empty($defaults['footer'])) {
+        $defaults['report_footer'] = $defaults['footer'];
+      }
+
+      // CRM-17310 private reports option.
+      $defaults['add_to_my_reports'] = 0;
+      if (CRM_Utils_Array::value('owner_id', $defaults) != NULL) {
+        $defaults['add_to_my_reports'] = 1;
+      }
 
       if (!empty($defaults['navigation_id'])) {
         // Get the default navigation parent id.
@@ -246,9 +285,12 @@ class CRM_Report_Form_Instance {
         CRM_Core_BAO_Navigation::retrieve($params, $navigationDefaults);
         $defaults['is_navigation'] = 1;
         $defaults['parent_id'] = CRM_Utils_Array::value('parent_id', $navigationDefaults);
-
         if (!empty($navigationDefaults['is_active'])) {
           $form->assign('is_navigation', TRUE);
+        }
+        // A saved view mode will over-ride any url assumptions.
+        if (strpos($navigationDefaults['url'], 'output=criteria')) {
+          $defaults['view_mode'] = 'criteria';
         }
 
         if (!empty($navigationDefaults['id'])) {
@@ -316,10 +358,23 @@ class CRM_Report_Form_Instance {
       'report_header',
       'report_footer',
       'grouprole',
+      'task',
     );
     foreach ($unsetFields as $field) {
       unset($formValues[$field]);
     }
+    $view_mode = $formValues['view_mode'];
+
+    // CRM-17310 my reports functionality - we should set owner if the checkbox is 1,
+    // it seems to be not set at all if unchecked.
+    if (!empty($formValues['add_to_my_reports'])) {
+      $params['owner_id'] = CRM_Core_Session::singleton()->getLoggedInContactID();
+    }
+    else {
+      $params['owner_id'] = 'null';
+    }
+    unset($formValues['add_to_my_reports']);
+
     // pass form_values as string
     $params['form_values'] = serialize($formValues);
 
@@ -339,7 +394,14 @@ class CRM_Report_Form_Instance {
     CRM_Core_Session::setStatus($statusMsg);
 
     if ($redirect) {
-      CRM_Utils_System::redirect(CRM_Utils_System::url("civicrm/report/instance/{$instance->id}", "reset=1"));
+      $urlParams = array('reset' => 1);
+      if ($view_mode == 'view') {
+        $urlParams['force'] = 1;
+      }
+      else {
+        $urlParams['output'] = 'criteria';
+      }
+      CRM_Utils_System::redirect(CRM_Utils_System::url("civicrm/report/instance/{$instance->id}", $urlParams));
     }
   }
 

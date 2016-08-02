@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -41,8 +39,6 @@ class CRM_Activity_Form_Task_SearchTaskHookSample extends CRM_Activity_Form_Task
 
   /**
    * Build all the data structures needed to build the form.
-   *
-   * @return void
    */
   public function preProcess() {
     parent::preProcess();
@@ -64,9 +60,7 @@ INNER JOIN civicrm_contact ct ON ( ac.contact_id = ct.id )
  LEFT JOIN civicrm_option_value ov ON (at.activity_type_id = ov.value AND og.id = ov.option_group_id )
      WHERE at.id IN ( $activityIDs )";
 
-    $dao = CRM_Core_DAO::executeQuery($query,
-      CRM_Core_DAO::$_nullArray
-    );
+    $dao = CRM_Core_DAO::executeQuery($query);
 
     while ($dao->fetch()) {
       $rows[] = array(
@@ -81,18 +75,15 @@ INNER JOIN civicrm_contact ct ON ( ac.contact_id = ct.id )
 
   /**
    * Build the form object.
-   *
-   * @return void
    */
   public function buildQuickForm() {
     $this->addButtons(array(
-        array(
-          'type' => 'done',
-          'name' => ts('Done'),
-          'isDefault' => TRUE,
-        ),
-      )
-    );
+      array(
+        'type' => 'done',
+        'name' => ts('Done'),
+        'isDefault' => TRUE,
+      ),
+    ));
   }
 
 }

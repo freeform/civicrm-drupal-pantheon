@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -59,8 +59,8 @@
 
 {if $SMSTask}
     <tr class="crm-contactPhone-form-block-template">
-        <td class="label">{$form.template.label}</td>
-        <td>{$form.template.html}</td>
+        <td class="label">{$form.SMStemplate.label}</td>
+        <td>{$form.SMStemplate.html}</td>
     </tr>
 {/if}
 

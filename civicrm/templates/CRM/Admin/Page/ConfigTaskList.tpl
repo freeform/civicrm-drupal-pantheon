@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -47,7 +47,7 @@
         <td>{ts}Enable the required CiviCRM components.(CiviContribute, CiviEvent etc.){/ts}</td>
     </tr>
     <tr class="even">
-        <td class="tasklist nowrap"><a href="https://civicrm.org/register-site" title="{ts}Register your site at CiviCRM.org. Opens in a new window.{/ts}" target="_blank">{ts}Register your site{/ts}</a></td>
+        <td class="tasklist nowrap"><a href="{$registerSite}" title="{ts}Register your site at CiviCRM.org. Opens in a new window.{/ts}" target="_blank">{ts}Register your site{/ts}</a></td>
         <td>{ts}Register your site, join the community, and help CiviCRM remain a leading CRM for organizations worldwide.{/ts}</td>
     </tr>
 

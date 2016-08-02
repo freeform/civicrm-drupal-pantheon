@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  *
  */
 
@@ -38,12 +38,9 @@
 class CRM_Group_Page_AJAX {
   /**
    * Get list of groups.
-   *
-   * @return array
    */
   public static function getGroupList() {
-    $params = $_REQUEST;
-
+    $params = $_GET;
     if (isset($params['parent_id'])) {
       // requesting child groups for a given parent
       $params['page'] = 1;
@@ -53,27 +50,19 @@ class CRM_Group_Page_AJAX {
       CRM_Utils_JSON::output($groups);
     }
     else {
-      $sortMapper = array(
-        0 => 'groups.title',
-        1 => 'count',
-        2 => 'createdBy.sort_name',
-        3 => '',
-        4 => 'groups.group_type',
-        5 => 'groups.visibility',
+      $requiredParams = array();
+      $optionalParams = array(
+        'title' => 'String',
+        'created_by' => 'String',
+        'group_type' => 'String',
+        'visibility' => 'String',
+        'status' => 'Integer',
+        'parentsOnly' => 'Integer',
+        'showOrgInfo' => 'Boolean',
+        // Ignore 'parent_id' as that case is handled above
       );
-
-      $sEcho = CRM_Utils_Type::escape($_REQUEST['sEcho'], 'Integer');
-      $offset = isset($_REQUEST['iDisplayStart']) ? CRM_Utils_Type::escape($_REQUEST['iDisplayStart'], 'Integer') : 0;
-      $rowCount = isset($_REQUEST['iDisplayLength']) ? CRM_Utils_Type::escape($_REQUEST['iDisplayLength'], 'Integer') : 25;
-      $sort = isset($_REQUEST['iSortCol_0']) ? CRM_Utils_Array::value(CRM_Utils_Type::escape($_REQUEST['iSortCol_0'], 'Integer'), $sortMapper) : NULL;
-      $sortOrder = isset($_REQUEST['sSortDir_0']) ? CRM_Utils_Type::escape($_REQUEST['sSortDir_0'], 'String') : 'asc';
-
-      if ($sort && $sortOrder) {
-        $params['sortBy'] = $sort . ' ' . $sortOrder;
-      }
-
-      $params['page'] = ($offset / $rowCount) + 1;
-      $params['rp'] = $rowCount;
+      $params = CRM_Core_Page_AJAX::defaultSortAndPagerParams();
+      $params += CRM_Core_Page_AJAX::validateParams($requiredParams, $optionalParams);
 
       // get group list
       $groups = CRM_Contact_BAO_Group::getGroupListSelector($params);
@@ -90,31 +79,7 @@ class CRM_Group_Page_AJAX {
         }
       }
 
-      $iFilteredTotal = $iTotal = $params['total'];
-      $selectorElements = array(
-        'group_name',
-        'count',
-        'created_by',
-        'group_description',
-        'group_type',
-        'visibility',
-        'org_info',
-        'links',
-        'class',
-      );
-
-      if (empty($params['showOrgInfo'])) {
-        unset($selectorElements[6]);
-      }
-      //add setting so this can be tested by unit test
-      //@todo - ideally the portion of this that retrieves the groups should be extracted into a function separate
-      // from the one which deals with web inputs & outputs so we have a properly testable & re-usable function
-      if (!empty($params['is_unit_test'])) {
-        return array($groups, $iFilteredTotal);
-      }
-      header('Content-Type: application/json');
-      echo CRM_Utils_JSON::encodeDataTableSelector($groups, $sEcho, $iTotal, $iFilteredTotal, $selectorElements);
-      CRM_Utils_System::civiExit();
+      CRM_Utils_JSON::output($groups);
     }
   }
 

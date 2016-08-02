@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -189,13 +187,12 @@ class CRM_Contribute_Selector_Search extends CRM_Core_Selector_Base implements C
     $this->_includeSoftCredits = CRM_Contribute_BAO_Query::isSoftCreditOptionEnabled($this->_queryParams);
     $this->_query = new CRM_Contact_BAO_Query(
       $this->_queryParams,
-      CRM_Contribute_BAO_Query::defaultReturnProperties(
-        CRM_Contact_BAO_Query::MODE_CONTRIBUTE,
-        FALSE
-      ),
+      CRM_Contribute_BAO_Query::selectorReturnProperties(),
       NULL, FALSE, FALSE,
       CRM_Contact_BAO_Query::MODE_CONTRIBUTE
     );
+    // @todo the function CRM_Contribute_BAO_Query::isSoftCreditOptionEnabled should handle this
+    // can we remove? if not why not?
     if ($this->_includeSoftCredits) {
       $this->_query->_rowCountClause = " count(civicrm_contribution.id)";
       $this->_query->_groupByComponentClause = " GROUP BY contribution_search_scredit_combined.id, contribution_search_scredit_combined.contact_id, contribution_search_scredit_combined.scredit_id ";
@@ -314,7 +311,7 @@ class CRM_Contribute_Selector_Search extends CRM_Core_Selector_Base implements C
   public function &getRows($action, $offset, $rowCount, $sort, $output = NULL) {
     if ($this->_includeSoftCredits) {
       // especial sort order when rows include soft credits
-      $sort = "civicrm_contribution.receive_date DESC, civicrm_contribution.id, civicrm_contribution_soft.id";
+      $sort = $sort->orderBy() . ", civicrm_contribution.id, civicrm_contribution_soft.id";
     }
     $result = $this->_query->searchQuery($offset, $rowCount, $sort,
       FALSE, FALSE,
@@ -338,6 +335,7 @@ class CRM_Contribute_Selector_Search extends CRM_Core_Selector_Base implements C
     $qfKey = $this->_key;
     $componentId = $componentContext = NULL;
     if ($this->_context != 'contribute') {
+      // @todo explain the significance of context & why we do not get these i that context.
       $qfKey = CRM_Utils_Request::retrieve('key', 'String', CRM_Core_DAO::$_nullObject);
       $componentId = CRM_Utils_Request::retrieve('id', 'Positive', CRM_Core_DAO::$_nullObject);
       $componentAction = CRM_Utils_Request::retrieve('action', 'String', CRM_Core_DAO::$_nullObject);
@@ -346,7 +344,15 @@ class CRM_Contribute_Selector_Search extends CRM_Core_Selector_Base implements C
       if (!$componentContext &&
         $this->_compContext
       ) {
+        // @todo explain when this condition might occur.
         $componentContext = $this->_compContext;
+        $qfKey = CRM_Utils_Request::retrieve('qfKey', 'String', CRM_Core_DAO::$_nullObject, NULL, FALSE, 'REQUEST');
+      }
+      // CRM-17628 for some reason qfKey is not always set when searching from contribution search.
+      // as a result if the edit link is opened using right-click + open in new tab
+      // then the browser is not returned to the search results on save.
+      // This is an effort to getting the qfKey without, sadly, understanding the intent of those who came before me.
+      if (empty($qfKey)) {
         $qfKey = CRM_Utils_Request::retrieve('qfKey', 'String', CRM_Core_DAO::$_nullObject, NULL, FALSE, 'REQUEST');
       }
     }
@@ -360,7 +366,38 @@ class CRM_Contribute_Selector_Search extends CRM_Core_Selector_Base implements C
     $allCampaigns = CRM_Campaign_BAO_Campaign::getCampaigns(NULL, NULL, FALSE, FALSE, FALSE, TRUE);
 
     while ($result->fetch()) {
+      $links = self::links($componentId,
+          $componentAction,
+          $qfKey,
+          $componentContext
+      );
+      $checkLineItem = FALSE;
       $row = array();
+      // Now check for lineItems
+      if (CRM_Financial_BAO_FinancialType::isACLFinancialTypeStatus()) {
+        $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID($result->id);
+        foreach ($lineItems as $items) {
+          if (!CRM_Core_Permission::check('view contributions of type ' . CRM_Contribute_PseudoConstant::financialType($items['financial_type_id']))) {
+            $checkLineItem = TRUE;
+            break;
+          }
+          if (!CRM_Core_Permission::check('edit contributions of type ' . CRM_Contribute_PseudoConstant::financialType($items['financial_type_id']))) {
+            unset($links[CRM_Core_Action::UPDATE]);
+          }
+          if (!CRM_Core_Permission::check('delete contributions of type ' . CRM_Contribute_PseudoConstant::financialType($items['financial_type_id']))) {
+            unset($links[CRM_Core_Action::DELETE]);
+          }
+        }
+        if ($checkLineItem) {
+          continue;
+        }
+        if (!CRM_Core_Permission::check('edit contributions of type ' . CRM_Contribute_PseudoConstant::financialType($result->financial_type_id))) {
+          unset($links[CRM_Core_Action::UPDATE]);
+        }
+        if (!CRM_Core_Permission::check('delete contributions of type ' . CRM_Contribute_PseudoConstant::financialType($result->financial_type_id))) {
+          unset($links[CRM_Core_Action::DELETE]);
+        }
+      }
       // the columns we are interested in
       foreach (self::$_properties as $property) {
         if (property_exists($result, $property)) {
@@ -369,6 +406,8 @@ class CRM_Contribute_Selector_Search extends CRM_Core_Selector_Base implements C
       }
 
       //carry campaign on selectors.
+      // @todo - I can't find any evidence that 'carrying' the campaign on selectors actually
+      // results in it being displayed anywhere so why do we do this???
       $row['campaign'] = CRM_Utils_Array::value($result->contribution_campaign_id, $allCampaigns);
       $row['campaign_id'] = $result->contribution_campaign_id;
 
@@ -397,11 +436,7 @@ class CRM_Contribute_Selector_Search extends CRM_Core_Selector_Base implements C
       );
 
       $row['action'] = CRM_Core_Action::formLink(
-        self::links($componentId,
-          $componentAction,
-          $qfKey,
-          $componentContext
-        ),
+        $links,
         $mask, $actions,
         ts('more'),
         FALSE,
@@ -443,6 +478,7 @@ class CRM_Contribute_Selector_Search extends CRM_Core_Selector_Base implements C
    *   the column headers that need to be displayed
    */
   public function &getColumnHeaders($action = NULL, $output = NULL) {
+    $pre = array();
     self::$_columnHeaders = array(
       array(
         'name' => $this->_includeSoftCredits ? ts('Contribution Amount') : ts('Amount'),
@@ -501,15 +537,14 @@ class CRM_Contribute_Selector_Search extends CRM_Core_Selector_Base implements C
       );
     if (!$this->_single) {
       $pre = array(
-        array('desc' => ts('Contact Type')),
         array(
           'name' => ts('Name'),
           'sort' => 'sort_name',
           'direction' => CRM_Utils_Sort::DONTCARE,
         ),
       );
-      self::$_columnHeaders = array_merge($pre, self::$_columnHeaders);
     }
+    self::$_columnHeaders = array_merge($pre, self::$_columnHeaders);
     if ($this->_includeSoftCredits) {
       self::$_columnHeaders = array_merge(
         self::$_columnHeaders,
@@ -533,6 +568,7 @@ class CRM_Contribute_Selector_Search extends CRM_Core_Selector_Base implements C
           array('desc' => ts('Actions')),
         )
       );
+    CRM_Core_Smarty::singleton()->assign('softCreditColumns', $this->_includeSoftCredits);
     return self::$_columnHeaders;
   }
 

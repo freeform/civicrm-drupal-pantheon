@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -47,9 +47,9 @@ class CRM_Core_Permission_WordPress extends CRM_Core_Permission_Base {
    *   true if yes, else false
    */
   public function check($str) {
-    // Generic cms 'administer users' role tranlates to 'administrator' WordPress role
+    // Generic cms 'administer users' role tranlates to users with the 'edit_users' capability' in WordPress
     $str = $this->translatePermission($str, 'WordPress', array(
-      'administer users' => 'administrator',
+      'administer users' => 'edit_users',
     ));
     if ($str == CRM_Core_Permission::ALWAYS_DENY_PERMISSION) {
       return FALSE;

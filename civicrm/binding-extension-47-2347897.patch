@@ -1,0 +1,35 @@
+--- a/CRM/Extension/Mapper.php
++++ b/CRM/Extension/Mapper.php
+@@ -285,6 +285,10 @@
+       $moduleExtensions = $this->cache->get($this->cacheKey . '/moduleFiles');
+     }
+ 
++    if ($fresh == 'NOCACHE') {
++      $moduleExtensions = NULL;
++    }
++
+     if (!is_array($moduleExtensions)) {
+       // Check canonical module list
+       $moduleExtensions = array();
+--- a/CRM/Extension/System.php
++++ b/CRM/Extension/System.php
+@@ -94,7 +94,7 @@
+    *   Missing values will be guessed based on $config.
+    */
+   public function __construct($parameters = array()) {
+-    $config = CRM_Core_Config::singleton();
++    $config = CRM_Core_Config::singleton(FALSE);
+     $parameters['extensionsDir'] = CRM_Utils_Array::value('extensionsDir', $parameters, $config->extensionsDir);
+     $parameters['extensionsURL'] = CRM_Utils_Array::value('extensionsURL', $parameters, $config->extensionsURL);
+     $parameters['resourceBase'] = CRM_Utils_Array::value('resourceBase', $parameters, $config->resourceBase);
+--- a/CRM/Utils/Hook.php
++++ b/CRM/Utils/Hook.php
+@@ -263,7 +263,7 @@
+    * @param $moduleList
+    */
+   public function requireCiviModules(&$moduleList) {
+-    $civiModules = CRM_Core_PseudoConstant::getModuleExtensions();
++    $civiModules = CRM_Core_PseudoConstant::getModuleExtensions('NOCACHE');
+     foreach ($civiModules as $civiModule) {
+       if (!file_exists($civiModule['filePath'])) {
+         CRM_Core_Session::setStatus(

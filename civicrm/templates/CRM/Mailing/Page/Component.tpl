@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -49,7 +49,7 @@
            <td class="crm-editable" data-field="name">{$row.name}</td>
            <td>{$row.component_type}</td>
            <td>{$row.subject}</td>
-           <td>{$row.body_text}</td>
+           <td>{$row.body_text|escape}</td>
            <td>{$row.body_html|escape}</td>
            <td>{if $row.is_default eq 1}<img src="{$config->resourceBase}i/check.gif" alt="{ts}Default{/ts}" />{/if}&nbsp;</td>
      <td id="row_{$row.id}_status">{if $row.is_active eq 1} {ts}Yes{/ts} {else} {ts}No{/ts} {/if}</td>
@@ -62,7 +62,7 @@
        {if $action ne 1 and $action ne 2}
   <br/>
        <div class="action-link">
-       {crmButton q="action=add&reset=1" icon="circle-plus"}{ts}Add Mailing Component{/ts}{/crmButton}
+       {crmButton q="action=add&reset=1" icon="plus-circle"}{ts}Add Mailing Component{/ts}{/crmButton}
        </div>
        {/if}
     </div>

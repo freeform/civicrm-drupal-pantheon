@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,16 +28,21 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
 class CRM_Report_Form_Mailing_Detail extends CRM_Report_Form {
 
+  protected $_customGroupExtends = array(
+    'Contact',
+    'Individual',
+    'Household',
+    'Organization',
+  );
+
   protected $_exposeContactID = FALSE;
 
-  /**
-   */
   /**
    */
   public function __construct() {
@@ -231,7 +236,6 @@ class CRM_Report_Form_Mailing_Detail extends CRM_Report_Form {
       'fields' => array(
         'email' => array(
           'title' => ts('Email'),
-          'required' => TRUE,
         ),
       ),
       'grouping' => 'contact-fields',
@@ -271,7 +275,7 @@ class CRM_Report_Form_Mailing_Detail extends CRM_Report_Form {
               $columns[$tableName][$fieldName] = $field;
             }
             elseif ($fieldName == 'delivery_id') {
-              $select[] = "IF(mailing_event_delivered_civireport.id IS NOT NULL, 'Successful', IF(mailing_event_bounce_civireport.id IS NOT NULL, 'Bounced ', 'Unknown')) as {$tableName}_{$fieldName}";
+              $select[] = "IF(mailing_event_bounce_civireport.id IS NOT NULL, 'Bounced', IF(mailing_event_delivered_civireport.id IS NOT NULL, 'Successful', 'Unknown')) as {$tableName}_{$fieldName}";
               $this->_columnHeaders["{$tableName}_{$fieldName}"]['type'] = CRM_Utils_Array::value('type', $field);
               $this->_columnHeaders["{$tableName}_{$fieldName}"]['no_display'] = CRM_Utils_Array::value('no_display', $field);
               $this->_columnHeaders["{$tableName}_{$fieldName}"]['title'] = CRM_Utils_Array::value('title', $field);
@@ -306,7 +310,7 @@ class CRM_Report_Form_Mailing_Detail extends CRM_Report_Form {
     $this->_from .= "
         INNER JOIN civicrm_mailing_event_queue
           ON civicrm_mailing_event_queue.contact_id = {$this->_aliases['civicrm_contact']}.id
-        INNER JOIN civicrm_email {$this->_aliases['civicrm_email']}
+        LEFT JOIN civicrm_email {$this->_aliases['civicrm_email']}
           ON civicrm_mailing_event_queue.email_id = {$this->_aliases['civicrm_email']}.id";
 
     if (array_key_exists('delivery_id', $this->_params['fields'])) {
@@ -323,7 +327,7 @@ class CRM_Report_Form_Mailing_Detail extends CRM_Report_Form {
       elseif (CRM_Utils_Array::value('delivery_status_value', $this->_params) ==
         'successful'
       ) {
-        $this->_columns['civicrm_mailing_event_delivered']['filters']['delivery_status']['clause'] = "{$this->_aliases['civicrm_mailing_event_delivered']}.id IS NOT NULL";
+        $this->_columns['civicrm_mailing_event_delivered']['filters']['delivery_status']['clause'] = "{$this->_aliases['civicrm_mailing_event_delivered']}.id IS NOT NULL AND {$this->_aliases['civicrm_mailing_event_bounce']}.id IS NULL";
       }
     }
     else {
@@ -454,6 +458,15 @@ class CRM_Report_Form_Mailing_Detail extends CRM_Report_Form {
   public function alterDisplay(&$rows) {
     $entryFound = FALSE;
     foreach ($rows as $rowNum => $row) {
+
+      // If the email address has been deleted
+      if (array_key_exists('civicrm_email_email', $row)) {
+        if (empty($rows[$rowNum]['civicrm_email_email'])) {
+          $rows[$rowNum]['civicrm_email_email'] = '<del>Email address deleted</del>';
+        }
+        $entryFound = TRUE;
+      }
+
       // make count columns point to detail report
       // convert display name to links
       if (array_key_exists('civicrm_contact_sort_name', $row) &&

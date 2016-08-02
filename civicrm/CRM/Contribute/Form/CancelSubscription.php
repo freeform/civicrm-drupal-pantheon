@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,14 +28,11 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
- * This class provides support for canceling recurring subscriptions
- *
+ * This class provides support for canceling recurring subscriptions.
  */
 class CRM_Contribute_Form_CancelSubscription extends CRM_Core_Form {
   protected $_paymentProcessorObj = NULL;
@@ -54,8 +51,6 @@ class CRM_Contribute_Form_CancelSubscription extends CRM_Core_Form {
 
   /**
    * Set variables up before form is built.
-   *
-   * @return void
    */
   public function preProcess() {
     $this->_mid = CRM_Utils_Request::retrieve('mid', 'Integer', $this, FALSE);
@@ -76,12 +71,13 @@ class CRM_Contribute_Form_CancelSubscription extends CRM_Core_Form {
     }
 
     if ($this->_mid) {
-      if (CRM_Member_BAO_Membership::isSubscriptionCancelled($this->_mid)) {
-        CRM_Core_Error::fatal(ts('The auto renewal option for this membership looks to have been cancelled already.'));
-      }
       $this->_mode = 'auto_renew';
-      $this->_paymentProcessorObj = CRM_Financial_BAO_PaymentProcessor::getProcessorForEntity($this->_mid, 'membership', 'obj');
-      $this->_subscriptionDetails = CRM_Contribute_BAO_ContributionRecur::getSubscriptionDetails($this->_mid, 'membership');
+      // CRM-18468: crid is more accurate than mid for getting
+      // subscriptionDetails, so don't get them again.
+      if (!$this->_crid) {
+        $this->_paymentProcessorObj = CRM_Financial_BAO_PaymentProcessor::getProcessorForEntity($this->_mid, 'membership', 'obj');
+        $this->_subscriptionDetails = CRM_Contribute_BAO_ContributionRecur::getSubscriptionDetails($this->_mid, 'membership');
+      }
 
       $membershipTypes = CRM_Member_PseudoConstant::membershipType();
       $membershipTypeId = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_Membership', $this->_mid, 'membership_type_id');
@@ -132,12 +128,10 @@ class CRM_Contribute_Form_CancelSubscription extends CRM_Core_Form {
 
   /**
    * Build the form object.
-   *
-   * @return void
    */
   public function buildQuickForm() {
     // Determine if we can cancel recurring contribution via API with this processor
-    $cancelSupported = $this->_paymentProcessorObj->isSupported('cancelSubscription');
+    $cancelSupported = $this->_paymentProcessorObj->supports('CancelRecurring');
     if ($cancelSupported) {
       $searchRange = array();
       $searchRange[] = $this->createElement('radio', NULL, NULL, ts('Yes'), '1');
@@ -183,22 +177,20 @@ class CRM_Contribute_Form_CancelSubscription extends CRM_Core_Form {
   }
 
   /**
-   * Set default values for the form. Note that in edit/view mode
-   * the default values are retrieved from the database
+   * Set default values for the form.
    *
    * @return array
    *   array of default values
    */
   public function setDefaultValues() {
-    $defaults = array('is_notify' => 1);
-    return $defaults;
+    return array(
+      'is_notify' => 1,
+      'send_cancel_request' => 1,
+    );
   }
 
   /**
    * Process the form submission.
-   *
-   *
-   * @return void
    */
   public function postProcess() {
     $status = $message = NULL;
@@ -207,7 +199,7 @@ class CRM_Contribute_Form_CancelSubscription extends CRM_Core_Form {
 
     if ($this->_selfService) {
       // for self service force sending-request & notify
-      if ($this->_paymentProcessorObj->isSupported('cancelSubscription')) {
+      if ($this->_paymentProcessorObj->supports('cancelRecurring')) {
         $params['send_cancel_request'] = 1;
       }
 

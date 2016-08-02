@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,13 +28,11 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
- * This class if for search builder processing
+ * This class is for search builder processing.
  */
 class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
 
@@ -54,8 +52,6 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
 
   /**
    * Build the form object.
-   *
-   * @return void
    */
   public function preProcess() {
     $this->set('searchFormName', 'Builder');
@@ -90,14 +86,27 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
     }
   }
 
+  /**
+   * Build quick form.
+   */
   public function buildQuickForm() {
     $fields = self::fields();
     // Get fields of type date
     // FIXME: This is a hack until our fields contain this meta-data
     $dateFields = array();
+    $stringFields = array();
+    $searchByLabelFields = array();
     foreach ($fields as $name => $field) {
       if (strpos($name, '_date') || CRM_Utils_Array::value('data_type', $field) == 'Date') {
         $dateFields[] = $name;
+      }
+      // it's necessary to know which of the fields are from string data type
+      if (isset($field['type']) && $field['type'] === CRM_Utils_Type::T_STRING) {
+        $stringFields[] = $name;
+      }
+      // it's necessary to know which of the fields are searchable by label
+      if (isset($field['searchByLabel']) && $field['searchByLabel']) {
+        $searchByLabelFields[] = $name;
       }
     }
     // Add javascript
@@ -109,6 +118,10 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
           'newBlock' => $this->get('newBlock'),
           'dateFields' => $dateFields,
           'fieldOptions' => self::fieldOptions(),
+          'stringFields' => $stringFields,
+          'searchByLabelFields' => $searchByLabelFields,
+          'generalOperators' => array('' => ts('-operator-')) + CRM_Core_SelectValues::getSearchBuilderOperators(),
+          'stringOperators' => array('' => ts('-operator-')) + CRM_Core_SelectValues::getSearchBuilderOperators(CRM_Utils_Type::T_STRING),
         ),
       ));
     //get the saved search mapping id
@@ -124,9 +137,6 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
 
   /**
    * Add local and global form rules.
-   *
-   *
-   * @return void
    */
   public function addRules() {
     $this->addFormRule(array('CRM_Contact_Form_Search_Builder', 'formRule'), $this);
@@ -135,9 +145,9 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
   /**
    * Global validation rules for the form.
    *
-   * @param $values
-   * @param $files
-   * @param $self
+   * @param array $values
+   * @param array $files
+   * @param CRM_Core_Form $self
    *
    * @return array
    *   list of errors to be posted back to the form
@@ -158,35 +168,15 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
         // CRM-10338
         $v[2] = self::checkArrayKeyEmpty($v[2]);
 
-        if (in_array($v[1], array('IS NULL', 'IS NOT NULL', 'IS EMPTY', 'IS NOT EMPTY')) &&
+        if (in_array($v[1], array(
+            'IS NULL',
+            'IS NOT NULL',
+            'IS EMPTY',
+            'IS NOT EMPTY',
+          )) &&
           !empty($v[2])
         ) {
           $errorMsg["value[$v[3]][$v[4]]"] = ts('Please clear your value if you want to use %1 operator.', array(1 => $v[1]));
-        }
-        elseif (($v[0] == 'group' || $v[0] == 'tag') && !empty($v[2])) {
-          $grpId = array_keys($v[2]);
-          if (!key($v[2])) {
-            $errorMsg["value[$v[3]][$v[4]]"] = ts("Please enter a value.");
-          }
-
-          if (count($grpId) > 1) {
-            if ($v[1] != 'IN' && $v[1] != 'NOT IN') {
-              $errorMsg["value[$v[3]][$v[4]]"] = ts("Please enter a valid value.");
-            }
-            foreach ($grpId as $val) {
-              $error = CRM_Utils_Type::validate($val, 'Integer', FALSE);
-              if ($error != $val) {
-                $errorMsg["value[$v[3]][$v[4]]"] = ts("Please enter a valid value.");
-                break;
-              }
-            }
-          }
-          else {
-            $error = CRM_Utils_Type::validate($grpId[0], 'Integer', FALSE);
-            if ($error != $grpId[0]) {
-              $errorMsg["value[$v[3]][$v[4]]"] = ts('Please enter valid %1 id.', array(1 => $v[0]));
-            }
-          }
         }
         elseif (substr($v[0], 0, 7) === 'do_not_' or substr($v[0], 0, 3) === 'is_') {
           if (isset($v[2])) {
@@ -313,11 +303,16 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
     return TRUE;
   }
 
+  /**
+   * Normalise form values.
+   */
   public function normalizeFormValues() {
   }
 
   /**
-   * @param $formValues
+   * Convert form values.
+   *
+   * @param array $formValues
    *
    * @return array
    */
@@ -326,6 +321,8 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
   }
 
   /**
+   * Get return properties.
+   *
    * @return array
    */
   public function &returnProperties() {
@@ -334,8 +331,6 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
 
   /**
    * Process the uploaded file.
-   *
-   * @return void
    */
   public function postProcess() {
     $this->set('isAdvanced', '2');
@@ -420,6 +415,8 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
   }
 
   /**
+   * Get fields.
+   *
    * @return array
    */
   public static function fields() {
@@ -434,6 +431,7 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
 
   /**
    * CRM-9434 Hackish function to fetch fields with options.
+   *
    * FIXME: When our core fields contain reliable metadata this will be much simpler.
    * @return array
    *   (string => string) key: field_name value: api entity name
@@ -499,10 +497,14 @@ class CRM_Contact_Form_Search_Builder extends CRM_Contact_Form_Search {
   }
 
   /**
-   * CRM-10338
-   * tags and groups use array keys for selection list.
+   * CRM-10338 tags and groups use array keys for selection list.
+   *
    * if using IS NULL/NOT NULL, an array with no array key is created
    * convert that to simple NULL so processing can proceed
+   *
+   * @param string $val
+   *
+   * @return null
    */
   public static function checkArrayKeyEmpty($val) {
     if (is_array($val)) {

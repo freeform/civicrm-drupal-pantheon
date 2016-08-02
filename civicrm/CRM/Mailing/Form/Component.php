@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,14 +28,11 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
- * This class generates form components for Location Type
- *
+ * This class generates form components for Location Type.
  */
 class CRM_Mailing_Form_Component extends CRM_Core_Form {
 
@@ -60,11 +57,9 @@ class CRM_Mailing_Form_Component extends CRM_Core_Form {
 
   /**
    * Build the form object.
-   *
-   * @return void
    */
   public function buildQuickForm() {
-    $this->applyFilter('__ALL__', 'trim');
+    $this->applyFilter(array('name', 'subject', 'body_html'), 'trim');
 
     $this->add('text', 'name', ts('Name'),
       CRM_Core_DAO::getAttribute('CRM_Mailing_DAO_Component', 'name'), TRUE
@@ -81,8 +76,7 @@ class CRM_Mailing_Form_Component extends CRM_Core_Form {
       TRUE
     );
     $this->add('textarea', 'body_text', ts('Body - TEXT Format'),
-      CRM_Core_DAO::getAttribute('CRM_Mailing_DAO_Component', 'body_text'),
-      TRUE
+      CRM_Core_DAO::getAttribute('CRM_Mailing_DAO_Component', 'body_text')
     );
     $this->add('textarea', 'body_html', ts('Body - HTML Format'),
       CRM_Core_DAO::getAttribute('CRM_Mailing_DAO_Component', 'body_html')
@@ -91,6 +85,7 @@ class CRM_Mailing_Form_Component extends CRM_Core_Form {
     $this->addYesNo('is_default', ts('Default?'));
     $this->addYesNo('is_active', ts('Enabled?'));
 
+    $this->addFormRule(array('CRM_Mailing_Form_Component', 'formRule'));
     $this->addFormRule(array('CRM_Mailing_Form_Component', 'dataRule'));
 
     $this->addButtons(array(
@@ -109,9 +104,6 @@ class CRM_Mailing_Form_Component extends CRM_Core_Form {
 
   /**
    * Set default values for the form.
-   *
-   *
-   * @return void
    */
   public function setDefaultValues() {
     $defaults = array();
@@ -131,9 +123,6 @@ class CRM_Mailing_Form_Component extends CRM_Core_Form {
 
   /**
    * Process the form submission.
-   *
-   *
-   * @return void
    */
   public function postProcess() {
     // store the submitted values in an array
@@ -192,7 +181,26 @@ class CRM_Mailing_Form_Component extends CRM_Core_Form {
           )) . '<ul>' . implode('', $dataErrors) . '</ul><br /><a href="' . CRM_Utils_System::docURL2('Tokens', TRUE, NULL, NULL, NULL, "wiki") . '">' . ts('More information on tokens...') . '</a>';
       }
     }
+    return empty($errors) ? TRUE : $errors;
+  }
 
+  /**
+   * Validates that either body text or body html is required.
+   * @param array $params
+   *   (ref.) an assoc array of name/value pairs.
+   *
+   * @param $files
+   * @param $options
+   *
+   * @return bool|array
+   *   mixed true or array of errors
+   */
+  public static function formRule($params, $files, $options) {
+    $errors = array();
+    if (empty($params['body_text']) && empty($params['body_html'])) {
+      $errors['body_text'] = ts("Please provide either HTML or TEXT format for the Body.");
+      $errors['body_html'] = ts("Please provide either HTML or TEXT format for the Body.");
+    }
     return empty($errors) ? TRUE : $errors;
   }
 

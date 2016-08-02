@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Badge_BAO_Layout extends CRM_Core_DAO_PrintLabel {
 
@@ -114,7 +112,7 @@ class CRM_Badge_BAO_Layout extends CRM_Core_DAO_PrintLabel {
 
     if ($params['is_default']) {
       $query = "UPDATE civicrm_print_label SET is_default = 0";
-      CRM_Core_DAO::executeQuery($query, CRM_Core_DAO::$_nullArray);
+      CRM_Core_DAO::executeQuery($query);
     }
 
     $printLabel->save();

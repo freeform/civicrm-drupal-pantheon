@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -75,6 +75,11 @@ class PermissionCheck implements EventSubscriberInterface {
 
       if (!\CRM_Core_Permission::check($permissions) and !self::checkACLPermission($apiRequest)) {
         if (is_array($permissions)) {
+          foreach ($permissions as &$permission) {
+            if (is_array($permission)) {
+              $permission = '( ' . implode(' or ', $permission) . ' )';
+            }
+          }
           $permissions = implode(' and ', $permissions);
         }
         // FIXME: Generating the exception ourselves allows for detailed error

@@ -62,33 +62,27 @@ function civicrm_conf_init() {
         // check to see if this is under sites/all/modules/contrib or subdir civicrm-core
         if ( strpos( $currentDir, $contribDir ) !== false || strpos( $currentDir, 'civicrm-core' ) !== false) {
             $confdir = $currentDir . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..';
-            
-             // drupal root is back one from the $confdir
-             define('DRUPAL_ROOT', $confdir . DIRECTORY_SEPARATOR . '..');
-             require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
-        
-        // check to see if this is under sites/all/modules
-        } else if ( strpos( $currentDir, $moduleDir ) !== false ) {
-            $confdir = $currentDir . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..';
-            
+
             // drupal root is back one from the $confdir
             define('DRUPAL_ROOT', $confdir . DIRECTORY_SEPARATOR . '..');
             require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
-            
+
+        // check to see if this is under sites/all/modules
+        } else if ( strpos( $currentDir, $moduleDir ) !== false ) {
+            $confdir = $currentDir . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..';
+
+            // drupal root is back one from the $confdir
+            define('DRUPAL_ROOT', $confdir . DIRECTORY_SEPARATOR . '..');
+            require_once DRUPAL_ROOT . '/includes/bootstrap.inc';
+
         // check to see if this is under profiles/[PROFILE]/modules    
         } else if ( strpos( $currentDir, $profileDir ) !== false ) {
-            
             // in the profile, we need to go back to the root and then forward
             // this is a bit more complicated
             $drupalbase = $currentDir . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..'; 
             define('DRUPAL_ROOT', $drupalbase);
             require_once $drupalbase . '/includes/bootstrap.inc';
-
-            $confdir = $currentDir . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . conf_path(); 
-            
-        } else if ( strpos( $currentDir, 'plugins' . DIRECTORY_SEPARATOR . 'civicrm' . DIRECTORY_SEPARATOR . 'civicrm' ) !== false ) {
-             //if its wordpress
-            $confdir = $currentDir . DIRECTORY_SEPARATOR . '..';
+            $confdir = $currentDir . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . conf_path();
         } else {
             $confdir = $currentDir . '..' . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR;
         }
@@ -103,6 +97,13 @@ function civicrm_conf_init() {
         exit( );
     }
 
+    // since drupal 7, alias could be defined in sites/sites.php
+    if ( file_exists( $confdir . "/sites.php" ) ) {
+      include $confdir . "/sites.php";
+    } else {
+      $sites = array();
+    }
+
     $phpSelf  = array_key_exists( 'PHP_SELF' , $_SERVER ) ? $_SERVER['PHP_SELF' ] : '';
     $httpHost = array_key_exists( 'HTTP_HOST', $_SERVER ) ? $_SERVER['HTTP_HOST'] : '';
 
@@ -114,6 +115,11 @@ function civicrm_conf_init() {
             if (file_exists("$confdir/$dir/civicrm.settings.php")) {
                 $conf = "$confdir/$dir";
                 return $conf;
+            }
+            // check for alias
+            if (isset($sites[$dir]) && file_exists("$confdir/{$sites[$dir]}/civicrm.settings.php")) {
+              $conf = "$confdir/{$sites[$dir]}";
+              return $conf;
             }
         }
     }

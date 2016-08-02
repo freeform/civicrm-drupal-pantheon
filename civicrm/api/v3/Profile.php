@@ -1,9 +1,9 @@
 <?php
 /*
   +--------------------------------------------------------------------+
-  | CiviCRM version 4.6                                                |
+  | CiviCRM version 4.7                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2015                                |
+  | Copyright CiviCRM LLC (c) 2004-2016                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -348,12 +348,24 @@ function civicrm_api3_profile_apply($params) {
   );
 
   if (empty($data)) {
-    throw new API_Exception('Enable to format profile parameters.');
+    throw new API_Exception('Unable to format profile parameters.');
   }
 
   return civicrm_api3_create_success($data);
 }
 
+/**
+ * Adjust Metadata for Apply action.
+ *
+ * The metadata is used for setting defaults, documentation & validation.
+ *
+ * @param array $params
+ *   Array of parameters determined by getfields.
+ */
+function _civicrm_api3_profile_apply_spec(&$params) {
+  $params['profile_id']['api.required'] = 1;
+  $params['profile_id']['title'] = 'Profile ID';
+}
 
 /**
  * Get pseudo profile 'billing'.
@@ -372,8 +384,7 @@ function civicrm_api3_profile_apply($params) {
  */
 function _civicrm_api3_profile_getbillingpseudoprofile(&$params) {
 
-  $locations = civicrm_api3('address', 'getoptions', array('field' => 'location_type_id', 'context' => 'validate'));
-  $locationTypeID = array_search('Billing', $locations['values']);
+  $locationTypeID = CRM_Core_BAO_LocationType::getBilling();
 
   if (empty($params['contact_id'])) {
     $config = CRM_Core_Config::singleton();

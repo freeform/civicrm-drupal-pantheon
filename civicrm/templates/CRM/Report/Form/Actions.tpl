@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -26,11 +26,7 @@
 {if !$printOnly} {* NO print section starts *}
 
   {* build the print pdf buttons *}
-  {if $rows}
     <div class="crm-tasks">
-      {assign var=print value="_qf_"|cat:$form.formName|cat:"_submit_print"}
-      {assign var=pdf   value="_qf_"|cat:$form.formName|cat:"_submit_pdf"}
-      {assign var=csv   value="_qf_"|cat:$form.formName|cat:"_submit_csv"}
       {assign var=group value="_qf_"|cat:$form.formName|cat:"_submit_group"}
       {assign var=chart value="_qf_"|cat:$form.formName|cat:"_submit_chart"}
       <table style="border:0;">
@@ -38,9 +34,7 @@
           <td>
             <table class="form-layout-compressed">
               <tr>
-                <td>{$form.$print.html}&nbsp;&nbsp;</td>
-                <td>{$form.$pdf.html}&nbsp;&nbsp;</td>
-                <td>{$form.$csv.html}&nbsp;&nbsp;</td>
+                {include file="CRM/common/tasks.tpl" location="botton"}
                 {if $instanceUrl}
                   <td>&nbsp;&nbsp;&raquo;&nbsp;<a href="{$instanceUrl}">{ts}Existing report(s) from this template{/ts}</a></td>
                 {/if}
@@ -86,7 +80,6 @@
         </tr>
       </table>
     </div>
-  {/if}
 
 {literal}
   <script type="text/javascript">

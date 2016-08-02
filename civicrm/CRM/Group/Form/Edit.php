@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,13 +28,11 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
- * This class is to build the form for adding Group
+ * This class is to build the form for adding Group.
  */
 class CRM_Group_Form_Edit extends CRM_Core_Form {
 
@@ -82,9 +80,6 @@ class CRM_Group_Form_Edit extends CRM_Core_Form {
 
   /**
    * Set up variables to build the form.
-   *
-   * @return void
-   * @acess protected
    */
   public function preProcess() {
     $this->_id = $this->get('id');
@@ -159,8 +154,7 @@ class CRM_Group_Form_Edit extends CRM_Core_Form {
   }
 
   /**
-   * Set default values for the form. LocationType that in edit/view mode
-   * the default values are retrieved from the database
+   * Set default values for the form.
    *
    * @return array
    */
@@ -210,8 +204,6 @@ class CRM_Group_Form_Edit extends CRM_Core_Form {
 
   /**
    * Build the form object.
-   *
-   * @return void
    */
   public function buildQuickForm() {
     if ($this->_action == CRM_Core_Action::DELETE) {
@@ -310,7 +302,7 @@ class CRM_Group_Form_Edit extends CRM_Core_Form {
    * @param array $fields
    *   Posted values of the form.
    * @param array $fileParams
-   * @param $options
+   * @param array $options
    *
    * @return array
    *   list of errors to be posted back to the form
@@ -367,8 +359,6 @@ WHERE  title = %1
 
   /**
    * Process the form when submitted.
-   *
-   * @return void
    */
   public function postProcess() {
     CRM_Utils_System::flushCache('CRM_Core_DAO_Group');
@@ -394,10 +384,10 @@ WHERE  title = %1
       }
 
       $params['is_reserved'] = CRM_Utils_Array::value('is_reserved', $params, FALSE);
+      $params['group_type'] = CRM_Utils_Array::value('group_type', $params, array());
 
       $customFields = CRM_Core_BAO_CustomField::getFields('Group');
       $params['custom'] = CRM_Core_BAO_CustomField::postProcess($params,
-        $customFields,
         $this->_id,
         'Group'
       );

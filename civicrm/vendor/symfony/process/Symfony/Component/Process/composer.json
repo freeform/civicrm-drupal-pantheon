@@ -3,7 +3,7 @@
     "type": "library",
     "description": "Symfony Process Component",
     "keywords": [],
-    "homepage": "https://symfony.com",
+    "homepage": "http://symfony.com",
     "license": "MIT",
     "authors": [
         {
@@ -12,14 +12,11 @@
         },
         {
             "name": "Symfony Community",
-            "homepage": "https://symfony.com/contributors"
+            "homepage": "http://symfony.com/contributors"
         }
     ],
     "require": {
         "php": ">=5.3.3"
-    },
-    "require-dev": {
-        "symfony/phpunit-bridge": "~2.7"
     },
     "autoload": {
         "psr-0": { "Symfony\\Component\\Process\\": "" }
@@ -28,7 +25,7 @@
     "minimum-stability": "dev",
     "extra": {
         "branch-alias": {
-            "dev-master": "2.3-dev"
+            "dev-master": "2.5-dev"
         }
     }
 }

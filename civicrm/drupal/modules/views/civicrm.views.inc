@@ -1,7 +1,7 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -97,6 +97,8 @@ function civicrm_views_data_alter(&$data) {
   ) {
     include_once 'components/civicrm.contribute.inc';
     _civicrm_contribute_data($data, $enabled);
+    include_once 'components/civicrm.lineitem.inc';
+    _civicrm_lineitem_data($data, $enabled);
   }
   if (isset($enabled['CiviEvent'])) {
     include_once 'components/civicrm.event.inc';
@@ -707,7 +709,7 @@ function civicrm_date_views_fields($field) {
     // The type of date: DATE_UNIX, DATE_ISO, DATE_DATETIME.
     'sql_type' => DATE_DATETIME,
     // Timezone handling options: 'none', 'site', 'date', 'utc'.
-    'tz_handling' => 'site',
+    'tz_handling' => 'none',
     // Needed only for dates that use 'date' tz_handling.
     'timezone_field' => '',
     // Needed only for dates that use 'date' tz_handling.
@@ -754,16 +756,16 @@ function civicrm_date_views_tables() {
  */
 function civicrm_views_plugins() {
   $data = array();
-  
+
   // This just tells us that the themes are elsewhere
   $data['module'] = 'civicrm';
-  
+
   // Default argument to pull CiviCRM IDs from the URL
   $data['argument default']['civicrm_id'] = array(
     'title' => t('CiviCRM ID from URL'),
     'handler' => 'civicrm_plugin_argument_default_civicrm_id'
   );
-  
+
   // Calendar module integration
   if (module_exists('calendar')) {
     $civicrm_module_path = drupal_get_path('module', 'civicrm');
@@ -831,7 +833,6 @@ function civicrm_views_plugins() {
       ),
     );
   }
-	
+
   return $data;
 }
-

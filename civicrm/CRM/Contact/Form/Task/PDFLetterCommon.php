@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,14 +28,11 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
- * This class provides the common functionality for creating PDF letter for
- * one or a group of contact ids.
+ * This class provides the common functionality for creating PDF letter for one or a group of contact ids.
  */
 class CRM_Contact_Form_Task_PDFLetterCommon {
 
@@ -43,8 +40,6 @@ class CRM_Contact_Form_Task_PDFLetterCommon {
    * Build all the data structures needed to build the form.
    *
    * @param CRM_Core_Form $form
-   *
-   * @return void
    */
   public static function preProcess(&$form) {
     $messageText = array();
@@ -59,7 +54,7 @@ class CRM_Contact_Form_Task_PDFLetterCommon {
 
     $form->assign('message', $messageText);
     $form->assign('messageSubject', $messageSubject);
-    CRM_Utils_System::setTitle('Create Printable Letters (PDF)');
+    CRM_Utils_System::setTitle('Print/Merge Document');
   }
 
   /**
@@ -69,15 +64,13 @@ class CRM_Contact_Form_Task_PDFLetterCommon {
   public static function preProcessSingle(&$form, $cid) {
     $form->_contactIds = array($cid);
     // put contact display name in title for single contact mode
-    CRM_Utils_System::setTitle(ts('Create Printable Letter (PDF) for %1', array(1 => CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $cid, 'display_name'))));
+    CRM_Utils_System::setTitle(ts('Print/Merge Document for %1', array(1 => CRM_Core_DAO::getFieldValue('CRM_Contact_DAO_Contact', $cid, 'display_name'))));
   }
 
   /**
    * Build the form object.
    *
    * @var CRM_Core_Form $form
-   *
-   * @return void
    */
   public static function buildQuickForm(&$form) {
     // This form outputs a file so should never be submitted via ajax
@@ -174,14 +167,24 @@ class CRM_Contact_Form_Task_PDFLetterCommon {
     $form->assign('useSelectedPageFormat', ts('Should the new template always use the selected Page Format?'));
     $form->assign('totalSelectedContacts', count($form->_contactIds));
 
-    CRM_Mailing_BAO_Mailing::commonLetterCompose($form);
+    $form->add('select', 'document_type', ts('Document Type'), CRM_Core_SelectValues::documentFormat());
+
+    CRM_Mailing_BAO_Mailing::commonCompose($form);
 
     $buttons = array();
     if ($form->get('action') != CRM_Core_Action::VIEW) {
       $buttons[] = array(
         'type' => 'submit',
-        'name' => $form->_single ? ts('Make PDF') : ts('Make PDFs'),
+        'name' => ts('Download Document'),
         'isDefault' => TRUE,
+        'icon' => 'fa-download',
+      );
+      $buttons[] = array(
+        'type' => 'submit',
+        'name' => ts('Preview'),
+        'subName' => 'preview',
+        'icon' => 'fa-search',
+        'isDefault' => FALSE,
       );
     }
     $buttons[] = array(
@@ -281,7 +284,7 @@ class CRM_Contact_Form_Task_PDFLetterCommon {
       else {
         $query = "UPDATE civicrm_msg_template SET pdf_format_id = NULL WHERE id = {$formValues['template']}";
       }
-      CRM_Core_DAO::executeQuery($query, CRM_Core_DAO::$_nullArray);
+      CRM_Core_DAO::executeQuery($query);
     }
     if (!empty($formValues['update_format'])) {
       $bao = new CRM_Core_BAO_PdfFormat();
@@ -315,16 +318,14 @@ class CRM_Contact_Form_Task_PDFLetterCommon {
   /**
    * Process the form after the input has been submitted and validated.
    *
-   *
    * @param CRM_Core_Form $form
-   *
-   * @return void
    */
   public static function postProcess(&$form) {
     list($formValues, $categories, $html_message, $messageToken, $returnProperties) = self::processMessageTemplate($form);
-
+    $buttonName = $form->controller->getButtonName();
     $skipOnHold = isset($form->skipOnHold) ? $form->skipOnHold : FALSE;
     $skipDeceased = isset($form->skipDeceased) ? $form->skipDeceased : TRUE;
+    $html = array();
 
     foreach ($form->_contactIds as $item => $contactId) {
       $params = array('contact_id' => $contactId);
@@ -343,6 +344,9 @@ class CRM_Contact_Form_Task_PDFLetterCommon {
       }
 
       $tokenHtml = CRM_Utils_Token::replaceContactTokens($html_message, $contact[$contactId], TRUE, $messageToken);
+      if (!empty($form->_caseId)) {
+        $tokenHtml = CRM_Utils_Token::replaceCaseTokens($form->_caseId, $html_message, $messageToken);
+      }
       $tokenHtml = CRM_Utils_Token::replaceHookTokens($tokenHtml, $contact[$contactId], $categories, TRUE);
 
       if (defined('CIVICRM_MAIL_SMARTY') && CIVICRM_MAIL_SMARTY) {
@@ -355,9 +359,19 @@ class CRM_Contact_Form_Task_PDFLetterCommon {
       $html[] = $tokenHtml;
     }
 
-    self::createActivities($form, $html_message, $form->_contactIds);
+    // CRM-16725 Skip creation of activities if user is previewing their PDF letter(s)
+    if ($buttonName == '_qf_PDF_submit') {
+      self::createActivities($form, $html_message, $form->_contactIds);
+    }
 
-    CRM_Utils_PDF_Utils::html2pdf($html, "CiviLetter.pdf", FALSE, $formValues);
+    $type = $formValues['document_type'];
+
+    if ($type == 'pdf') {
+      CRM_Utils_PDF_Utils::html2pdf($html, "CiviLetter.pdf", FALSE, $formValues);
+    }
+    else {
+      CRM_Utils_PDF_Document::html2doc($html, "CiviLetter.$type", $formValues);
+    }
 
     $form->postProcessHook();
 

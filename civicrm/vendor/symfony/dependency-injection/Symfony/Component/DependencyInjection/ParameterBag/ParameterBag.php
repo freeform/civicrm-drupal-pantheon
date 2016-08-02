@@ -24,8 +24,8 @@ use Symfony\Component\DependencyInjection\Exception\RuntimeException;
  */
 class ParameterBag implements ParameterBagInterface
 {
-    protected $parameters;
-    protected $resolved;
+    protected $parameters = array();
+    protected $resolved = false;
 
     /**
      * Constructor.
@@ -36,9 +36,7 @@ class ParameterBag implements ParameterBagInterface
      */
     public function __construct(array $parameters = array())
     {
-        $this->parameters = array();
         $this->add($parameters);
-        $this->resolved = false;
     }
 
     /**
@@ -206,7 +204,7 @@ class ParameterBag implements ParameterBagInterface
     }
 
     /**
-     * Resolves parameters inside a string
+     * Resolves parameters inside a string.
      *
      * @param string $value     The string to resolve
      * @param array  $resolving An array of keys that are being resolved (used internally to detect circular references)

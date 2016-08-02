@@ -47,7 +47,7 @@ class Reference
      */
     public function __toString()
     {
-        return (string) $this->id;
+        return $this->id;
     }
 
     /**
@@ -61,7 +61,7 @@ class Reference
     }
 
     /**
-     * Returns true when this Reference is strict
+     * Returns true when this Reference is strict.
      *
      * @return bool
      */

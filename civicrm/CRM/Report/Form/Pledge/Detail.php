@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -39,7 +39,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -54,8 +54,7 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
   );
 
   /**
-   */
-  /**
+   * Class constructor.
    */
   public function __construct() {
     $this->_pledgeStatuses = CRM_Contribute_PseudoConstant::contributionStatus();
@@ -101,6 +100,9 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
           'contact_id' => array(
             'no_display' => TRUE,
             'required' => TRUE,
+          ),
+          'financial_type_id' => array(
+            'title' => ts('Financial Type'),
           ),
           'amount' => array(
             'title' => ts('Pledge Amount'),
@@ -152,8 +154,15 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
           'sid' => array(
             'name' => 'status_id',
             'title' => ts('Pledge Status'),
+            'type' => CRM_Utils_Type::T_INT,
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
             'options' => CRM_Core_OptionGroup::values('contribution_status'),
+          ),
+          'financial_type_id' => array(
+            'title' => ts('Financial Type'),
+            'type' => CRM_Utils_Type::T_INT,
+            'operatorType' => CRM_Report_Form::OP_MULTISELECT,
+            'options' => CRM_Contribute_PseudoConstant::financialType(),
           ),
 
         ),
@@ -187,6 +196,7 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
         'title' => ts('Campaign'),
         'operatorType' => CRM_Report_Form::OP_MULTISELECT,
         'options' => $this->activeCampaigns,
+        'type' => CRM_Utils_Type::T_INT,
       );
       $this->_columns['civicrm_pledge']['group_bys']['campaign_id'] = array('title' => ts('Campaign'));
 
@@ -282,6 +292,7 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
   public function statistics(&$rows) {
     $statistics = parent::statistics($rows);
     //regenerate the from field without extra left join on pledge payments
+    $totalPaid = $this->_totalPaid;
     $this->_totalPaid = FALSE;
     $this->from();
     $this->customDataFrom();
@@ -329,6 +340,11 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
           'type' => CRM_Utils_Type::T_INT,
         );
       }
+    }
+    // reset from clause
+    if ($totalPaid) {
+      $this->_totalPaid = TRUE;
+      $this->from();
     }
     return $statistics;
   }
@@ -449,6 +465,8 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
     // To Display Payment Details of pledged amount
     // for pledge payments In Progress
     if (!empty($display)) {
+      $statusId = array_keys(CRM_Core_PseudoConstant::accountOptionValues("contribution_status", NULL, " AND v.name IN  ('Pending', 'Overdue')"));
+      $statusId = implode(',', $statusId);
       $sqlPayment = "
                  SELECT min(payment.scheduled_date) as scheduled_date,
                         payment.pledge_id,
@@ -459,7 +477,7 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
                        LEFT JOIN civicrm_pledge pledge
                                  ON pledge.id = payment.pledge_id
 
-                  WHERE payment.status_id = 2
+                  WHERE payment.status_id IN ({$statusId})
 
                   GROUP BY payment.pledge_id";
 
@@ -554,6 +572,13 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
         );
         $rows[$rowNum]['civicrm_contact_sort_name_link'] = $url;
         $rows[$rowNum]['civicrm_contact_sort_name_hover'] = ts("View Contact Summary for this Contact.");
+        $entryFound = TRUE;
+      }
+
+      if (array_key_exists('civicrm_pledge_financial_type_id', $row)) {
+        if ($value = $row['civicrm_pledge_financial_type_id']) {
+          $rows[$rowNum]['civicrm_pledge_financial_type_id'] = CRM_Contribute_PseudoConstant::financialType($value, FALSE);
+        }
         $entryFound = TRUE;
       }
 

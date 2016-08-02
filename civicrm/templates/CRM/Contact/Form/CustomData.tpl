@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -39,17 +39,26 @@
   {if $customValueCount}
     {literal}
     <script type="text/javascript">
-      var customValueCount = {/literal}"{$customValueCount}"{literal};
-      var groupID = {/literal}"{$groupID}"{literal};
-      var contact_type = {/literal}"{$contact_type}"{literal};
-      var contact_subtype = {/literal}"{$contact_subtype}"{literal};
-      CRM.buildCustomData( contact_type, contact_subtype );
-      for ( var i = 1; i < customValueCount; i++ ) {
-        CRM.buildCustomData( contact_type, contact_subtype, null, i, groupID, true );
-      }
+      CRM.$(function() {
+        {/literal}
+        var customValueCount = "{$customValueCount}",
+          groupID = "{$groupID}",
+          contact_type = "{$contact_type}",
+          contact_subtype = "{$contact_subtype}",
+          i = 1;
+        {literal}
+        // FIXME: This is pretty terrible. Loading each item at a time via ajax.
+        // Building the complete form in php with no ajax would be way more efficient.
+        function loadNextRecord() {
+          if (i < customValueCount) {
+            CRM.buildCustomData(contact_type, contact_subtype, null, i++, groupID, true).one('crmLoad', loadNextRecord);
+          }
+        }
+        CRM.buildCustomData(contact_type, contact_subtype).one('crmLoad', loadNextRecord);
+      });
     </script>
     {/literal}
   {/if}
+  {include file="CRM/Form/attachmentjs.tpl"}
 {/if}
 
-{include file="CRM/Form/attachmentjs.tpl"}

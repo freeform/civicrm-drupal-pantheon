@@ -138,7 +138,7 @@ class Smarty
      *
      * @var boolean
      */
-    var $compile_check   =  false;
+    var $compile_check   =  true;
 
     /**
      * This forces templates to compile every time. Useful for development
@@ -175,7 +175,7 @@ class Smarty
      *
      * @var integer
      */
-    var $cache_lifetime  =  14400;
+    var $cache_lifetime  =  3600;
 
     /**
      * Only used when $caching is enabled. If true, then If-Modified-Since headers
@@ -1018,11 +1018,16 @@ class Smarty
      */
     function clear_compiled_tpl($tpl_file = null, $compile_id = null, $exp_time = null)
     {
-        // Smarty in Redis
-        // Not clear if this ever gets called,
-        // deleting compiled templates happens in CRM_Core_Config::cleanup()
-        CRM_Utils_Cache::singleton()->flush();
-        return TRUE;
+        if (!isset($compile_id)) {
+            $compile_id = $this->compile_id;
+        }
+        $_params = array('auto_base' => $this->compile_dir,
+                        'auto_source' => $tpl_file,
+                        'auto_id' => $compile_id,
+                        'exp_time' => $exp_time,
+                        'extensions' => array('.inc', '.php'));
+        require_once(SMARTY_CORE_DIR . 'core.rm_auto.php');
+        return smarty_core_rm_auto($_params, $this);
     }
 
     /**
@@ -1113,9 +1118,6 @@ class Smarty
     function fetch($resource_name, $cache_id = null, $compile_id = null, $display = false)
     {
         static $_cache_info = array();
-
-        // Smarty in Redis
-        $cache = CRM_Utils_Cache::singleton();
 
         $_smarty_old_error_level = $this->debugging ? error_reporting() : error_reporting(isset($this->error_reporting)
                ? $this->error_reporting : error_reporting() & ~E_NOTICE);
@@ -1252,28 +1254,14 @@ class Smarty
             if ($this->_is_compiled($resource_name, $_smarty_compile_path)
                     || $this->_compile_resource($resource_name, $_smarty_compile_path))
             {
-                // Smarty in Redis
-                $get = $cache->get($_smarty_compile_path);
-                if ($get) {
-                  eval('?>' . $get . '<?php ');
-                }
-                else {
-                  CRM_Core_Error::debug_log_message( 'Smarty in cache error 1: unable to read compiled template (for display): ' . $_smarty_compile_path);
-                }
+                include($_smarty_compile_path);
             }
         } else {
             ob_start();
             if ($this->_is_compiled($resource_name, $_smarty_compile_path)
                     || $this->_compile_resource($resource_name, $_smarty_compile_path))
             {
-                // Smarty in Redis
-                $get = $cache->get($_smarty_compile_path);
-                if ($get) {
-                  eval('?>' . $get . '<?php ');
-                }
-                else {
-                  CRM_Core_Error::debug_log_message( 'Smarty in cache error 2: unable to read compiled template (not for display): ' . $_smarty_compile_path);
-                }
+                include($_smarty_compile_path);
             }
             $_smarty_results = ob_get_contents();
             ob_end_clean();
@@ -1527,6 +1515,18 @@ class Smarty
                                                   $resource_name,
                                                   $this->_compile_id );
         $compilePath .= '.php';
+
+        //for 'string:' resource smarty might going to fail to create
+        //compile file, so make sure we should have valid path, CRM-5890
+        $matches = array( );
+        if ( preg_match( '/^(\s+)?string:/', $resource_name, $matches ) ) {
+            if ( !$this->validateCompilePath( $compilePath ) ) {
+                $compilePath = $this->_get_auto_filename( $this->compile_dir,
+                                                          time().rand(),
+                                                          $this->_compile_id );
+                $compilePath .= '.php';
+            }
+        }
 
         return $compilePath;
     }
@@ -1904,15 +1904,7 @@ class Smarty
         if ($this->_is_compiled($params['smarty_include_tpl_file'], $_smarty_compile_path)
             || $this->_compile_resource($params['smarty_include_tpl_file'], $_smarty_compile_path))
         {
-            // Smarty in Redis
-            $cache = CRM_Utils_Cache::singleton();
-            $get = $cache->get($_smarty_compile_path);
-            if ($get) {
-                eval('?>' . $get . '<?php ');
-            }
-            else {
-                CRM_Core_Error::debug_log_message( 'Smarty in cache error 3: unable to read compiled template: ' . $_smarty_compile_path);
-            }
+            include($_smarty_compile_path);
         }
 
         // pop the local vars off the front of the stack

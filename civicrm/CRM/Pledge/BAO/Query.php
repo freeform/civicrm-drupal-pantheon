@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,27 +28,27 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Pledge_BAO_Query {
   /**
+   * Get pledge fields.
+   *
+   * @param bool $checkPermission
+   *
    * @return array
    */
-  public static function &getFields() {
-    $fields = CRM_Pledge_BAO_Pledge::exportableFields();
-    return $fields;
+  public static function getFields($checkPermission = TRUE) {
+    return CRM_Pledge_BAO_Pledge::exportableFields($checkPermission);
   }
 
   /**
    * Build select for Pledge.
    *
-   * @param $query
-   *
-   * @return void
+   * @param CRM_Contact_BAO_Query $query
    */
   public static function select(&$query) {
+
     $statusId = implode(',', array_keys(CRM_Core_PseudoConstant::accountOptionValues("contribution_status", NULL, " AND v.name IN  ('Pending', 'Overdue')")));
     if (($query->_mode & CRM_Contact_BAO_Query::MODE_PLEDGE) || !empty($query->_returnProperties['pledge_id'])) {
       $query->_select['pledge_id'] = 'civicrm_pledge.id as pledge_id';
@@ -56,7 +56,7 @@ class CRM_Pledge_BAO_Query {
       $query->_tables['civicrm_pledge'] = $query->_whereTables['civicrm_pledge'] = 1;
     }
 
-    //add pledge select
+    // add pledge select
     if (!empty($query->_returnProperties['pledge_amount'])) {
       $query->_select['pledge_amount'] = 'civicrm_pledge.amount as pledge_amount';
       $query->_element['pledge_amount'] = 1;
@@ -66,6 +66,12 @@ class CRM_Pledge_BAO_Query {
     if (!empty($query->_returnProperties['pledge_create_date'])) {
       $query->_select['pledge_create_date'] = 'civicrm_pledge.create_date as pledge_create_date';
       $query->_element['pledge_create_date'] = 1;
+      $query->_tables['civicrm_pledge'] = $query->_whereTables['civicrm_pledge'] = 1;
+    }
+
+    if (!empty($query->_returnProperties['pledge_start_date'])) {
+      $query->_select['pledge_start_date'] = 'civicrm_pledge.start_date as pledge_start_date';
+      $query->_element['pledge_start_date'] = 1;
       $query->_tables['civicrm_pledge'] = $query->_whereTables['civicrm_pledge'] = 1;
     }
 
@@ -266,6 +272,26 @@ class CRM_Pledge_BAO_Query {
         );
         return;
 
+      case 'pledge_installments_low':
+      case 'pledge_installments_high':
+        // process min/max amount
+        $query->numberRangeBuilder($values,
+          'civicrm_pledge', 'pledge_installments', 'installments', 'Number of Installments'
+        );
+        return;
+
+      case 'pledge_acknowledge_date_is_not_null':
+        if ($value) {
+          $op = "IS NOT NULL";
+          $query->_qill[$grouping][] = ts('Pledge Acknowledgement Sent');
+        }
+        else {
+          $op = "IS NULL";
+          $query->_qill[$grouping][] = ts('Pledge Acknowledgement  Not Sent');
+        }
+        $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("civicrm_pledge.acknowledge_date", $op);
+        return;
+
       case 'pledge_payment_status_id':
       case 'pledge_status_id':
         if ($name == 'pledge_status_id') {
@@ -349,33 +375,24 @@ class CRM_Pledge_BAO_Query {
         $query->_tables['civicrm_pledge'] = $query->_whereTables['civicrm_pledge'] = 1;
         return;
 
-      case 'pledge_campaign_id':
-        if (CRM_Utils_Array::value($op, $value)) {
-          $value = $value[$op];
-        }
-        $campParams = array(
-          'op' => $op,
-          'campaign' => $value,
-          'grouping' => $grouping,
-          'tableName' => 'civicrm_pledge',
-        );
-        CRM_Campaign_BAO_Query::componentSearchClause($campParams, $query);
-        return;
-
       case 'pledge_contact_id':
+      case 'pledge_campaign_id':
         $name = str_replace('pledge_', '', $name);
         $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("civicrm_pledge.$name", $op, $value, 'Integer');
         list($op, $value) = CRM_Contact_BAO_Query::buildQillForFieldValue('CRM_Pledge_DAO_Pledge', $name, $value, $op);
-        $query->_qill[$grouping][] = ts('Contact ID %1 %2', array(1 => $op, 2 => $value));
+        $label = ($name == 'campaign_id') ? 'Campaign' : 'Contact ID';
+        $query->_qill[$grouping][] = ts('%1 %2 %3', array(1 => $label, 2 => $op, 3 => $value));
         $query->_tables['civicrm_pledge'] = $query->_whereTables['civicrm_pledge'] = 1;
         return;
     }
   }
 
   /**
+   * From clause.
+   *
    * @param string $name
-   * @param $mode
-   * @param $side
+   * @param string $mode
+   * @param string $side
    *
    * @return null|string
    */
@@ -424,6 +441,11 @@ class CRM_Pledge_BAO_Query {
 
   /**
    * Ideally this function should include fields that are displayed in the selector.
+   *
+   * @param int $mode
+   * @param bool $includeCustomFields
+   *
+   * @return array|null
    */
   public static function defaultReturnProperties(
     $mode,
@@ -441,6 +463,7 @@ class CRM_Pledge_BAO_Query {
         'pledge_amount' => 1,
         'pledge_total_paid' => 1,
         'pledge_create_date' => 1,
+        'pledge_start_date' => 1,
         'pledge_next_pay_date' => 1,
         'pledge_next_pay_amount' => 1,
         'pledge_status' => 1,
@@ -459,6 +482,10 @@ class CRM_Pledge_BAO_Query {
 
   /**
    * This includes any extra fields that might need for export etc.
+   *
+   * @param string $mode
+   *
+   * @return array|null
    */
   public static function extraReturnProperties($mode) {
     $properties = NULL;
@@ -508,17 +535,22 @@ class CRM_Pledge_BAO_Query {
     $form->addRule('pledge_amount_high', ts('Please enter a valid money value (e.g. %1).', array(1 => CRM_Utils_Money::format('99.99', ' '))), 'money');
 
     $statusValues = CRM_Contribute_PseudoConstant::contributionStatus();
-
     // Remove status values that are only used for recurring contributions for now (Failed and In Progress).
     unset($statusValues['4']);
-
+    // unset in progress for payment
+    unset($statusValues['5']);
     $form->add('select', 'pledge_status_id',
       ts('Pledge Status'), $statusValues,
       FALSE, array('class' => 'crm-select2', 'multiple' => 'multiple')
     );
 
-    //unset in progress for payment
-    unset($statusValues['5']);
+    $form->addYesNo('pledge_acknowledge_date_is_not_null', ts('Acknowledgement sent?'), TRUE);
+
+    $form->add('text', 'pledge_installments_low', ts('From'), array('size' => 8, 'maxlength' => 8));
+    $form->addRule('pledge_installments_low', ts('Please enter a number'), 'integer');
+
+    $form->add('text', 'pledge_installments_high', ts('To'), array('size' => 8, 'maxlength' => 8));
+    $form->addRule('pledge_installments_high', ts('Please enter number.'), 'integer');
 
     $form->add('select', 'pledge_payment_status_id',
       ts('Pledge Payment Status'), $statusValues,
@@ -537,7 +569,7 @@ class CRM_Pledge_BAO_Query {
       FALSE, array('class' => 'crm-select2')
     );
 
-    //add fields for pledge frequency
+    // add fields for pledge frequency
     $form->add('text', 'pledge_frequency_interval', ts('Every'), array('size' => 8, 'maxlength' => 8));
     $form->addRule('pledge_frequency_interval', ts('Please enter valid Pledge Frequency Interval'), 'integer');
     $frequencies = CRM_Core_OptionGroup::values('recur_frequency_units');
@@ -559,11 +591,7 @@ class CRM_Pledge_BAO_Query {
         foreach ($group['fields'] as $field) {
           $fieldId = $field['id'];
           $elementName = 'custom_' . $fieldId;
-          CRM_Core_BAO_CustomField::addQuickFormElement($form,
-            $elementName,
-            $fieldId,
-            FALSE, FALSE, TRUE
-          );
+          CRM_Core_BAO_CustomField::addQuickFormElement($form, $elementName, $fieldId, FALSE, TRUE);
         }
       }
     }
@@ -585,7 +613,7 @@ class CRM_Pledge_BAO_Query {
    * @param $tables
    */
   public static function tableNames(&$tables) {
-    //add status table
+    // add status table
     if (!empty($tables['pledge_status']) || !empty($tables['civicrm_pledge_payment'])) {
       $tables = array_merge(array('civicrm_pledge' => 1), $tables);
     }

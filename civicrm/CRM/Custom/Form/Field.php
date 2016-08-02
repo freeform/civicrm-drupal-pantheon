@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -486,7 +486,7 @@ class CRM_Custom_Form_Field extends CRM_Core_Form {
     $this->addRule('weight', ts('is a numeric field'), 'numeric');
 
     // is required ?
-    $this->add('checkbox', 'is_required', ts('Required?'));
+    $this->add('advcheckbox', 'is_required', ts('Required?'));
 
     // checkbox / radio options per line
     $this->add('text', 'options_per_line', ts('Options Per Line'));
@@ -507,13 +507,13 @@ class CRM_Custom_Form_Field extends CRM_Core_Form {
     );
 
     // is active ?
-    $this->add('checkbox', 'is_active', ts('Active?'));
+    $this->add('advcheckbox', 'is_active', ts('Active?'));
 
     // is active ?
-    $this->add('checkbox', 'is_view', ts('View Only?'));
+    $this->add('advcheckbox', 'is_view', ts('View Only?'));
 
     // is searchable ?
-    $this->addElement('checkbox',
+    $this->addElement('advcheckbox',
       'is_searchable',
       ts('Is this Field Searchable?'),
       NULL, array('onclick' => "showSearchRange(this)")
@@ -964,7 +964,7 @@ SELECT id
   FROM civicrm_state_province
  WHERE LOWER(name) = '$fieldStateProvince'
     OR abbreviation = '$fieldStateProvince'";
-          $dao = CRM_Core_DAO::executeQuery($query, CRM_Core_DAO::$_nullArray);
+          $dao = CRM_Core_DAO::executeQuery($query);
           if ($dao->fetch()) {
             $params['default_value'] = $dao->id;
           }
@@ -977,7 +977,7 @@ SELECT id
   FROM civicrm_country
  WHERE LOWER(name) = '$fieldCountry'
     OR iso_code = '$fieldCountry'";
-          $dao = CRM_Core_DAO::executeQuery($query, CRM_Core_DAO::$_nullArray);
+          $dao = CRM_Core_DAO::executeQuery($query);
           if ($dao->fetch()) {
             $params['default_value'] = $dao->id;
           }

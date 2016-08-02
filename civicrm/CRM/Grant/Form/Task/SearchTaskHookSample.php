@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -59,7 +59,7 @@ class CRM_Grant_Form_Task_SearchTaskHookSample extends CRM_Grant_Form_Task {
 INNER JOIN civicrm_contact ct ON ( grt.contact_id = ct.id )
      WHERE grt.id IN ( $grantIDs )";
 
-    $dao = CRM_Core_DAO::executeQuery($query, CRM_Core_DAO::$_nullArray);
+    $dao = CRM_Core_DAO::executeQuery($query);
 
     while ($dao->fetch()) {
       $rows[] = array(

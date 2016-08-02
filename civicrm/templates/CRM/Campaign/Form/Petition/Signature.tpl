@@ -1,8 +1,8 @@
 {*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -50,11 +50,11 @@
   {/if}
 {else}
   <div class="crm-section crm-petition-contact-profile">
-    {include file="CRM/Campaign/Form/Petition/Block.tpl" fields=$petitionContactProfile}
+    {include file="CRM/UF/Form/Block.tpl" fields=$petitionContactProfile hideFieldset=true}
   </div>
 
   <div class="crm-section crm-petition-activity-profile">
-    {include file="CRM/Campaign/Form/Petition/Block.tpl" fields=$petitionActivityProfile}
+    {include file="CRM/UF/Form/Block.tpl" fields=$petitionActivityProfile hideFieldset=true}
   </div>
 
   {if $isCaptcha}

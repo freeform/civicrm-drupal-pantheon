@@ -15,6 +15,8 @@
  * $Id$
  *
  */
+require_once 'PayJunction/pjClasses.php';
+
 class CRM_Core_Payment_PayJunction extends CRM_Core_Payment {
   # (not used, implicit in the API, might need to convert?)
   const CHARSET = 'UFT-8';
@@ -38,9 +40,6 @@ class CRM_Core_Payment_PayJunction extends CRM_Core_Payment {
    * @return \CRM_Core_Payment_PayJunction
    */
   public function __construct($mode, &$paymentProcessor) {
-    //require PayJunction API library
-    require_once 'PayJunction/pjClasses.php';
-
     $this->_mode = $mode;
     $this->_paymentProcessor = $paymentProcessor;
     $this->_processorName = ts('PayJunction');
@@ -92,6 +91,7 @@ class CRM_Core_Payment_PayJunction extends CRM_Core_Payment {
       'pan' => $params['credit_card_number'],
       'expdate' => $expiry_string,
       'crypt_type' => '7',
+      'cavv' => $params['cvv2'],
       'cust_id' => $params['contact_id'],
     );
 
@@ -171,9 +171,10 @@ class CRM_Core_Payment_PayJunction extends CRM_Core_Payment {
   }
   // end function doDirectPayment
 
-
   /**
    * This function checks the PayJunction response code.
+   *
+   * @param array $response
    *
    * @return bool
    */

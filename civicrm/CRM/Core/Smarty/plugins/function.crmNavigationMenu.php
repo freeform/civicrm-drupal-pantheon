@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -61,7 +61,7 @@ function smarty_function_crmNavigationMenu($params, &$smarty) {
       // These params force the browser to refresh the js file when switching user, domain, or language
       // We don't put them as a query string because some browsers will refuse to cache a page with a ? in the url
       // @see CRM_Admin_Page_AJAX::getNavigationMenu
-      $lang = $config->lcMessages;
+      $lang = CRM_Core_I18n::getLocale();
       $domain = CRM_Core_Config::domainID();
       $key = CRM_Core_BAO_Navigation::getCacheKey($contactID);
       $src = CRM_Utils_System::url("civicrm/ajax/menujs/$contactID/$lang/$domain/$key");

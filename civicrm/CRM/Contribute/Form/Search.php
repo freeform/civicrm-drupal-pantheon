@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -56,8 +56,6 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
    * @var boolean
    */
   protected $_limit = NULL;
-
-  protected $_defaults;
 
   /**
    * Prefix for the controller.
@@ -168,14 +166,7 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
    */
   public function buildQuickForm() {
     parent::buildQuickForm();
-    // text for sort_name
-    $this->addElement('text',
-      'sort_name',
-      ts('Contributor Name or Email'),
-      CRM_Core_DAO::getAttribute('CRM_Contact_DAO_Contact',
-        'sort_name'
-      )
-    );
+    $this->addSortNameField();
 
     $this->_group = CRM_Core_PseudoConstant::nestedGroup();
 
@@ -214,6 +205,28 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
       $this->addTaskMenu($tasks);
     }
 
+  }
+
+  /**
+   * Get the label for the sortName field if email searching is on.
+   *
+   * (email searching is a setting under search preferences).
+   *
+   * @return string
+   */
+  protected function getSortNameLabelWithEmail() {
+    return ts('Contributor Name or Email');
+  }
+
+  /**
+   * Get the label for the sortName field if email searching is off.
+   *
+   * (email searching is a setting under search preferences).
+   *
+   * @return string
+   */
+  protected function getSortNameLabelWithOutEmail() {
+    return ts('Contributor Name');
   }
 
   /**
@@ -263,19 +276,12 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
         'contribution_status_id',
         'contribution_source',
         'contribution_trxn_id',
+        'contribution_page_id',
+        'contribution_product_id',
         'invoice_id',
+        'payment_instrument_id',
       );
-      foreach ($specialParams as $element) {
-        $value = CRM_Utils_Array::value($element, $this->_formValues);
-        if ($value) {
-          if (is_array($value)) {
-            $this->_formValues[$element] = array('IN' => $value);
-          }
-          else {
-            $this->_formValues[$element] = array('LIKE' => "%$value%");
-          }
-        }
-      }
+      CRM_Contact_BAO_Query::processSpecialFormValue($this->_formValues, $specialParams);
 
       $tags = CRM_Utils_Array::value('contact_tags', $this->_formValues);
       if ($tags && !is_array($tags)) {
@@ -290,7 +296,7 @@ class CRM_Contribute_Form_Search extends CRM_Core_Form_Search {
         }
       }
 
-      if (!$config->groupTree) {
+      if (!defined('CIVICRM_GROUPTREE')) {
         $group = CRM_Utils_Array::value('group', $this->_formValues);
         if ($group && !is_array($group)) {
           unset($this->_formValues['group']);

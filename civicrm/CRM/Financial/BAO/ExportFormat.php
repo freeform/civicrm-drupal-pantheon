@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                             |
+ | CiviCRM version 4.7                                             |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
@@ -38,7 +36,7 @@
  * Create a subclass for a specific format.
  * @see http://wiki.civicrm.org/confluence/display/CRM/CiviAccounts+Specifications+-++Batches#CiviAccountsSpecifications-Batches-%C2%A0Overviewofimplementation
  */
-class CRM_Financial_BAO_ExportFormat {
+abstract class CRM_Financial_BAO_ExportFormat {
 
   /**
    * data which the individual export formats will output in the desired format.
@@ -73,22 +71,21 @@ class CRM_Financial_BAO_ExportFormat {
   }
 
   /**
-   * @param null $fileName
+   * Exports sbatches in $this->_batchIds, and saves to file.
+   *
+   * @param string $fileName - use this file name (if applicable)
    */
   public function output($fileName = NULL) {
-    switch ($this->getFileExtension()) {
-      case 'csv':
-        self::createActivityExport($this->_batchIds, $fileName);
-        break;
-
-      case 'iif':
-        $tplFile = $this->getHookedTemplateFileName();
-        $out = self::getTemplate()->fetch($tplFile);
-        $fileName = $this->putFile($out);
-        self::createActivityExport($this->_batchIds, $fileName);
-        break;
-    }
+    // Default behaviour, override if needed:
+    self::createActivityExport($this->_batchIds, $fileName);
   }
+
+  /**
+   * Abstract function that generates exports, and downloads them as zip file.
+   *
+   * @param $exportDaos array with DAO's for queries to be exported.
+   */
+  public abstract function makeExport($exportDaos);
 
   /**
    * @return string
@@ -98,19 +95,14 @@ class CRM_Financial_BAO_ExportFormat {
   }
 
   /**
+   * Returns some kind of identification for your export format.
+   *
+   * This does not really has to be a file extension, you can name your
+   * file as you wish as you override output.
+   *
    * @return string
    */
-  public function getFileExtension() {
-    return 'txt';
-  }
-
-  /**
-   * Override this if appropriate.
-   * @return null
-   */
-  public function getTemplateFileName() {
-    return NULL;
-  }
+  public abstract function getFileExtension();
 
   /**
    * @return object
@@ -150,14 +142,14 @@ class CRM_Financial_BAO_ExportFormat {
 
   public function initiateDownload() {
     $config = CRM_Core_Config::singleton();
-    //zip files if more than one.
+    // zip files if more than one.
     if (count($this->_downloadFile) > 1) {
       $zip = $config->customFileUploadDir . 'Financial_Transactions_' . date('YmdHis') . '.zip';
       $result = $this->createZip($this->_downloadFile, $zip, TRUE);
       if ($result) {
-        header('Content-Type: application/zip');
-        header('Content-Disposition: attachment; filename=' . CRM_Utils_File::cleanFileName(basename($zip)));
-        header('Content-Length: ' . filesize($zip));
+        CRM_Utils_System::setHttpHeader('Content-Type', 'application/zip');
+        CRM_Utils_System::setHttpHeader('Content-Disposition', 'attachment; filename=' . CRM_Utils_File::cleanFileName(basename($zip)));
+        CRM_Utils_System::setHttpHeader('Content-Length', '' . filesize($zip));
         ob_clean();
         flush();
         readfile($config->customFileUploadDir . CRM_Utils_File::cleanFileName(basename($zip)));
@@ -166,9 +158,9 @@ class CRM_Financial_BAO_ExportFormat {
       }
     }
     else {
-      header('Content-Type: text/plain');
-      header('Content-Disposition: attachment; filename=' . CRM_Utils_File::cleanFileName(basename($this->_downloadFile[0])));
-      header('Content-Length: ' . filesize($this->_downloadFile[0]));
+      CRM_Utils_System::setHttpHeader('Content-Type', 'text/plain');
+      CRM_Utils_System::setHttpHeader('Content-Disposition', 'attachment; filename=' . CRM_Utils_File::cleanFileName(basename($this->_downloadFile[0])));
+      CRM_Utils_System::setHttpHeader('Content-Length', '' . filesize($this->_downloadFile[0]));
       ob_clean();
       flush();
       readfile($config->customFileUploadDir . CRM_Utils_File::cleanFileName(basename($this->_downloadFile[0])));
@@ -195,7 +187,7 @@ class CRM_Financial_BAO_ExportFormat {
       $paymentInstrument = array_flip(CRM_Contribute_PseudoConstant::paymentInstrument('label'));
       $values['payment_instrument_id'] = array_search($values['payment_instrument_id'], $paymentInstrument);
     }
-    $details = '<p>' . ts('Record:') . ' ' . $values['title'] . '</p><p>' . ts('Description:') . '</p><p>' . ts('Created By:') . " $createdBy" . '</p><p>' . ts('Created Date:') . ' ' . $values['created_date'] . '</p><p>' . ts('Last Modified By:') . ' ' . $modifiedBy . '</p><p>' . ts('Payment Instrument:') . ' ' . $values['payment_instrument_id'] . '</p>';
+    $details = '<p>' . ts('Record:') . ' ' . $values['title'] . '</p><p>' . ts('Description:') . '</p><p>' . ts('Created By:') . " $createdBy" . '</p><p>' . ts('Created Date:') . ' ' . $values['created_date'] . '</p><p>' . ts('Last Modified By:') . ' ' . $modifiedBy . '</p><p>' . ts('Payment Method:') . ' ' . $values['payment_instrument_id'] . '</p>';
     $subject = '';
     if (!empty($values['total'])) {
       $subject .= ts('Total') . '[' . CRM_Utils_Money::format($values['total']) . '],';
@@ -204,7 +196,7 @@ class CRM_Financial_BAO_ExportFormat {
       $subject .= ' ' . ts('Count') . '[' . $values['item_count'] . '],';
     }
 
-    //create activity.
+    // create activity.
     $subject .= ' ' . ts('Batch') . '[' . $values['title'] . ']';
     $activityTypes = CRM_Core_PseudoConstant::activityType(TRUE, FALSE, FALSE, 'name');
     $activityParams = array(
@@ -235,14 +227,14 @@ class CRM_Financial_BAO_ExportFormat {
    * @return bool
    */
   public function createZip($files = array(), $destination = NULL, $overwrite = FALSE) {
-    //if the zip file already exists and overwrite is false, return false
+    // if the zip file already exists and overwrite is false, return false
     if (file_exists($destination) && !$overwrite) {
       return FALSE;
     }
     $valid_files = array();
     if (is_array($files)) {
       foreach ($files as $file) {
-        //make sure the file exists
+        // make sure the file exists
         if (file_exists($file)) {
           $validFiles[] = $file;
         }

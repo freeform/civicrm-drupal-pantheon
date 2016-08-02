@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -58,13 +58,6 @@ class CRM_Custom_Form_Group extends CRM_Core_Form {
    * @var array
    */
   protected $_subtypes = array();
-
-  /**
-   * Array of default params.
-   *
-   * @var array
-   */
-  protected $_defaults = array();
 
   /**
    * Set variables up before form is built.
@@ -335,8 +328,8 @@ class CRM_Custom_Form_Group extends CRM_Core_Form {
     $this->assign('defaultSubtypes', json_encode($this->_subtypes));
 
     // help text
-    $this->addWysiwyg('help_pre', ts('Pre-form Help'), $attributes['help_pre']);
-    $this->addWysiwyg('help_post', ts('Post-form Help'), $attributes['help_post']);
+    $this->add('wysiwyg', 'help_pre', ts('Pre-form Help'), $attributes['help_pre']);
+    $this->add('wysiwyg', 'help_post', ts('Post-form Help'), $attributes['help_post']);
 
     // weight
     $this->add('text', 'weight', ts('Order'), $attributes['weight'], TRUE);
@@ -346,16 +339,16 @@ class CRM_Custom_Form_Group extends CRM_Core_Form {
     $this->add('select', 'style', ts('Display Style'), CRM_Core_SelectValues::customGroupStyle());
 
     // is this set collapsed or expanded ?
-    $this->addElement('checkbox', 'collapse_display', ts('Collapse this set on initial display'));
+    $this->addElement('advcheckbox', 'collapse_display', ts('Collapse this set on initial display'));
 
     // is this set collapsed or expanded ? in advanced search
-    $this->addElement('checkbox', 'collapse_adv_display', ts('Collapse this set in Advanced Search'));
+    $this->addElement('advcheckbox', 'collapse_adv_display', ts('Collapse this set in Advanced Search'));
 
     // is this set active ?
-    $this->addElement('checkbox', 'is_active', ts('Is this Custom Data Set active?'));
+    $this->addElement('advcheckbox', 'is_active', ts('Is this Custom Data Set active?'));
 
     // does this set have multiple record?
-    $multiple = $this->addElement('checkbox', 'is_multiple',
+    $multiple = $this->addElement('advcheckbox', 'is_multiple',
       ts('Does this Custom Field Set allow multiple records?'), NULL);
 
     // $min_multiple = $this->add('text', 'min_multiple', ts('Minimum number of multiple records'), $attributes['min_multiple'] );

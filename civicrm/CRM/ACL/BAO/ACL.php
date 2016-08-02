@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,15 +28,16 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 
 /**
  *  Access Control List
  */
 class CRM_ACL_BAO_ACL extends CRM_ACL_DAO_ACL {
+  /**
+   * @var string
+   */
   static $_entityTable = NULL;
   static $_objectTable = NULL;
   static $_operation = NULL;
@@ -44,6 +45,8 @@ class CRM_ACL_BAO_ACL extends CRM_ACL_DAO_ACL {
   static $_fieldKeys = NULL;
 
   /**
+   * Get ACL entity table.
+   *
    * @return array|null
    */
   public static function entityTable() {
@@ -679,7 +682,7 @@ SELECT $acl.*
    *   Value we want to set the is_active field.
    *
    * @return Object
-   *   DAO object on sucess, null otherwise
+   *   DAO object on success, null otherwise
    */
   public static function setIsActive($id, $is_active) {
     // note this also resets any ACL cache
@@ -720,14 +723,54 @@ SELECT count( a.id )
   }
 
   /**
+   * Build a join and where part for a query
+   *
+   * @param int $contactId
+   * @return array - the first key is join part of the query and the second key is the where part of the query
+   */
+  public static function buildAcl($contactId) {
+    // If there is no $contactId passed return empty ACL join and where clause
+    if (empty($contactId)) {
+      return array('', '');
+    }
+
+    $tables = array();
+    $whereTables = array();
+    $whereClause = CRM_ACL_BAO_ACL::whereClause(CRM_Core_Permission::VIEW, $tables, $whereTables, $contactId, TRUE);
+    if (strlen($whereClause)) {
+      $whereClause = " AND (" . $whereClause . ")";
+    }
+
+    $join = "";
+    foreach ($whereTables as $name => $value) {
+      if (!$value) {
+        continue;
+      }
+      if ($value != 1) {
+        // if there is already a join statement in value, use value itself
+        if (strpos($value, 'JOIN')) {
+          $join .= " $value ";
+        }
+        continue;
+      }
+    }
+
+    return array(
+      $join,
+      $whereClause,
+    );
+  }
+
+  /**
    * @param $type
    * @param $tables
    * @param $whereTables
    * @param int $contactID
+   * @param bool $strictReturn If there is no where clause build for ACL
    *
    * @return null|string
    */
-  public static function whereClause($type, &$tables, &$whereTables, $contactID = NULL) {
+  public static function whereClause($type, &$tables, &$whereTables, $contactID = NULL, $strictReturn = FALSE) {
     $acls = CRM_ACL_BAO_Cache::build($contactID);
 
     $whereClause = NULL;
@@ -837,7 +880,7 @@ SELECT g.*
     // call the hook to get additional whereClauses
     CRM_Utils_Hook::aclWhereClause($type, $tables, $whereTables, $contactID, $whereClause);
 
-    if (empty($whereClause)) {
+    if (empty($whereClause) && !$strictReturn) {
       $whereClause = ' ( 0 ) ';
     }
 

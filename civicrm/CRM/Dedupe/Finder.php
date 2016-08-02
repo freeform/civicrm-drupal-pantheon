@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  *
  */
@@ -48,20 +48,38 @@ class CRM_Dedupe_Finder {
    * @param array $cids
    *   Contact ids to limit the search to.
    *
+   * @param bool $checkPermissions
+   *   Respect logged in user permissions.
+   *
+   * @param int $limit
+   *   Optional limit. This limits the number of contacts for which the code will
+   *   attempt to find matches.
+   *
    * @return array
-   *   array of (cid1, cid2, weight) dupe triples
+   *   Array of (cid1, cid2, weight) dupe triples
+   *
+   * @throws CiviCRM_API3_Exception
+   * @throws Exception
    */
-  public static function dupes($rgid, $cids = array()) {
+  public static function dupes($rgid, $cids = array(), $checkPermissions = TRUE, $limit = NULL) {
     $rgBao = new CRM_Dedupe_BAO_RuleGroup();
     $rgBao->id = $rgid;
     $rgBao->contactIds = $cids;
     if (!$rgBao->find(TRUE)) {
       CRM_Core_Error::fatal("Dedupe rule not found for selected contacts");
     }
+    if (empty($rgBao->contactIds) && !empty($limit)) {
+      $limitedContacts = civicrm_api3('Contact', 'get', array(
+        'return' => 'id',
+        'contact_type' => $rgBao->contact_type,
+        'options' => array('limit' => $limit),
+      ));
+      $rgBao->contactIds = array_keys($limitedContacts['values']);
+    }
 
     $rgBao->fillTable();
     $dao = new CRM_Core_DAO();
-    $dao->query($rgBao->thresholdQuery());
+    $dao->query($rgBao->thresholdQuery($checkPermissions));
     $dupes = array();
     while ($dao->fetch()) {
       $dupes[] = array($dao->id1, $dao->id2, $dao->weight);
@@ -149,11 +167,12 @@ class CRM_Dedupe_Finder {
    * @param int $gid
    *   Contact group id (currently, works only with non-smart groups).
    *
+   * @param int $limit
    * @return array
    *   array of (cid1, cid2, weight) dupe triples
    */
-  public static function dupesInGroup($rgid, $gid) {
-    $cids = array_keys(CRM_Contact_BAO_Group::getMember($gid));
+  public static function dupesInGroup($rgid, $gid, $limit = NULL) {
+    $cids = array_keys(CRM_Contact_BAO_Group::getMember($gid, $limit));
     if (!empty($cids)) {
       return self::dupes($rgid, $cids);
     }
@@ -235,9 +254,9 @@ class CRM_Dedupe_Finder {
 
     // handle {birth,deceased}_date
     foreach (array(
-               'birth_date',
-               'deceased_date',
-             ) as $date) {
+      'birth_date',
+      'deceased_date',
+    ) as $date) {
       if (!empty($fields[$date])) {
         $flat[$date] = $fields[$date];
         if (is_array($flat[$date])) {
@@ -279,7 +298,7 @@ class CRM_Dedupe_Finder {
       if (substr_count($key, '.')) {
         $last = explode('.', $key);
         $last = array_pop($last);
-        // make sure the first occurence is kept, not the last
+        // make sure the first occurrence is kept, not the last
         if (!isset($flat[$last])) {
           $flat[$last] = $value;
         }
@@ -292,8 +311,9 @@ class CRM_Dedupe_Finder {
     // the -digit to civicrm_address.location_type_id and -Primary to civicrm_address.is_primary
     foreach ($flat as $key => $value) {
       $matches = array();
-      if (preg_match('/(.*)-(\d+|Primary)$/', $key, $matches)) {
-        $flat[$matches[1]] = $value;
+      if (preg_match('/(.*)-(Primary-[\d+])$|(.*)-(\d+|Primary)$/', $key, $matches)) {
+        $return = array_values(array_filter($matches));
+        $flat[$return[1]] = $value;
         unset($flat[$key]);
       }
     }

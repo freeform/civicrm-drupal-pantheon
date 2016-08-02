@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2016
  */
 class CRM_Logging_Reverter {
   private $db;
@@ -38,7 +36,16 @@ class CRM_Logging_Reverter {
   private $log_date;
 
   /**
-   * @param int $log_conn_id
+   * The diffs to be reverted.
+   *
+   * @var array
+   */
+  private $diffs = array();
+
+  /**
+   * Class constructor.
+   *
+   * @param string $log_conn_id
    * @param $log_date
    */
   public function __construct($log_conn_id, $log_date) {
@@ -49,22 +56,24 @@ class CRM_Logging_Reverter {
   }
 
   /**
-   * @param $tables
+   *
+   * Calculate a set of diffs based on the connection_id and changes at a close time.
+   *
+   * @param array $tables
    */
-  public function revert($tables) {
-    // FIXME: split off the table → DAO mapping to a GenCode-generated class
-    $daos = array(
-      'civicrm_address' => 'CRM_Core_DAO_Address',
-      'civicrm_contact' => 'CRM_Contact_DAO_Contact',
-      'civicrm_email' => 'CRM_Core_DAO_Email',
-      'civicrm_im' => 'CRM_Core_DAO_IM',
-      'civicrm_openid' => 'CRM_Core_DAO_OpenID',
-      'civicrm_phone' => 'CRM_Core_DAO_Phone',
-      'civicrm_website' => 'CRM_Core_DAO_Website',
-      'civicrm_contribution' => 'CRM_Contribute_DAO_Contribution',
-      'civicrm_note' => 'CRM_Core_DAO_Note',
-      'civicrm_relationship' => 'CRM_Contact_DAO_Relationship',
-    );
+  public function calculateDiffsFromLogConnAndDate($tables) {
+    $differ = new CRM_Logging_Differ($this->log_conn_id, $this->log_date);
+    $this->diffs = $differ->diffsInTables($tables);
+  }
+
+  public function setDiffs($diffs) {
+    $this->diffs = $diffs;
+  }
+
+  /**
+   * Revert changes in the array of diffs in $this->diffs.
+   */
+  public function revert() {
 
     // get custom data tables, columns and types
     $ctypes = array();
@@ -76,9 +85,7 @@ class CRM_Logging_Reverter {
       $ctypes[$dao->table_name][$dao->column_name] = $dao->data_type;
     }
 
-    $differ = new CRM_Logging_Differ($this->log_conn_id, $this->log_date);
-    $diffs = $differ->diffsInTables($tables);
-
+    $diffs = $this->diffs;
     $deletes = array();
     $reverts = array();
     foreach ($diffs as $table => $changes) {
@@ -115,8 +122,8 @@ class CRM_Logging_Reverter {
       switch (TRUE) {
         // DAO-based tables
 
-        case in_array($table, array_keys($daos)):
-          $dao = new $daos[$table]();
+        case (($tableDAO = CRM_Core_DAO_AllCoreTables::getClassForTable($table)) != FALSE):
+          $dao = new $tableDAO ();
           foreach ($row as $id => $changes) {
             $dao->id = $id;
             foreach ($changes as $field => $value) {
@@ -126,9 +133,17 @@ class CRM_Logging_Reverter {
               if (empty($value) and $value !== 0 and $value !== '0') {
                 $value = 'null';
               }
+              // Date reaches this point in ISO format (possibly) so strip out stuff
+              // if it does have hyphens of colons demarking the date & it regexes as being a date
+              // or datetime format.
+              if (preg_match('/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/', $value)) {
+                $value = str_replace('-', '', $value);
+                $value = str_replace(':', '', $value);
+              }
               $dao->$field = $value;
             }
             $changes['log_action'] == 'Delete' ? $dao->insert() : $dao->update();
+
             $dao->reset();
           }
           break;
@@ -146,6 +161,7 @@ class CRM_Logging_Reverter {
               if (!isset($ctypes[$table][$field])) {
                 continue;
               }
+              $fldVal = "%{$counter}";
               switch ($ctypes[$table][$field]) {
                 case 'Date':
                   $value = substr(CRM_Utils_Date::isoToMysql($value), 0, 8);
@@ -154,10 +170,17 @@ class CRM_Logging_Reverter {
                 case 'Timestamp':
                   $value = CRM_Utils_Date::isoToMysql($value);
                   break;
+
+                case 'Boolean':
+                  if ($value === '') {
+                    $fldVal = 'DEFAULT';
+                  }
               }
               $inserts[$field] = "%$counter";
-              $updates[] = "$field = %$counter";
-              $params[$counter] = array($value, $ctypes[$table][$field]);
+              $updates[] = "{$field} = {$fldVal}";
+              if ($fldVal != 'DEFAULT') {
+                $params[$counter] = array($value, $ctypes[$table][$field]);
+              }
               $counter++;
             }
             if ($changes['log_action'] == 'Delete') {
@@ -181,7 +204,7 @@ class CRM_Logging_Reverter {
                 ORDER BY log_date DESC LIMIT 1
             ";
       $params = array(
-        1 => array($this->log_conn_id, 'Integer'),
+        1 => array($this->log_conn_id, 'String'),
         2 => array($this->log_date, 'String'),
       );
       $cid = CRM_Core_DAO::singleValueQuery($query, $params);

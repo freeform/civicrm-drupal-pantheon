@@ -1,9 +1,9 @@
 <?php
 /*
  +--------------------------------------------------------------------+
- | CiviCRM version 4.6                                                |
+ | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2015                                |
+ | Copyright CiviCRM LLC (c) 2004-2016                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,11 +27,11 @@
 
 /**
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2015
+ * @copyright CiviCRM LLC (c) 2004-2016
  * $Id$
  */
 
-if (!empty($_SERVER['PRESSFLOW_SETTINGS'])) {
+if (defined('PANTHEON_ENVIRONMENT')) {
   ini_set('session.save_handler', 'files');
 }
 session_start();
@@ -50,6 +50,10 @@ $paypalIPN = new CRM_Core_Payment_PayPalProIPN($_REQUEST);
 
 
 try {
+  //CRM-18245
+  if ($config->userFramework == 'Joomla') {
+    CRM_Utils_System::loadBootStrap();
+  }
   $paypalIPN->main();
 }
 catch (CRM_Core_Exception $e) {

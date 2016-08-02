@@ -23,6 +23,7 @@ class CRM_Core_Payment_AuthorizeNet extends CRM_Core_Payment {
   const AUTH_APPROVED = 1;
   const AUTH_DECLINED = 2;
   const AUTH_ERROR = 3;
+  const AUTH_REVIEW = 4;
   const TIMEZONE = 'America/Denver';
 
   protected $_mode = NULL;
@@ -52,13 +53,11 @@ class CRM_Core_Payment_AuthorizeNet extends CRM_Core_Payment {
     $this->_paymentProcessor = $paymentProcessor;
     $this->_processorName = ts('Authorize.net');
 
-    $config = CRM_Core_Config::singleton();
     $this->_setParam('apiLogin', $paymentProcessor['user_name']);
     $this->_setParam('paymentKey', $paymentProcessor['password']);
     $this->_setParam('paymentType', 'AIM');
-    $this->_setParam('md5Hash', $paymentProcessor['signature']);
+    $this->_setParam('md5Hash', CRM_Utils_Array::value('signature', $paymentProcessor));
 
-    $this->_setParam('emailCustomer', 'TRUE');
     $this->_setParam('timestamp', time());
     srand(time());
     $this->_setParam('sequence', rand(1, 1000));
@@ -104,7 +103,7 @@ class CRM_Core_Payment_AuthorizeNet extends CRM_Core_Payment {
     }
 
     /*
-     * recurpayment function does not compile an array & then proces it -
+     * recurpayment function does not compile an array & then process it -
      * - the tpl does the transformation so adding call to hook here
      * & giving it a change to act on the params array
      */
@@ -144,7 +143,7 @@ class CRM_Core_Payment_AuthorizeNet extends CRM_Core_Payment {
     }
 
     // Authorize.Net will not refuse duplicates, so we should check if the user already submitted this transaction
-    if ($this->_checkDupe($authorizeNetFields['x_invoice_num'])) {
+    if ($this->checkDupe($authorizeNetFields['x_invoice_num'], CRM_Utils_Array::value('contributionID', $params))) {
       return self::error(9004, 'It appears that this transaction is a duplicate.  Have you already submitted the form once?  If so there may have been a connection problem.  Check your email for a receipt from Authorize.net.  If you do not receive a receipt within 2 hours you can try your transaction again.  If you continue to have problems please contact the site administrator.');
     }
 
@@ -157,7 +156,7 @@ class CRM_Core_Payment_AuthorizeNet extends CRM_Core_Payment {
     curl_setopt($submit, CURLOPT_POST, TRUE);
     curl_setopt($submit, CURLOPT_RETURNTRANSFER, TRUE);
     curl_setopt($submit, CURLOPT_POSTFIELDS, implode('&', $postFields));
-    curl_setopt($submit, CURLOPT_SSL_VERIFYPEER, CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'verifySSL'));
+    curl_setopt($submit, CURLOPT_SSL_VERIFYPEER, Civi::settings()->get('verifySSL'));
 
     $response = curl_exec($submit);
 
@@ -168,7 +167,6 @@ class CRM_Core_Payment_AuthorizeNet extends CRM_Core_Payment {
     curl_close($submit);
 
     $response_fields = $this->explode_csv($response);
-
     // check gateway MD5 response
     if (!$this->checkMD5($response_fields[37], $response_fields[6], $response_fields[9])) {
       return self::error(9003, 'MD5 Verification failed');
@@ -177,30 +175,42 @@ class CRM_Core_Payment_AuthorizeNet extends CRM_Core_Payment {
     // check for application errors
     // TODO:
     // AVS, CVV2, CAVV, and other verification results
-    if ($response_fields[0] != self::AUTH_APPROVED) {
-      $errormsg = $response_fields[2] . ' ' . $response_fields[3];
-      return self::error($response_fields[1], $errormsg);
-    }
+    $contributionStatus = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
+    switch ($response_fields[0]) {
+      case self::AUTH_REVIEW :
+        $params['payment_status_id'] = array_search('Pending', $contributionStatus);
+        break;
 
-    // Success
+      case self::AUTH_ERROR :
+        $params['payment_status_id'] = array_search('Failed', $contributionStatus);
+        break;
 
-    // test mode always returns trxn_id = 0
-    // also live mode in CiviCRM with test mode set in
-    // Authorize.Net return $response_fields[6] = 0
-    // hence treat that also as test mode transaction
-    // fix for CRM-2566
-    if (($this->_mode == 'test') || $response_fields[6] == 0) {
-      $query = "SELECT MAX(trxn_id) FROM civicrm_contribution WHERE trxn_id RLIKE 'test[0-9]+'";
-      $p = array();
-      $trxn_id = strval(CRM_Core_DAO::singleValueQuery($query, $p));
-      $trxn_id = str_replace('test', '', $trxn_id);
-      $trxn_id = intval($trxn_id) + 1;
-      $params['trxn_id'] = sprintf('test%08d', $trxn_id);
+      case self::AUTH_DECLINED :
+        $errormsg = $response_fields[2] . ' ' . $response_fields[3];
+        return self::error($response_fields[1], $errormsg);
+
+      default:
+        // Success
+
+        // test mode always returns trxn_id = 0
+        // also live mode in CiviCRM with test mode set in
+        // Authorize.Net return $response_fields[6] = 0
+        // hence treat that also as test mode transaction
+        // fix for CRM-2566
+        if (($this->_mode == 'test') || $response_fields[6] == 0) {
+          $query = "SELECT MAX(trxn_id) FROM civicrm_contribution WHERE trxn_id RLIKE 'test[0-9]+'";
+          $p = array();
+          $trxn_id = strval(CRM_Core_DAO::singleValueQuery($query, $p));
+          $trxn_id = str_replace('test', '', $trxn_id);
+          $trxn_id = intval($trxn_id) + 1;
+          $params['trxn_id'] = sprintf('test%08d', $trxn_id);
+        }
+        else {
+          $params['trxn_id'] = $response_fields[6];
+        }
+        $params['gross_amount'] = $response_fields[9];
+        break;
     }
-    else {
-      $params['trxn_id'] = $response_fields[6];
-    }
-    $params['gross_amount'] = $response_fields[9];
     // TODO: include authorization code?
 
     return $params;
@@ -316,7 +326,7 @@ class CRM_Core_Payment_AuthorizeNet extends CRM_Core_Payment {
     curl_setopt($submit, CURLOPT_HEADER, 1);
     curl_setopt($submit, CURLOPT_POSTFIELDS, $arbXML);
     curl_setopt($submit, CURLOPT_POST, 1);
-    curl_setopt($submit, CURLOPT_SSL_VERIFYPEER, CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'verifySSL'));
+    curl_setopt($submit, CURLOPT_SSL_VERIFYPEER, Civi::settings()->get('verifySSL'));
 
     $response = curl_exec($submit);
 
@@ -387,21 +397,6 @@ class CRM_Core_Payment_AuthorizeNet extends CRM_Core_Payment {
     }
 
     return $fields;
-  }
-
-  /**
-   * Checks to see if invoice_id already exists in db.
-   *
-   * @param int $invoiceId
-   *   The ID to check.
-   *
-   * @return bool
-   *   True if ID exists, else false
-   */
-  public function _checkDupe($invoiceId) {
-    $contribution = new CRM_Contribute_DAO_Contribution();
-    $contribution->invoice_id = $invoiceId;
-    return $contribution->find();
   }
 
   /**
@@ -554,6 +549,12 @@ class CRM_Core_Payment_AuthorizeNet extends CRM_Core_Payment {
    *
    * Function is from Authorize.Net sample code, and used to avoid using
    * PHP5 XML functions
+   *
+   * @param string $haystack
+   * @param string $start
+   * @param string $end
+   *
+   * @return bool|string
    */
   public function _substring_between(&$haystack, $start, $end) {
     if (strpos($haystack, $start) === FALSE || strpos($haystack, $end) === FALSE) {
@@ -680,7 +681,7 @@ class CRM_Core_Payment_AuthorizeNet extends CRM_Core_Payment {
     curl_setopt($submit, CURLOPT_HEADER, 1);
     curl_setopt($submit, CURLOPT_POSTFIELDS, $arbXML);
     curl_setopt($submit, CURLOPT_POST, 1);
-    curl_setopt($submit, CURLOPT_SSL_VERIFYPEER, CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'verifySSL'));
+    curl_setopt($submit, CURLOPT_SSL_VERIFYPEER, Civi::settings()->get('verifySSL'));
 
     $response = curl_exec($submit);
 
@@ -739,7 +740,7 @@ class CRM_Core_Payment_AuthorizeNet extends CRM_Core_Payment {
     curl_setopt($submit, CURLOPT_HEADER, 1);
     curl_setopt($submit, CURLOPT_POSTFIELDS, $arbXML);
     curl_setopt($submit, CURLOPT_POST, 1);
-    curl_setopt($submit, CURLOPT_SSL_VERIFYPEER, CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'verifySSL'));
+    curl_setopt($submit, CURLOPT_SSL_VERIFYPEER, Civi::settings()->get('verifySSL'));
 
     $response = curl_exec($submit);
 
@@ -801,7 +802,7 @@ class CRM_Core_Payment_AuthorizeNet extends CRM_Core_Payment {
     curl_setopt($submit, CURLOPT_HEADER, 1);
     curl_setopt($submit, CURLOPT_POSTFIELDS, $arbXML);
     curl_setopt($submit, CURLOPT_POST, 1);
-    curl_setopt($submit, CURLOPT_SSL_VERIFYPEER, CRM_Core_BAO_Setting::getItem(CRM_Core_BAO_Setting::SYSTEM_PREFERENCES_NAME, 'verifySSL'));
+    curl_setopt($submit, CURLOPT_SSL_VERIFYPEER, Civi::settings()->get('verifySSL'));
 
     $response = curl_exec($submit);
 

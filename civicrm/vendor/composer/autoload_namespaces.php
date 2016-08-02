@@ -9,8 +9,10 @@ return array(
     'System' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
     'Symfony\\Component\\Process\\' => array($vendorDir . '/symfony/process'),
     'Symfony\\Component\\Finder\\' => array($vendorDir . '/symfony/finder'),
+    'Symfony\\Component\\Filesystem\\' => array($vendorDir . '/symfony/filesystem'),
     'Symfony\\Component\\EventDispatcher\\' => array($vendorDir . '/symfony/event-dispatcher'),
     'Symfony\\Component\\DependencyInjection\\' => array($vendorDir . '/symfony/dependency-injection'),
+    'Symfony\\Component\\Config\\' => array($vendorDir . '/symfony/config'),
     'Psr\\Log\\' => array($vendorDir . '/psr/log'),
     'PHPUnit_' => array($baseDir . '/packages'),
     'Net' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
@@ -18,5 +20,6 @@ return array(
     'File' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
     'Crypt' => array($vendorDir . '/phpseclib/phpseclib/phpseclib'),
     'Civi\\' => array($baseDir . '/', $baseDir . '/tests/phpunit'),
+    'Civi' => array($baseDir . '/'),
     'CA_Config' => array($vendorDir . '/totten/ca-config/src'),
 );
