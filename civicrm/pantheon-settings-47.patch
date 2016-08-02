@@ -109,7 +109,7 @@
 + 
 +// Pantheon: if it's not the live site then send all emails to a log file
 +if ($pantheon_conf['pantheon_environment'] != 'live') {
-+  define('CIVICRM_MAIL_LOG', '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/default/files/private/civicrm/templates_c/mail.log');
++  define('CIVICRM_MAIL_LOG', '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/default/files/private/civicrm/ConfigAndLog/mail.log');
 +}
 +
  // if (!defined('CIVICRM_MAIL_LOG')) {
