@@ -761,6 +761,7 @@ LIMIT {$offset}, {$rowCount}
         foreach ($elements as $key => $element) {
           $elements[$key] = self::_convertToId($element);
         }
+        CRM_Utils_Type::escapeAll($elements, 'Integer');
         CRM_Core_BAO_PrevNextCache::markSelection($cacheKey, $actionToPerform, $elements);
       }
       else {
@@ -769,6 +770,7 @@ LIMIT {$offset}, {$rowCount}
     }
     elseif ($variableType == 'single') {
       $cId = self::_convertToId($name);
+      CRM_Utils_Type::escape($cId, 'Integer');
       $action = ($state == 'checked') ? 'select' : 'unselect';
       CRM_Core_BAO_PrevNextCache::markSelection($cacheKey, $action, $cId);
     }
@@ -838,9 +840,9 @@ LIMIT {$offset}, {$rowCount}
     $offset = isset($_REQUEST['iDisplayStart']) ? CRM_Utils_Type::escape($_REQUEST['iDisplayStart'], 'Integer') : 0;
     $rowCount = isset($_REQUEST['iDisplayLength']) ? CRM_Utils_Type::escape($_REQUEST['iDisplayLength'], 'Integer') : 25;
     $sort = isset($_REQUEST['iSortCol_0']) ? CRM_Utils_Array::value(CRM_Utils_Type::escape($_REQUEST['iSortCol_0'], 'Integer'), $sortMapper) : NULL;
-    $sortOrder = isset($_REQUEST['sSortDir_0']) ? CRM_Utils_Type::escape($_REQUEST['sSortDir_0'], 'String') : 'asc';
+    $sortOrder = isset($_REQUEST['sSortDir_0']) ? CRM_Utils_Type::escape($_REQUEST['sSortDir_0'], 'MysqlOrderByDirection') : 'asc';
 
-    $params = $_POST;
+    $params = array();
     if ($sort && $sortOrder) {
       $params['sortBy'] = $sort . ' ' . $sortOrder;
     }

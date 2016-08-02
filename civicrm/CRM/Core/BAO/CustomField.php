@@ -834,6 +834,12 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
           $qf->add('text', $elementName . '_to', ts('To'), $field->attributes);
         }
         else {
+          if ($field->text_length) {
+            $field->attributes .= ' maxlength=' . $field->text_length;
+            if ($field->text_length < 20) {
+              $field->attributes .= ' size=' . $field->text_length;
+            }
+          }
           $element = &$qf->add('text', $elementName, $label,
             $field->attributes,
             $useRequired && !$search
@@ -1125,16 +1131,13 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
    */
   public static function getDisplayValue($value, $id, &$options, $contactID = NULL, $fieldID = NULL) {
     $option = &$options[$id];
-    $attributes = &$option['attributes'];
-    $html_type = $attributes['html_type'];
-    $data_type = $attributes['data_type'];
-    $format = CRM_Utils_Array::value('format', $attributes);
+    $field = self::getFieldObject($id);
 
     return self::getDisplayValueCommon($value,
       $option,
-      $html_type,
-      $data_type,
-      $format,
+      $field->html_type,
+      $field->data_type,
+      NULL,
       $contactID,
       $fieldID
     );
@@ -1226,6 +1229,9 @@ class CRM_Core_BAO_CustomField extends CRM_Core_DAO_CustomField {
       case 'AdvMulti-Select':
       case 'Multi-Select':
         if (is_array($value)) {
+          if ($html_type == 'CheckBox') {
+            CRM_Utils_Array::formatArrayKeys($value);
+          }
           $checkedData = $value;
         }
         else {
@@ -1721,14 +1727,27 @@ SELECT id
       $fName = $value['name'];
       $mimeType = $value['type'];
 
+      // If we are already passing the file id as a value then retrieve and set the file data
+      if (CRM_Utils_Rule::integer($value)) {
+        $fileDAO = new CRM_Core_DAO_File();
+        $fileDAO->id = $value;
+        $fileDAO->find(TRUE);
+        if ($fileDAO->N) {
+          $fileID = $value;
+          $fName = $fileDAO->uri;
+          $mimeType = $fileDAO->mime_type;
+        }
+      }
+
       $filename = pathinfo($fName, PATHINFO_BASENAME);
 
-      // rename this file to go into the secure directory
-      if (!rename($fName, $config->customFileUploadDir . $filename)) {
+      // rename this file to go into the secure directory only if
+      // user has uploaded new file not existing verfied on the basis of $fileID
+      if (empty($fileID) && !rename($fName, $config->customFileUploadDir . $filename)) {
         CRM_Core_Error::statusBounce(ts('Could not move custom file to custom upload directory'));
       }
 
-      if ($customValueId) {
+      if ($customValueId && empty($fileID)) {
         $query = "
 SELECT $columnName
   FROM $tableName

@@ -328,8 +328,11 @@ class CRM_Core_Payment_BaseIPN {
             'labelColumn' => 'name',
             'flip' => 1,
           ));
+        // Cancel only Pending memberships
+        // CRM-18688
+        $pendingStatusId = $membershipStatuses['Pending'];
         foreach ($memberships as $membership) {
-          if ($membership) {
+          if ($membership && ($membership->status_id == $pendingStatusId)) {
             $membership->status_id = $membershipStatuses['Cancelled'];
             $membership->save();
 
@@ -645,6 +648,12 @@ LIMIT 1;";
       }
       if (!empty($input['campaign_id'])) {
         $contribution->campaign_id = $input['campaign_id'];
+      }
+      elseif (!empty($recurContrib->campaign_id)) {
+        $contribution->campaign_id = $recurContrib->campaign_id;
+      }
+      if (CRM_Contribute_BAO_Contribution::isSingleLineItem($primaryContributionID) && !empty($input['financial_type_id'])) {
+        $contribution->financial_type_id = $input['financial_type_id'];
       }
     }
 
@@ -1089,6 +1098,10 @@ LIMIT 1;";
     $lineItems = CRM_Price_BAO_LineItem::getLineItemsByContributionID($originalContributionID);
     if (count($lineItems) == 1) {
       foreach ($lineItems as $index => $lineItem) {
+        if (isset($contribution->financial_type_id)) {
+          // CRM-17718 allow for possibility of changed financial type ID having been set prior to calling this.
+          $lineItems[$index]['financial_type_id'] = $contribution->financial_type_id;
+        }
         if ($lineItem['line_total'] != $contribution->total_amount) {
           // We are dealing with a changed amount! Per CRM-16397 we can work out what to do with these
           // if there is only one line item, and the UI should prevent this situation for those with more than one.

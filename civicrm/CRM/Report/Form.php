@@ -1666,7 +1666,7 @@ class CRM_Report_Form extends CRM_Core_Form {
               $clauses[] = "( {$field['dbAlias']} >= $min )";
             }
             else {
-              $clauses[] = "( {$field['dbAlias']} < $min )";
+              $clauses[] = "( {$field['dbAlias']} < $min OR {$field['dbAlias']} IS NULL )";
             }
           }
           if ($max) {
@@ -1683,7 +1683,7 @@ class CRM_Report_Form extends CRM_Core_Form {
               $clause = implode(' AND ', $clauses);
             }
             else {
-              $clause = implode(' OR ', $clauses);
+              $clause = '(' . implode('OR', $clauses) . ')';
             }
           }
         }
@@ -1737,22 +1737,13 @@ class CRM_Report_Form extends CRM_Core_Form {
         break;
 
       case 'mhas':
-        // mhas == multiple has
-        if ($value !== NULL && count($value) > 0) {
-          $sqlOP = $this->getSQLOperator($op);
-          $clause
-            = "{$field['dbAlias']} REGEXP '[[:cntrl:]]" . implode('|', $value) .
-            "[[:cntrl:]]'";
-        }
-        break;
-
       case 'mnot':
-        // mnot == multiple is not one of
+        // multiple has or multiple not
         if ($value !== NULL && count($value) > 0) {
-          $sqlOP = $this->getSQLOperator($op);
-          $clause
-            = "( {$field['dbAlias']} NOT REGEXP '[[:cntrl:]]" . implode('|', $value) .
-            "[[:cntrl:]]' OR {$field['dbAlias']} IS NULL )";
+          $value = CRM_Utils_Type::escapeAll($value, $type);
+          $operator = $op == 'mnot' ? 'NOT' : '';
+          $regexp = "[[:cntrl:]]*" . implode('[[:>:]]*|[[:<:]]*', (array) $value) . "[[:cntrl:]]*";
+          $clause = "{$field['dbAlias']} {$operator} REGEXP '{$regexp}'";
         }
         break;
 
@@ -4349,7 +4340,7 @@ LEFT JOIN civicrm_contact {$field['alias']} ON {$field['alias']}.id = {$this->_a
       ),
       'postal_greeting_display' => array('title' => ts('Postal Greeting')),
       'email_greeting_display' => array('title' => ts('Email Greeting')),
-      'addressee_display' => array('title' => ts('Address Greeting')),
+      'addressee_display' => array('title' => ts('Addressee')),
       'contact_type' => array(
         'title' => ts('Contact Type'),
       ),

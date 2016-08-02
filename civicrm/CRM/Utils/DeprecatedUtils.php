@@ -76,12 +76,7 @@ function _civicrm_api3_deprecated_participant_formatted_param($params, &$values,
             if ((strtolower(trim($customLabel['label'])) == strtolower(trim($v1))) ||
               (strtolower(trim($customValue)) == strtolower(trim($v1)))
             ) {
-              if ($type == 'CheckBox') {
-                $values[$key][$customValue] = 1;
-              }
-              else {
-                $values[$key][] = $customValue;
-              }
+              $values[$key][] = $customValue;
             }
           }
         }
@@ -252,12 +247,7 @@ function _civicrm_api3_deprecated_formatted_param($params, &$values, $create = F
             if ((strtolower($customLabel['label']) == strtolower(trim($v1))) ||
               (strtolower($customValue) == strtolower(trim($v1)))
             ) {
-              if ($type == 'CheckBox') {
-                $values[$key][$customValue] = 1;
-              }
-              else {
-                $values[$key][] = $customValue;
-              }
+              $values[$key][] = $customValue;
             }
           }
         }
@@ -730,12 +720,7 @@ function _civicrm_api3_deprecated_activity_formatted_param(&$params, &$values, $
             if ((strtolower(trim($customLabel['label'])) == strtolower(trim($v1))) ||
               (strtolower(trim($customValue)) == strtolower(trim($v1)))
             ) {
-              if ($type == 'CheckBox') {
-                $values[$key][$customValue] = 1;
-              }
-              else {
-                $values[$key][] = $customValue;
-              }
+              $values[$key][] = $customValue;
             }
           }
         }
@@ -967,7 +952,7 @@ function _civicrm_api3_deprecated_add_formatted_param(&$values, &$params) {
   /* Check for custom field values */
 
   if (empty($fields['custom'])) {
-    $fields['custom'] = &CRM_Core_BAO_CustomField::getFields(CRM_Utils_Array::value('contact_type', $values),
+    $fields['custom'] = CRM_Core_BAO_CustomField::getFields(CRM_Utils_Array::value('contact_type', $values),
       FALSE, FALSE, NULL, NULL, FALSE, FALSE, FALSE
     );
   }
