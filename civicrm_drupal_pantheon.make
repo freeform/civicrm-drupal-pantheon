@@ -40,9 +40,9 @@ libraries[civicrm][patch][redis] = ./patches/redis-caching-civi46.patch
 ; Skip config cache on Pantheon
 libraries[civicrm][patch][config] = ./patches/skip-config-cache.patch
 
-; Use CiviCRM cache functions to use Redis for storing compiled Smarty templates
+; [OPTIONAL IF USING REDIS] Use CiviCRM cache functions to use Redis for storing compiled Smarty templates
 ; Based on github.com/ojkelly commit 85e04b6
-libraries[civicrm][patch][smartyredis] = ./patches/smarty-redis-civi-cache.patch
+;libraries[civicrm][patch][smartyredis] = ./patches/smarty-redis-civi-cache.patch
 
 ; Required for install
 ; Populate with Pantheon environment settings on install

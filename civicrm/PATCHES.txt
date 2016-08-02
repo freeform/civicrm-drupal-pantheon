@@ -9,7 +9,6 @@ The following patches have been applied to this project:
 - pantheon-settings-civicrm-4-6.patch
 - redis-caching-civi46.patch
 - skip-config-cache.patch
-- smarty-redis-civi-cache.patch
 - http://drupal.org/files/issues/1978838-pre-populate-db-settings-2.patch
 - http://drupal.org/files/issues/2130213-ignore-timezone-on-install-2.patch
 - https://drupal.org/files/issues/1844558-run-civicrm-from-profile-dir-config-3.patch
