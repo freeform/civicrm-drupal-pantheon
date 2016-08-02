@@ -318,6 +318,8 @@ if (!defined('CIVICRM_DOMAIN_ID')) {
   define( 'CIVICRM_DOMAIN_ID', 1);
 }
 
+} // end Pantheon check
+
 /**
  * Settings to enable external caching using a Memcache server.  This is an
  * advanced feature, and you should read and understand the documentation

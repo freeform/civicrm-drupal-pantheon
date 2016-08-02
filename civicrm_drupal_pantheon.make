@@ -30,13 +30,12 @@ libraries[civicrm][patch][ipnstd] = ./patches/ipnStd.patch
 ; May be necessary where extension, etc paths are cached but Pantheon changes binding
 libraries[civicrm][patch][2347897] = ./patches/binding-fix-for-extension-v2.patch
 
-; http://forum.civicrm.org/index.php?topic=31570.0
-libraries[civicrm][patch][pantheonsettings] = ./patches/pantheon-settings-civicrm-4-5.patch
+; Add Pantheon settings to civicrm.settings.php (http://forum.civicrm.org/index.php?topic=31570.0)
+; Redis caching settings for Pantheon
+libraries[civicrm][patch][pantheonsettings] = ./patches/pantheon-settings-civicrm-4-6.patch
 
 ; Add Redis caching
 libraries[civicrm][patch][redis] = ./patches/redis-caching-civi46.patch
-; Redis caching settings for Pantheon
-libraries[civicrm][patch][redissettings] = ./patches/pantheon-redis-settings.patch
 
 ; Skip config cache on Pantheon
 libraries[civicrm][patch][config] = ./patches/skip-config-cache.patch
