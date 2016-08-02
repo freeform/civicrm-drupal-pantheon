@@ -89,12 +89,12 @@ if (!empty($_SERVER['PRESSFLOW_SETTINGS'])) {
     define( 'CIVICRM_UF_BASEURL', $base_url . '/');
     define( 'CIVICRM_SITE_KEY', '%%siteKey%%' );
 
-    if ( $pantheon_conf['pantheon_environment'] == 'dev' || $pantheon_conf['pantheon_environment'] == 'test' ){
+    if ( $pantheon_conf['pantheon_environment'] != 'live' ){
       /**
       * This setting logs all emails to a file. Useful for debugging any mail (or civimail) issues.
       * This will not send any email, so ensure this is commented out in production
       */
-     define( 'CIVICRM_MAIL_LOG', '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/default/files/civicrm/templates_c/mail.log' );
+     define( 'CIVICRM_MAIL_LOG', '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/default/files/civicrm/ConfigAndLog/mail.log' );
     }
 
     // Add this line only once above any settings overrides
@@ -104,7 +104,12 @@ if (!empty($_SERVER['PRESSFLOW_SETTINGS'])) {
     $civicrm_setting['Directory Preferences']['imageUploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/persist/contribute/';
     $civicrm_setting['Directory Preferences']['extensionsDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/all/extensions/';
     $civicrm_setting['URL Preferences']['extensionsURL'] = $base_url . '/sites/all/extensions';
-
+    $civicrm_setting['URL Preferences']['userFrameworkResourceURL'] = $base_url . '/sites/all/modules/civicrm';
+    // Disable extension automatic downloading
+    $civicrm_setting['Extension Preferences']['ext_repo_url'] = false;
+    // Uncomment if needing to override core CiviCRM files
+    //$civicrm_setting['Directory Preferences']['customTemplateDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/all/civicrm/custom_templates/';
+    //$civicrm_setting['Directory Preferences']['customPHPPathDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/all/civicrm/custom_php/';
   }
 } else {
 

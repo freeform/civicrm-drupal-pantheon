@@ -1,6 +1,6 @@
---- /templates/CRM/common/civicrm.settings.php.template
-+++ /templates/CRM/common/civicrm.settings.php.template
-@@ -54,6 +54,60 @@
+--- a/templates/CRM/common/civicrm.settings.php.template
++++ b/templates/CRM/common/civicrm.settings.php.template
+@@ -54,6 +54,65 @@
    define( 'CIVICRM_UF', '%%cms%%');
  }
  
@@ -39,12 +39,12 @@
 +    define( 'CIVICRM_UF_BASEURL', $base_url . '/');
 +    define( 'CIVICRM_SITE_KEY', '%%siteKey%%' );
 +
-+    if ( $pantheon_conf['pantheon_environment'] == 'dev' || $pantheon_conf['pantheon_environment'] == 'test' ){
++    if ( $pantheon_conf['pantheon_environment'] != 'live' ){
 +      /**
 +      * This setting logs all emails to a file. Useful for debugging any mail (or civimail) issues.
 +      * This will not send any email, so ensure this is commented out in production
 +      */
-+     define( 'CIVICRM_MAIL_LOG', '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/default/files/civicrm/templates_c/mail.log' );
++     define( 'CIVICRM_MAIL_LOG', '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/default/files/civicrm/ConfigAndLog/mail.log' );
 +    }
 +
 +    // Add this line only once above any settings overrides
@@ -54,14 +54,19 @@
 +    $civicrm_setting['Directory Preferences']['imageUploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/persist/contribute/';
 +    $civicrm_setting['Directory Preferences']['extensionsDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/all/extensions/';
 +    $civicrm_setting['URL Preferences']['extensionsURL'] = $base_url . '/sites/all/extensions';
-+
++    $civicrm_setting['URL Preferences']['userFrameworkResourceURL'] = $base_url . '/sites/all/modules/civicrm';
++    // Disable extension automatic downloading
++    $civicrm_setting['Extension Preferences']['ext_repo_url'] = false;
++    // Uncomment if needing to override core CiviCRM files
++    //$civicrm_setting['Directory Preferences']['customTemplateDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/all/civicrm/custom_templates/';
++    //$civicrm_setting['Directory Preferences']['customPHPPathDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/all/civicrm/custom_php/';
 +  }
 +} else {
 +
  /**
   * Content Management System (CMS) Datasource:
   *
-@@ -61,6 +115,10 @@
+@@ -61,6 +120,10 @@
   * Datasource (DSN) format:
   *      define( 'CIVICRM_UF_DSN', 'mysql://cms_db_username:cms_db_password@db_server/cms_database?new_link=true');
   */
@@ -72,7 +77,7 @@
  if (!defined('CIVICRM_UF_DSN')) {
    define( 'CIVICRM_UF_DSN'           , 'mysql://%%CMSdbUser%%:%%CMSdbPass%%@%%CMSdbHost%%/%%CMSdbName%%?new_link=true');
  }
-@@ -84,6 +142,10 @@
+@@ -84,6 +147,10 @@
   *      define( 'CIVICRM_DSN'         , 'mysql://civicrm:YOUR_PASSWORD@localhost/civicrm?new_link=true');
   *
   */
@@ -83,7 +88,7 @@
  if (!defined('CIVICRM_DSN')) {
    define( 'CIVICRM_DSN'          , 'mysql://%%dbUser%%:%%dbPass%%@%%dbHost%%/%%dbName%%?new_link=true');
  }
-@@ -256,6 +318,8 @@
+@@ -256,6 +323,8 @@
    define( 'CIVICRM_DOMAIN_ID', 1);
  }
  
@@ -92,7 +97,7 @@
  /**
   * Settings to enable external caching using a Memcache server.  This is an
   * advanced feature, and you should read and understand the documentation
-@@ -265,6 +329,22 @@
+@@ -265,6 +334,22 @@
   *
   * @see http://civicrm.org/node/126
   */
@@ -115,7 +120,7 @@
  
  /**
   * If you have a memcache server configured and want CiviCRM to make use of it,
-@@ -317,6 +397,8 @@
+@@ -317,6 +402,8 @@
  if (!defined('CIVICRM_MEMCACHE_PREFIX')) {
    define('CIVICRM_MEMCACHE_PREFIX', '');
  }
