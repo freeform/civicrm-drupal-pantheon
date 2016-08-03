@@ -29,7 +29,7 @@
   * Content Management System (CMS) Datasource:
   *
   * Update this setting with your CMS (Drupal, Backdrop CMS, or Joomla) database username, server and DB name.
-@@ -70,7 +92,10 @@
+@@ -70,7 +92,11 @@
   *      define( 'CIVICRM_UF_DSN', 'mysql://cms_db_username:cms_db_password@db_server/cms_database?new_link=true');
   */
  if (!defined('CIVICRM_UF_DSN') && CIVICRM_UF !== 'UnitTests') {
@@ -38,10 +38,11 @@
 +    define('CIVICRM_UF_DSN', $pantheon_db_string);
 +  } else {
 +    define( 'CIVICRM_UF_DSN'           , 'mysql://%%CMSdbUser%%:%%CMSdbPass%%@%%CMSdbHost%%/%%CMSdbName%%?new_link=true');
++  }
  }
  
  /**
-@@ -96,6 +121,9 @@
+@@ -96,6 +122,9 @@
  if (!defined('CIVICRM_DSN')) {
    if (CIVICRM_UF === 'UnitTests' && isset($GLOBALS['_CV']['TEST_DB_DSN'])) {
      define('CIVICRM_DSN', $GLOBALS['_CV']['TEST_DB_DSN']);
@@ -51,7 +52,7 @@
    }
    else {
      define('CIVICRM_DSN', 'mysql://%%dbUser%%:%%dbPass%%@%%dbHost%%/%%dbName%%?new_link=true');
-@@ -162,9 +190,20 @@
+@@ -162,9 +191,20 @@
  
  global $civicrm_root;
  
@@ -74,7 +75,7 @@
  }
  
  /**
-@@ -208,8 +247,25 @@
+@@ -208,8 +248,26 @@
   *
   * Uncomment and edit the below as appropriate.
   */
@@ -82,6 +83,7 @@
 - //  global $civicrm_setting;
 +
 +global $civicrm_setting;
++global $base_url;
 + 
 +if (isset($pantheon_conf)) {
 +  $civicrm_setting['Directory Preferences']['uploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/upload/';
@@ -102,7 +104,7 @@
  
   // Override the Temporary Files directory.
   // $civicrm_setting['Directory Preferences']['customFileUploadDir'] = '/path/to/upload';
-@@ -279,6 +335,12 @@
+@@ -279,6 +337,12 @@
   * The CIVICRM_MAIL_LOG is a debug option which disables MTA (mail transport agent) interaction.
   * You must disable CIVICRM_MAIL_LOG before CiviCRM will talk to your MTA.
   */
@@ -115,12 +117,57 @@
  // if (!defined('CIVICRM_MAIL_LOG')) {
  // define( 'CIVICRM_MAIL_LOG', '%%templateCompileDir%%/mail.log');
  // }
-@@ -312,54 +374,68 @@
+@@ -312,54 +376,68 @@
   * To not use any caching (not recommended), use a value of 'NoCache'
   *
   */
 -if (!defined('CIVICRM_DB_CACHE_CLASS')) {
 -  define('CIVICRM_DB_CACHE_CLASS', 'ArrayCache');
+-}
+-
+-/**
+- * Change this to the IP address of your cache server if it is not on the
+- * same machine (Unix).
+- */
+-if (!defined('CIVICRM_DB_CACHE_HOST')) {
+-  define('CIVICRM_DB_CACHE_HOST', 'localhost');
+-}
+-
+-/**
+- * Change this if you are not using the standard port for your cache server.
+- *
+- * The standard port for Memcache & APCCache is 11211. For Redis it is 6379.
+- */
+-if (!defined('CIVICRM_DB_CACHE_PORT')) {
+-  define('CIVICRM_DB_CACHE_PORT', 11211 );
+-}
+-
+-/**
+- * Change this if your cache server requires a password (currently only works
+- * with Redis)
+- */
+-if (!defined('CIVICRM_DB_CACHE_PASSWORD')) {
+-  define('CIVICRM_DB_CACHE_PASSWORD', '' );
+-}
+-
+-/**
+- * Items in cache will expire after the number of seconds specified here.
+- * Default value is 3600 (i.e., after an hour)
+- */
+-if (!defined('CIVICRM_DB_CACHE_TIMEOUT')) {
+-  define('CIVICRM_DB_CACHE_TIMEOUT', 3600 );
+-}
+-
+-/**
+- * If you are sharing the same cache instance with more than one CiviCRM
+- * database, you will need to set a different value for the following argument
+- * so that each copy of CiviCRM will not interfere with other copies.  If you only
+- * have one copy of CiviCRM, you may leave this set to ''.  A good value for
+- * this if you have two servers might be 'server1_' for the first server, and
+- * 'server2_' for the second server.
+- */
+-if (!defined('CIVICRM_DB_CACHE_PREFIX')) {
+-  define('CIVICRM_DB_CACHE_PREFIX', '');
 -}
 + 
 +if (isset($pantheon_conf['redis_client_host']) && !empty($pantheon_conf['redis_client_host'])) {
@@ -133,26 +180,11 @@
 +  
 +} 
 +else {
- 
--/**
-- * Change this to the IP address of your cache server if it is not on the
-- * same machine (Unix).
-- */
--if (!defined('CIVICRM_DB_CACHE_HOST')) {
--  define('CIVICRM_DB_CACHE_HOST', 'localhost');
--}
++
 +  if (!defined('CIVICRM_DB_CACHE_CLASS')) {
 +    define('CIVICRM_DB_CACHE_CLASS', 'ArrayCache');
 +  }
- 
--/**
-- * Change this if you are not using the standard port for your cache server.
-- *
-- * The standard port for Memcache & APCCache is 11211. For Redis it is 6379.
-- */
--if (!defined('CIVICRM_DB_CACHE_PORT')) {
--  define('CIVICRM_DB_CACHE_PORT', 11211 );
--}
++
 +  /**
 +  * Change this to the IP address of your cache server if it is not on the
 +  * same machine (Unix).
@@ -160,14 +192,7 @@
 +  if (!defined('CIVICRM_DB_CACHE_HOST')) {
 +    define('CIVICRM_DB_CACHE_HOST', 'localhost');
 +  }
- 
--/**
-- * Change this if your cache server requires a password (currently only works
-- * with Redis)
-- */
--if (!defined('CIVICRM_DB_CACHE_PASSWORD')) {
--  define('CIVICRM_DB_CACHE_PASSWORD', '' );
--}
++
 +  /**
 +  * Change this if you are not using the standard port for your cache server.
 +  *
@@ -176,14 +201,7 @@
 +  if (!defined('CIVICRM_DB_CACHE_PORT')) {
 +    define('CIVICRM_DB_CACHE_PORT', 11211 );
 +  }
- 
--/**
-- * Items in cache will expire after the number of seconds specified here.
-- * Default value is 3600 (i.e., after an hour)
-- */
--if (!defined('CIVICRM_DB_CACHE_TIMEOUT')) {
--  define('CIVICRM_DB_CACHE_TIMEOUT', 3600 );
--}
++
 +  /**
 +  * Change this if your cache server requires a password (currently only works
 +  * with Redis)
@@ -191,18 +209,7 @@
 +  if (!defined('CIVICRM_DB_CACHE_PASSWORD')) {
 +    define('CIVICRM_DB_CACHE_PASSWORD', '' );
 +  }
- 
--/**
-- * If you are sharing the same cache instance with more than one CiviCRM
-- * database, you will need to set a different value for the following argument
-- * so that each copy of CiviCRM will not interfere with other copies.  If you only
-- * have one copy of CiviCRM, you may leave this set to ''.  A good value for
-- * this if you have two servers might be 'server1_' for the first server, and
-- * 'server2_' for the second server.
-- */
--if (!defined('CIVICRM_DB_CACHE_PREFIX')) {
--  define('CIVICRM_DB_CACHE_PREFIX', '');
--}
++
 +  /**
 +  * Items in cache will expire after the number of seconds specified here.
 +  * Default value is 3600 (i.e., after an hour)

@@ -96,6 +96,7 @@ if (!defined('CIVICRM_UF_DSN') && CIVICRM_UF !== 'UnitTests') {
     define('CIVICRM_UF_DSN', $pantheon_db_string);
   } else {
     define( 'CIVICRM_UF_DSN'           , 'mysql://%%CMSdbUser%%:%%CMSdbPass%%@%%CMSdbHost%%/%%CMSdbName%%?new_link=true');
+  }
 }
 
 /**
@@ -249,6 +250,7 @@ if (!defined('CIVICRM_UF_BASEURL')) {
  */
 
 global $civicrm_setting;
+global $base_url;
  
 if (isset($pantheon_conf)) {
   $civicrm_setting['Directory Preferences']['uploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/upload/';
