@@ -239,8 +239,10 @@ if (!defined('CIVICRM_TEMPLATE_COMPILEDIR')) {
  *      define( 'CIVICRM_UF_BASEURL' , 'http://www.example.com/joomla/');
  *
  */
+global $base_url;
+ 
 if (!defined('CIVICRM_UF_BASEURL')) {
-  define( 'CIVICRM_UF_BASEURL'      , '%%baseURL%%');
+  define( 'CIVICRM_UF_BASEURL'      , $base_url);
 }
 
 /**
@@ -250,7 +252,6 @@ if (!defined('CIVICRM_UF_BASEURL')) {
  */
 
 global $civicrm_setting;
-global $base_url;
  
 if (isset($pantheon_conf)) {
   $civicrm_setting['Directory Preferences']['uploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/upload/';

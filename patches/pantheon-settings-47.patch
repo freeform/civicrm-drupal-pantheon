@@ -75,7 +75,19 @@
  }
  
  /**
-@@ -208,8 +248,26 @@
+@@ -199,8 +239,10 @@
+  *      define( 'CIVICRM_UF_BASEURL' , 'http://www.example.com/joomla/');
+  *
+  */
++global $base_url;
++ 
+ if (!defined('CIVICRM_UF_BASEURL')) {
+-  define( 'CIVICRM_UF_BASEURL'      , '%%baseURL%%');
++  define( 'CIVICRM_UF_BASEURL'      , $base_url);
+ }
+ 
+ /**
+@@ -208,8 +250,25 @@
   *
   * Uncomment and edit the below as appropriate.
   */
@@ -83,7 +95,6 @@
 - //  global $civicrm_setting;
 +
 +global $civicrm_setting;
-+global $base_url;
 + 
 +if (isset($pantheon_conf)) {
 +  $civicrm_setting['Directory Preferences']['uploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/upload/';
@@ -104,7 +115,7 @@
  
   // Override the Temporary Files directory.
   // $civicrm_setting['Directory Preferences']['customFileUploadDir'] = '/path/to/upload';
-@@ -279,6 +337,12 @@
+@@ -279,6 +338,12 @@
   * The CIVICRM_MAIL_LOG is a debug option which disables MTA (mail transport agent) interaction.
   * You must disable CIVICRM_MAIL_LOG before CiviCRM will talk to your MTA.
   */
@@ -117,7 +128,7 @@
  // if (!defined('CIVICRM_MAIL_LOG')) {
  // define( 'CIVICRM_MAIL_LOG', '%%templateCompileDir%%/mail.log');
  // }
-@@ -312,54 +376,68 @@
+@@ -312,54 +377,68 @@
   * To not use any caching (not recommended), use a value of 'NoCache'
   *
   */
