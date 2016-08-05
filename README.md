@@ -16,7 +16,7 @@ A minimally-patched CiviCRM for Drupal on Pantheon platform.
 http://<your_drupal_home>/sites/all/modules/civicrm/install/index.php
 ```
 
-Follow the rest of the installation guidelines here http://wiki.civicrm.org/confluence/display/CRMDOC/Drupal+Installation+Guide+for+CiviCRM+4.5+-+Drupal+7
+Follow the rest of the installation guidelines here https://wiki.civicrm.org/confluence/display/CRMDOC46/Installing+CiviCRM+for+Drupal+7
 
 ## Advanced option
 
