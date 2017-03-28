@@ -8,7 +8,7 @@ core = 7.50
 ; ====== CIVICRM RELATED =========
 
 libraries[civicrm][download][type] = get
-libraries[civicrm][download][url] = "https://download.civicrm.org/civicrm-4.7.9-drupal.tar.gz"
+libraries[civicrm][download][url] = "https://download.civicrm.org/civicrm-4.7.17-drupal.tar.gz"
 libraries[civicrm][destination] = modules
 libraries[civicrm][directory_name] = civicrm
 
@@ -20,8 +20,8 @@ libraries[civicrm][patch][pantheonsettings] = ./patches/pantheon-settings-47.pat
 libraries[civicrm][patch][2063371] = http://drupal.org/files/2063371-add-modulePath-var-4-4.patch
 
 libraries[civicrm][patch][externbootstrap] = ./patches/extern-cms-bootstrap.patch
-libraries[civicrm][patch][ipn] = ./patches/ipn.patch
-libraries[civicrm][patch][ipnstd] = ./patches/ipnStd.patch
+;libraries[civicrm][patch][ipn] = ./patches/ipn.patch
+;libraries[civicrm][patch][ipnstd] = ./patches/ipnStd.patch
 
 ; May be necessary where extension, etc paths are cached but Pantheon changes binding
 libraries[civicrm][patch][2347897] = ./patches/binding-extension-47-2347897.patch
