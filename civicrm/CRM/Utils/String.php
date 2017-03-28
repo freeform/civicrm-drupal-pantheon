@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 require_once 'HTML/QuickForm/Rule/Email.php';
@@ -657,7 +657,12 @@ class CRM_Utils_String {
       return $string;
     }
     else {
-      return substr($string, 0, $maxLen - 3) . '...';
+      $end = $maxLen - 3;
+      while (strlen($string) > $maxLen - 3) {
+        $string = mb_substr($string, 0, $end, 'UTF-8');
+        $end = $end - 1;
+      }
+      return $string . '...';
     }
   }
 

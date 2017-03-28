@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -43,9 +41,9 @@ class CRM_Price_BAO_PriceFieldValue extends CRM_Price_DAO_PriceFieldValue {
    * Insert/update a new entry in the database.
    *
    * @param array $params
-   *   (reference), array $ids.
    *
-   * @param $ids
+   * @param array $ids
+   *  Deprecated variable.
    *
    * @return CRM_Price_DAO_PriceFieldValue
    */
@@ -60,6 +58,18 @@ class CRM_Price_BAO_PriceFieldValue extends CRM_Price_DAO_PriceFieldValue {
       if (!empty($params['label']) && $prevLabel != $params['label']) {
         self::updateAmountAndFeeLevel($id, $prevLabel, $params['label']);
       }
+    }
+    // CRM-16189
+    $priceFieldID = CRM_Utils_Array::value('price_field_id', $params);
+    if (!$priceFieldID) {
+      $priceFieldID = CRM_Core_DAO::getFieldValue('CRM_Price_BAO_PriceFieldValue', $id, 'price_field_id');
+    }
+    if (!empty($params['financial_type_id'])) {
+      CRM_Financial_BAO_FinancialAccount::validateFinancialType(
+        $params['financial_type_id'],
+        $priceFieldID,
+        'PriceField'
+      );
     }
     if (!empty($params['is_default'])) {
       $query = 'UPDATE civicrm_price_field_value SET is_default = 0 WHERE  price_field_id = %1';
@@ -145,7 +155,7 @@ class CRM_Price_BAO_PriceFieldValue extends CRM_Price_DAO_PriceFieldValue {
   }
 
   /**
-   * Retrive the all values for given field id.
+   * Retrieve all values for given field id.
    *
    * @param int $fieldId
    *   Price_field_id.

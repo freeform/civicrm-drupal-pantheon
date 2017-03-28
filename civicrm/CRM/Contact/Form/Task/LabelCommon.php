@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -53,7 +53,7 @@ class CRM_Contact_Form_Task_LabelCommon {
 
     //build contact string that needs to be printed
     $val = NULL;
-    foreach ($contactRows as $row => $value) {
+    foreach ((array) $contactRows as $row => $value) {
       foreach ($value as $k => $v) {
         $val .= "$v\n";
       }
@@ -80,6 +80,7 @@ class CRM_Contact_Form_Task_LabelCommon {
    */
   public static function getRows($contactIDs, $locationTypeID, $respectDoNotMail, $mergeSameAddress, $mergeSameHousehold) {
     $locName = NULL;
+    $rows = array();
     //get the address format sequence from the config file
     $addressReturnProperties = CRM_Contact_Form_Task_LabelCommon::getAddressReturnProperties();
 

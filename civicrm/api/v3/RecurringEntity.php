@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -82,6 +82,7 @@ function _civicrm_api3_recurring_entity_create_spec(&$params) {
     'civicrm_event' => 'civicrm_event',
     'civicrm_activity' => 'civicrm_activity',
   );
+  $params['entity_table']['api.required'] = 1;
 }
 
 /**

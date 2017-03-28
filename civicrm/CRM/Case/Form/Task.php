@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -62,7 +62,7 @@ class CRM_Case_Form_Task extends CRM_Core_Form {
    *
    * @var array
    */
-  protected $_caseIds;
+  public $_caseIds;
 
   /**
    * Build all the data structures needed to build the form.
@@ -137,7 +137,7 @@ class CRM_Case_Form_Task extends CRM_Core_Form {
    */
   public function setContactIDs() {
     $this->_contactIds = &CRM_Core_DAO::getContactIDsFromComponent($this->_caseIds,
-      'civicrm_case'
+      'civicrm_case_contact'
     );
   }
 

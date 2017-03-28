@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -24,6 +24,7 @@
  | see the CiviCRM license FAQ at http://civicrm.org/licensing        |
  +--------------------------------------------------------------------+
 *}
+{crmRegion name="contribute-form-contributionpage-settings-main"}
 <div class="crm-block crm-form-block crm-contribution-contributionpage-settings-form-block">
 <div class="help">
     {if $action eq 0}
@@ -202,3 +203,6 @@
      }
  {/literal}
 </script>
+{/crmRegion}
+{crmRegion name="contribute-form-contributionpage-settings-post"}
+{/crmRegion}

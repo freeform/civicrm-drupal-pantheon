@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  *
  */
@@ -43,7 +43,10 @@ abstract class CRM_Import_DataSource {
    * Provides information about the data source.
    *
    * @return array
-   *   collection of info about this data source
+   *   Description of this data source, including:
+   *   - title: string, translated, required
+   *   - permissions: array, optional
+   *
    */
   abstract public function getInfo();
 
@@ -71,5 +74,15 @@ abstract class CRM_Import_DataSource {
    * @param CRM_Core_Form $form
    */
   abstract public function postProcess(&$params, &$db, &$form);
+
+  /**
+   * Determine if the current user has access to this data source.
+   *
+   * @return bool
+   */
+  public function checkPermission() {
+    $info = $this->getInfo();
+    return empty($info['permissions']) || CRM_Core_Permission::check($info['permissions']);
+  }
 
 }

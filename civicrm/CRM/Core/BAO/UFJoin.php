@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  *
  */
@@ -186,12 +186,11 @@ class CRM_Core_BAO_UFJoin extends CRM_Core_DAO_UFJoin {
    * @return array
    */
   public static function entityTables() {
-    $tables = array(
-      'civicrm_event',
-      'civicrm_contribution_page',
+    return array(
+      'civicrm_event' => 'Event',
+      'civicrm_contribution_page' => 'ContributionPage',
+      'civicrm_survey' => 'Survey',
     );
-    // Identical keys & values
-    return array_combine($tables, $tables);
   }
 
 }

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  *
  */
@@ -81,7 +81,7 @@ class CRM_Core_BAO_CustomOption {
 
     $optionValues = CRM_Core_PseudoConstant::get('CRM_Core_BAO_CustomField', 'custom_' . $fieldID, array(), $inactiveNeeded ? 'get' : 'create');
 
-    foreach ($optionValues as $value => $label) {
+    foreach ((array) $optionValues as $value => $label) {
       $options[] = array(
         'label' => $label,
         'value' => $value,
@@ -144,7 +144,7 @@ class CRM_Core_BAO_CustomOption {
         $action -= CRM_Core_Action::DISABLE;
       }
       if (in_array($field->html_type, array('CheckBox', 'AdvMulti-Select', 'Multi-Select'))) {
-        if (in_array($dao->value, $defVal)) {
+        if (isset($defVal) && in_array($dao->value, $defVal)) {
           $options[$dao->id]['is_default'] = '<img src="' . $config->resourceBase . 'i/check.gif" />';
         }
         else {

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -51,16 +51,13 @@ class CRM_Contact_Page_Dashlet extends CRM_Core_Page {
     $currentDashlets = CRM_Core_BAO_Dashboard::getContactDashlets();
     $contactDashlets = $availableDashlets = array();
 
-    foreach ($currentDashlets as $columnNo => $values) {
-      foreach ($values as $val => $isMinimized) {
-        list($weight, $dashletID) = explode('-', $val);
-        $key = "{$dashletID}-{$isMinimized}";
-        $contactDashlets[$columnNo][$key] = array(
-          'label' => $allDashlets[$dashletID]['label'],
-          'is_reserved' => $allDashlets[$dashletID]['is_reserved'],
-        );
-        unset($allDashlets[$dashletID]);
-      }
+    foreach ($currentDashlets as $item) {
+      $key = "{$item['dashboard_id']}-0";
+      $contactDashlets[$item['column_no']][$key] = array(
+        'label' => $item['label'],
+        'is_reserved' => $allDashlets[$item['dashboard_id']]['is_reserved'],
+      );
+      unset($allDashlets[$item['dashboard_id']]);
     }
 
     foreach ($allDashlets as $dashletID => $values) {

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Logging_Schema {
   private $logs = array();
@@ -396,7 +396,7 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
       if (!empty($cols[$alterType])) {
         foreach ($cols[$alterType] as $col) {
           $line = $this->_getColumnQuery($col, $create);
-          CRM_Core_DAO::executeQuery("ALTER TABLE `{$this->db}`.log_$table {$alterType} {$line}");
+          CRM_Core_DAO::executeQuery("ALTER TABLE `{$this->db}`.log_$table {$alterType} {$line}", array(), TRUE, NULL, FALSE, FALSE);
         }
       }
     }
@@ -407,7 +407,7 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
       foreach ($cols['OBSOLETE'] as $col) {
         $line = $this->_getColumnQuery($col, $create);
         // This is just going to make a not null column to nullable
-        CRM_Core_DAO::executeQuery("ALTER TABLE `{$this->db}`.log_$table MODIFY {$line}");
+        CRM_Core_DAO::executeQuery("ALTER TABLE `{$this->db}`.log_$table MODIFY {$line}", array(), TRUE, NULL, FALSE, FALSE);
       }
     }
 
@@ -426,7 +426,7 @@ AND    (TABLE_NAME LIKE 'log_civicrm_%' $nonStandardTableNameString )
    * @return array
    */
   private function _getCreateQuery($table) {
-    $dao = CRM_Core_DAO::executeQuery("SHOW CREATE TABLE {$table}");
+    $dao = CRM_Core_DAO::executeQuery("SHOW CREATE TABLE {$table}", array(), TRUE, NULL, FALSE, FALSE);
     $dao->fetch();
     $create = explode("\n", $dao->Create_Table);
     return $create;
@@ -753,8 +753,8 @@ COLS;
    * Predicate whether logging is enabled.
    */
   public function isEnabled() {
-    if (CRM_Core_Config::singleton()->logging) {
-      return $this->tablesExist() and $this->triggersExist();
+    if (\Civi::settings()->get('logging')) {
+      return ($this->tablesExist() && (\Civi::settings()->get('logging_no_trigger_permission') || $this->triggersExist()));
     }
     return FALSE;
   }

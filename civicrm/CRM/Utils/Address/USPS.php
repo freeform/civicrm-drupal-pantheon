@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,7 +27,7 @@
 
 /**
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -36,13 +36,32 @@
 class CRM_Utils_Address_USPS {
 
   /**
-   * Check address.
+   * Whether USPS validation should be disabled during import.
+   *
+   * @var bool
+   */
+  protected static $_disabled = FALSE;
+
+  /**
+   * Disable the USPS validation.
+   *
+   * @param bool $disable
+   */
+  public static function disable($disable = TRUE) {
+    self::$_disabled = $disable;
+  }
+
+  /**
+   * Check address against USPS.
    *
    * @param array $values
    *
    * @return bool
    */
   public static function checkAddress(&$values) {
+    if (self::$_disabled) {
+      return FALSE;
+    }
     if (!isset($values['street_address']) ||
       (!isset($values['city']) &&
         !isset($values['state_province']) &&

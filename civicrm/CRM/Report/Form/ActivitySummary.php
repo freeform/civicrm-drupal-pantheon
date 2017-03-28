@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
 
@@ -40,8 +38,20 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
   protected $_tempDurationSumTableName;
 
   /**
+   * This report has not been optimised for group filtering.
+   *
+   * The functionality for group filtering has been improved but not
+   * all reports have been adjusted to take care of it. This report has not
+   * and will run an inefficient query until fixed.
+   *
+   * CRM-19170
+   *
+   * @var bool
    */
+  protected $groupFilterNotOptimised = TRUE;
+
   /**
+   * Class constructor.
    */
   public function __construct() {
     $this->_columns = array(
@@ -79,7 +89,7 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
         'dao' => 'CRM_Core_DAO_Email',
         'fields' => array(
           'email' => array(
-            'title' => 'Email',
+            'title' => ts('Email'),
           ),
         ),
         'order_bys' => array(
@@ -93,7 +103,7 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
         'dao' => 'CRM_Core_DAO_Email',
         'fields' => array(
           'phone' => array(
-            'title' => 'Phone',
+            'title' => ts('Phone'),
           ),
         ),
         'grouping' => 'contact-fields',
@@ -114,6 +124,11 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
           'duration' => array(
             'title' => ts('Duration'),
             'default' => TRUE,
+          ),
+          'priority_id' => array(
+            'title' => ts('Priority'),
+            'default' => TRUE,
+            'type' => CRM_Utils_Type::T_STRING,
           ),
           'id' => array(
             'title' => ts('Total Activities'),
@@ -140,7 +155,7 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
             'options' => CRM_Core_PseudoConstant::activityStatus(),
           ),
           'priority_id' => array(
-            'title' => ts('Priority'),
+            'title' => ts('Activity Priority'),
             'type' => CRM_Utils_Type::T_INT,
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
             'options' => CRM_Core_PseudoConstant::get('CRM_Activity_DAO_Activity', 'priority_id'),
@@ -236,7 +251,7 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
       if (array_key_exists('fields', $table)) {
         foreach ($table['fields'] as $fieldName => $field) {
           if (!empty($field['required']) || !empty($this->_params['fields'][$fieldName])) {
-            if ($tableName == 'civicrm_email') {
+            if ($tableName == 'civicrm_email' || in_array('email', CRM_Utils_Array::collect('column', $this->_params['order_bys']))) {
               $this->_emailField = TRUE;
             }
             if ($tableName == 'civicrm_phone') {
@@ -275,6 +290,7 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
         }
       }
     }
+    $this->_selectClauses = $select;
 
     $this->_select = "SELECT " . implode(', ', $select) . " ";
   }
@@ -321,13 +337,6 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
                LEFT JOIN civicrm_case_contact
                       ON civicrm_case_contact.case_id = civicrm_case.id ";
 
-      if ($this->_emailField) {
-        $this->_from .= "
-              LEFT JOIN civicrm_email  {$this->_aliases['civicrm_email']}
-                     ON {$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_email']}.contact_id AND
-                       {$this->_aliases['civicrm_email']}.is_primary = 1 ";
-      }
-
       if ($this->_phoneField) {
         $this->_from .= "
               LEFT JOIN civicrm_phone  {$this->_aliases['civicrm_phone']}
@@ -337,7 +346,20 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
     }
     else {
       $this->_from = "
-      FROM civicrm_activity {$this->_aliases['civicrm_activity']} {$this->_aclFrom} ";
+      FROM civicrm_activity {$this->_aliases['civicrm_activity']}
+              LEFT JOIN civicrm_activity_contact target_activity
+                     ON {$this->_aliases['civicrm_activity']}.id = target_activity.activity_id AND
+                        target_activity.record_type_id = {$targetID}
+              LEFT JOIN civicrm_contact contact_civireport
+                     ON target_activity.contact_id = contact_civireport.id
+              {$this->_aclFrom}";
+    }
+
+    if ($this->_emailField) {
+      $this->_from .= "
+            LEFT JOIN civicrm_email  {$this->_aliases['civicrm_email']}
+                   ON {$this->_aliases['civicrm_contact']}.id = {$this->_aliases['civicrm_email']}.contact_id AND
+                     {$this->_aliases['civicrm_email']}.is_primary = 1 ";
     }
   }
 
@@ -400,7 +422,12 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
     }
   }
 
-  public function groupBy() {
+  /**
+   * Group the fields.
+   *
+   * @param bool $includeSelectCol
+   */
+  public function groupBy($includeSelectCol = TRUE) {
     $this->_groupBy = array();
     if (!empty($this->_params['group_bys']) &&
       is_array($this->_params['group_bys'])) {
@@ -431,11 +458,15 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
           }
         }
       }
-
+      $groupBy = $this->_groupBy;
       $this->_groupBy = "GROUP BY " . implode(', ', $this->_groupBy);
     }
     else {
+      $groupBy = "{$this->_aliases['civicrm_activity']}.id";
       $this->_groupBy = "GROUP BY {$this->_aliases['civicrm_activity']}.id ";
+    }
+    if ($includeSelectCol) {
+      $this->_groupBy = CRM_Contact_BAO_Query::getGroupByFromSelectColumns($this->_selectClauses, $groupBy);
     }
   }
 
@@ -522,7 +553,8 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
 
     // create temp table to store main result
     $tempQuery = "CREATE TEMPORARY TABLE {$this->_tempTableName} (
-      id int unsigned NOT NULL AUTO_INCREMENT, " . implode(', ', $dbColumns) . ' , PRIMARY KEY (id))';
+      id int unsigned NOT NULL AUTO_INCREMENT, " . implode(', ', $dbColumns) . ' , PRIMARY KEY (id))'
+      . $this->_databaseAttributes;
     CRM_Core_DAO::executeQuery($tempQuery);
 
     // build main report query
@@ -537,6 +569,7 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
     // now build the query for duration sum
     $this->from(TRUE);
     $this->where(TRUE);
+    $this->groupBy(FALSE);
 
     // build the query to calulate duration sum
     $sql = "SELECT SUM(activity_civireport.duration) as civicrm_activity_duration_total {$this->_from} {$this->_where} {$this->_groupBy} {$this->_having} {$this->_orderBy} {$this->_limit}";
@@ -544,7 +577,8 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
     // create temp table to store duration
     $this->_tempDurationSumTableName = CRM_Core_DAO::createTempTableName('civicrm_activity');
     $tempQuery = "CREATE TEMPORARY TABLE {$this->_tempDurationSumTableName} (
-      id int unsigned NOT NULL AUTO_INCREMENT, civicrm_activity_duration_total VARCHAR(128), PRIMARY KEY (id))";
+      id int unsigned NOT NULL AUTO_INCREMENT, civicrm_activity_duration_total VARCHAR(128), PRIMARY KEY (id))"
+      . $this->_databaseAttributes;
     CRM_Core_DAO::executeQuery($tempQuery);
 
     // store the result in temporary table
@@ -626,7 +660,7 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
   public function modifyColumnHeaders() {
     //CRM-16719 modify name of column
     if (!empty($this->_columnHeaders['civicrm_activity_status_id'])) {
-      $this->_columnHeaders['civicrm_activity_status_id']['title'] = "Status";
+      $this->_columnHeaders['civicrm_activity_status_id']['title'] = ts('Status');
     }
   }
 
@@ -643,7 +677,7 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
     $entryFound = FALSE;
     $activityType = CRM_Core_PseudoConstant::activityType(TRUE, TRUE, FALSE, 'label', TRUE);
     $activityStatus = CRM_Core_PseudoConstant::activityStatus();
-    $flagContact = 0;
+    $priority = CRM_Core_PseudoConstant::get('CRM_Activity_DAO_Activity', 'priority_id');
     $onHover = ts('View Contact Summary for this Contact');
     foreach ($rows as $rowNum => $row) {
       // make count columns point to activity detail report
@@ -687,21 +721,8 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
       if (array_key_exists('civicrm_contact_sort_name', $row) && $this->_outputMode != 'csv') {
         if ($value = $row['civicrm_contact_id']) {
 
-          if ($rowNum == 0) {
-            $priviousContact = $value;
-          }
-          else {
-            if ($priviousContact == $value) {
-              $flagContact = 1;
-              $priviousContact = $value;
-            }
-            else {
-              $flagContact = 0;
-              $priviousContact = $value;
-            }
-          }
-
-          if ($flagContact == 1) {
+          // unset the name, email and phone fields if the contact is the same as the previous contact
+          if (isset($previousContact) && $previousContact == $value) {
             $rows[$rowNum]['civicrm_contact_sort_name'] = "";
 
             if (array_key_exists('civicrm_email_email', $row)) {
@@ -720,6 +741,9 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
             $rows[$rowNum]['civicrm_contact_sort_name'] = "<a href='$url'>" . $row['civicrm_contact_sort_name'] .
               '</a>';
           }
+
+          // store the contact ID of this contact
+          $previousContact = $value;
           $entryFound = TRUE;
         }
       }
@@ -740,6 +764,13 @@ class CRM_Report_Form_ActivitySummary extends CRM_Report_Form {
       if (array_key_exists('civicrm_activity_status_id', $row)) {
         if ($value = $row['civicrm_activity_status_id']) {
           $rows[$rowNum]['civicrm_activity_status_id'] = $activityStatus[$value];
+          $entryFound = TRUE;
+        }
+      }
+
+      if (array_key_exists('civicrm_activity_priority_id', $row)) {
+        if ($value = $row['civicrm_activity_priority_id']) {
+          $rows[$rowNum]['civicrm_activity_priority_id'] = $priority[$value];
           $entryFound = TRUE;
         }
       }

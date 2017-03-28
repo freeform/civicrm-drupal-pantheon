@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -39,9 +39,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
 
@@ -52,6 +50,19 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
     'Pledge',
     'Individual',
   );
+
+  /**
+   * This report has not been optimised for group filtering.
+   *
+   * The functionality for group filtering has been improved but not
+   * all reports have been adjusted to take care of it. This report has not
+   * and will run an inefficient query until fixed.
+   *
+   * CRM-19170
+   *
+   * @var bool
+   */
+  protected $groupFilterNotOptimised = TRUE;
 
   /**
    * Class constructor.
@@ -137,7 +148,7 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
         ),
         'filters' => array(
           'pledge_create_date' => array(
-            'title' => 'Pledge Made Date',
+            'title' => ts('Pledge Made Date'),
             'operatorType' => CRM_Report_Form::OP_DATE,
           ),
           'pledge_amount' => array(
@@ -145,7 +156,7 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
             'operatorType' => CRM_Report_Form::OP_INT,
           ),
           'currency' => array(
-            'title' => 'Currency',
+            'title' => ts('Currency'),
             'operatorType' => CRM_Report_Form::OP_MULTISELECT,
             'options' => CRM_Core_OptionGroup::values('currencies_enabled'),
             'default' => NULL,
@@ -189,7 +200,7 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
     $this->_tagFilter = TRUE;
     if ($campaignEnabled && !empty($this->activeCampaigns)) {
       $this->_columns['civicrm_pledge']['fields']['campaign_id'] = array(
-        'title' => 'Campaign',
+        'title' => ts('Campaign'),
         'default' => 'false',
       );
       $this->_columns['civicrm_pledge']['filters']['campaign_id'] = array(
@@ -252,7 +263,8 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
   public function groupBy() {
     parent::groupBy();
     if (empty($this->_groupBy) && $this->_totalPaid) {
-      $this->_groupBy = " GROUP BY {$this->_aliases['civicrm_pledge']}.id, {$this->_aliases['civicrm_pledge']}.currency";
+      $groupBy = array("{$this->_aliases['civicrm_pledge']}.id", "{$this->_aliases['civicrm_pledge']}.currency");
+      $this->_groupBy = CRM_Contact_BAO_Query::getGroupByFromSelectColumns($this->_selectClauses, $groupBy);
     }
   }
 
@@ -434,11 +446,11 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
     // Add Special headers
     $this->_columnHeaders['scheduled_date'] = array(
       'type' => CRM_Utils_Type::T_DATE,
-      'title' => 'Next Payment Due',
+      'title' => ts('Next Payment Due'),
     );
     $this->_columnHeaders['scheduled_amount'] = array(
       'type' => CRM_Utils_Type::T_MONEY,
-      'title' => 'Next Payment Amount',
+      'title' => ts('Next Payment Amount'),
     );
     $this->_columnHeaders['status_id'] = NULL;
 
@@ -467,11 +479,10 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
     if (!empty($display)) {
       $statusId = array_keys(CRM_Core_PseudoConstant::accountOptionValues("contribution_status", NULL, " AND v.name IN  ('Pending', 'Overdue')"));
       $statusId = implode(',', $statusId);
+      $select = "payment.pledge_id, payment.scheduled_amount, pledge.contact_id";
       $sqlPayment = "
                  SELECT min(payment.scheduled_date) as scheduled_date,
-                        payment.pledge_id,
-                        payment.scheduled_amount,
-                        pledge.contact_id
+                        {$select}
 
                   FROM civicrm_pledge_payment payment
                        LEFT JOIN civicrm_pledge pledge
@@ -479,7 +490,7 @@ class CRM_Report_Form_Pledge_Detail extends CRM_Report_Form {
 
                   WHERE payment.status_id IN ({$statusId})
 
-                  GROUP BY payment.pledge_id";
+                  GROUP BY {$select}";
 
       $daoPayment = CRM_Core_DAO::executeQuery($sqlPayment);
 

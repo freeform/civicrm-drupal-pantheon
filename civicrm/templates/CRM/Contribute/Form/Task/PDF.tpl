@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -34,6 +34,9 @@
 <table class="form-layout-compressed">
   <tr>
     <td>{$form.output.email_receipt.html}</td>
+  </tr>
+  <tr id="selectEmailFrom" style="display: none">
+    <td>{$form.fromEmailAddress.label}: {$form.fromEmailAddress.html}</td>
   </tr>
   <tr>
     <td>{$form.output.pdf_receipt.html}</td>

@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -42,6 +42,10 @@
   </td>
   <td>
     <p>
+    {$form.membership_is_current_member.label}
+    {$form.membership_is_current_member.html}
+    </p>
+    <p>
     {$form.member_is_primary.label}
     {help id="id-member_is_primary" file="CRM/Member/Form/Search.hlp"}
     {$form.member_is_primary.html}
@@ -63,6 +67,9 @@
     {$form.member_is_override.html}
     </p>
   </td>
+</tr>
+
+<tr><td><label>{$form.membership_id.label}</label> {$form.membership_id.html}</td>
 </tr>
 
 <tr><td><label>{ts}Member Since{/ts}</label></td></tr>

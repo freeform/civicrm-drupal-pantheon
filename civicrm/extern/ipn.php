@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -27,7 +27,7 @@
 
 /**
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  */
 
@@ -45,10 +45,15 @@ $config = CRM_Core_Config::singleton();
 CRM_Utils_System::loadBootStrap(array(), FALSE);
 
 $log = new CRM_Utils_SystemLogger();
-$log->alert('payment_notification processor_name=PayPal', $_REQUEST);
-$paypalIPN = new CRM_Core_Payment_PayPalProIPN($_REQUEST);
-
-
+if (empty($_GET)) {
+  $log->alert('payment_notification processor_name=PayPal', $_REQUEST);
+  $paypalIPN = new CRM_Core_Payment_PayPalProIPN($_REQUEST);
+}
+else {
+  $log->alert('payment_notification PayPal_Standard', $_REQUEST);
+  $paypalIPN = new CRM_Core_Payment_PayPalIPN($_REQUEST);
+  // @todo upgrade standard per Pro
+}
 try {
   //CRM-18245
   if ($config->userFramework == 'Joomla') {

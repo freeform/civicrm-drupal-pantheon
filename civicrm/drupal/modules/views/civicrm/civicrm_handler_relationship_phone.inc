@@ -25,11 +25,11 @@
 
 /**
  * Field handler to provide relationship to CiviCRM email.
- *
- * @ingroup civicrm_relationship_handlers
- */
+*
+* @ingroup civicrm_relationship_handlers
+*/
 class civicrm_handler_relationship_phone extends civicrm_handler_relationship_location {
-  
+
   static $_phoneType;
   function construct() {
     parent::construct();
@@ -63,42 +63,44 @@ class civicrm_handler_relationship_phone extends civicrm_handler_relationship_lo
     );
   }
 
-  function ensure_my_table() {
-    if (!isset($this->table_alias)) {
-      if (!method_exists($this->query, 'ensure_table')) {
-        vpr_trace();
-        exit;
-      }
-      if (isset($this->options['phone_type']) && $this->options['phone_type']) {
-        $join    = $this->get_join();
-        $extra   = parent::location_extras();
-        $extra[] = array(
-          'value' => $this->options['phone_type'],
-          'numeric' => TRUE,
-          'field' => 'phone_type_id',
-          'operator' => '=',
-        );
-        $join->extra       = $extra;
-        $join->extra_type  = self::$_locationOps[$this->options['location_op']];
-        $this->table_alias = $this->query->add_table($this->table, $this->relationship, $join);
-      }
-      else {
-        $join              = $this->get_join();
-        $join->extra       = parent::location_extras();
-        $join->extra_type  = self::$_locationOps[$this->options['location_op']];
-        $this->table_alias = $this->query->add_table($this->table, $this->relationship, $join);
-      }
+
+  function join_phone($join = array()) {
+    $extra = array();
+    if (isset($join->extra)) {
+      $extra = $join->extra;
     }
-    return $this->table_alias;
+    if (isset($this->options['phone_type']) && $this->options['phone_type']) {
+      $extra[] = array(
+        'value' => $this->options['phone_type'],
+        'numeric' => TRUE,
+        'field' => 'phone_type_id',
+        'operator' => '=',
+      );
+    }
+    if (!empty($extra)) {
+      $join->extra = $extra;
+    }
+    return $join;
+  }
+
+  function get_join() {
+    $join = parent::get_join();
+    $join = $this->join_phone($join);
+    return $join;
   }
 
   /**
    * Called to implement a relationship in a query.
    */
   function query() {
-    // Just ensure the one table. This is briefer than parent::query(), which
-    // attempts to create an additional join.
-    $this->ensure_my_table();
+    $join = $this->get_join();
+    $this->alias = $this->query->add_table($this->table, $this->relationship, $join);
+    //register relationship
+    $this->view->relationship[$this->options['id']]->alias = $this->alias;
+    $this->query->relationships[$this->alias] = array(
+      'link' => $this->relationship,
+      'table' => $this->table,
+      'base' => $this->table,
+    );
   }
 }
-

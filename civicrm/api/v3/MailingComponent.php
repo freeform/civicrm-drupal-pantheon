@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -55,6 +55,8 @@ function civicrm_api3_mailing_component_create($params) {
  */
 function _civicrm_api3_mailing_component_create_spec(&$spec) {
   $spec['is_active']['api.default'] = 1;
+  $spec['name']['api.required'] = 1;
+  $spec['component_type']['api.required'] = 1;
 }
 
 /**

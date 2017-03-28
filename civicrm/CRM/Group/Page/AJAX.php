@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  *
  */
 
@@ -46,8 +46,6 @@ class CRM_Group_Page_AJAX {
       $params['page'] = 1;
       $params['rp'] = 0;
       $groups = CRM_Contact_BAO_Group::getGroupListSelector($params);
-
-      CRM_Utils_JSON::output($groups);
     }
     else {
       $requiredParams = array();
@@ -78,9 +76,13 @@ class CRM_Group_Page_AJAX {
           $groups = CRM_Contact_BAO_Group::getGroupListSelector($params);
         }
       }
-
-      CRM_Utils_JSON::output($groups);
     }
+
+    if (!empty($_GET['is_unit_test'])) {
+      return $groups;
+    }
+
+    CRM_Utils_JSON::output($groups);
   }
 
 }

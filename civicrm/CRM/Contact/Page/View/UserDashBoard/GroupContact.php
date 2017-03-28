@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Contact_Page_View_UserDashBoard_GroupContact extends CRM_Contact_Page_View_UserDashBoard {
 
@@ -43,21 +43,21 @@ class CRM_Contact_Page_View_UserDashBoard_GroupContact extends CRM_Contact_Page_
       $this->_onlyPublicGroups
     );
 
-    $in =& CRM_Contact_BAO_GroupContact::getContactGroup(
+    $in = CRM_Contact_BAO_GroupContact::getContactGroup(
       $this->_contactId,
       'Added',
       NULL, FALSE, TRUE,
       $this->_onlyPublicGroups
     );
 
-    $pending =& CRM_Contact_BAO_GroupContact::getContactGroup(
+    $pending = CRM_Contact_BAO_GroupContact::getContactGroup(
       $this->_contactId,
       'Pending',
       NULL, FALSE, TRUE,
       $this->_onlyPublicGroups
     );
 
-    $out =& CRM_Contact_BAO_GroupContact::getContactGroup(
+    $out = CRM_Contact_BAO_GroupContact::getContactGroup(
       $this->_contactId,
       'Removed',
       NULL, FALSE, TRUE,

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Contact_Form_Search_Custom_EventAggregate extends CRM_Contact_Form_Search_Custom_Base implements CRM_Contact_Form_Search_Interface {
 
@@ -155,14 +155,15 @@ class CRM_Contact_Form_Search_Custom_EventAggregate extends CRM_Contact_Form_Sea
                          on civicrm_contact.id = civicrm_participant.contact_id";
     }
     else {
-      unset($this->_columns['Participant']);
+      unset($this->_columns[ts('Participant')]);
     }
 
     $where = $this->where();
+    $groupFromSelect = "civicrm_option_value.label, civicrm_contribution.payment_instrument_id";
 
-    $groupBy = "event_id";
+    $groupBy = "event_id, event_type_id, {$groupFromSelect}";
     if (!empty($this->_formValues['event_type_id'])) {
-      $groupBy = "event_type_id";
+      $groupBy = "event_type_id, event_id, {$groupFromSelect}";
     }
 
     $sql = "

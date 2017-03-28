@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -99,6 +99,10 @@
           <br /><span class="description">{ts}Unit price.{/ts}</span> {help id="id-negative"}
         {/if}
         </td>
+      </tr>
+      <tr class="crm-price-field-form-block-non-deductible-amount">
+        <td class="label">{$form.non_deductible_amount.label}</td>
+        <td>{$form.non_deductible_amount.html}</td>
       </tr>
     {if $useForEvent}
       <tr class="crm-price-field-form-block-count">

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -115,8 +115,7 @@ class CRM_Activity_BAO_ICalendar {
    * @return string
    */
   private function getPrimaryEmail() {
-    $session = &CRM_Core_Session::singleton();
-    $uid = $session->get('userID');
+    $uid = CRM_Core_Session::getLoggedInContactID();
     $primary = '';
     $emails = CRM_Core_BAO_Email::allEmails($uid);
     foreach ($emails as $eid => $e) {

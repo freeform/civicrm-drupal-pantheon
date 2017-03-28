@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,11 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  *
  */
-class CRM_Event_BAO_Query {
+class CRM_Event_BAO_Query extends CRM_Core_BAO_Query {
 
   /**
    * Function get the import/export fields for contribution.
@@ -368,6 +368,7 @@ class CRM_Event_BAO_Query {
       case 'participant_fee_amount':
       case 'participant_fee_level':
       case 'participant_campaign_id':
+      case 'participant_registered_by_id':
 
         $qillName = $name;
         if (in_array($name, array(
@@ -379,6 +380,7 @@ class CRM_Event_BAO_Query {
           'participant_fee_level',
           'participant_is_pay_later',
           'participant_campaign_id',
+          'participant_registered_by_id',
         ))
         ) {
           $name = str_replace('participant_', '', $name);
@@ -408,13 +410,15 @@ class CRM_Event_BAO_Query {
         $qillName = $name;
         $name = 'role_id';
 
+        $dataType = !empty($fields[$qillName]['type']) ? CRM_Utils_Type::typeToString($fields[$qillName]['type']) : 'String';
+        $tableName = empty($tableName) ? 'civicrm_participant' : $tableName;
         if (is_array($value) && in_array(key($value), CRM_Core_DAO::acceptedSQLOperators(), TRUE)) {
           $op = key($value);
           $value = $value[$op];
         }
         if (!strstr($op, 'NULL') && !strstr($op, 'EMPTY') && !strstr($op, 'LIKE')) {
           $regexOp = (strstr($op, '!') || strstr($op, 'NOT')) ? 'NOT REGEXP' : 'REGEXP';
-          $regexp = "[[:cntrl:]]*" . implode('[[:>:]]*|[[:<:]]*', (array) $value) . "[[:cntrl:]]*";
+          $regexp = "([[:cntrl:]]|^)" . implode('([[:cntrl:]]|$)|([[:cntrl:]]|^)', (array) $value) . "([[:cntrl:]]|$)";
           $query->_where[$grouping][] = CRM_Contact_BAO_Query::buildClause("civicrm_participant.$name", $regexOp, $regexp, 'String');
         }
         else {
@@ -508,15 +512,6 @@ class CRM_Event_BAO_Query {
         break;
     }
     return $from;
-  }
-
-  /**
-   * Getter for the qill object.
-   *
-   * @return string
-   */
-  public function qill() {
-    return (isset($this->_qill)) ? $this->_qill : "";
   }
 
   /**
@@ -644,31 +639,13 @@ class CRM_Event_BAO_Query {
 
     $form->addRule('participant_fee_amount_low', ts('Please enter a valid money value.'), 'money');
     $form->addRule('participant_fee_amount_high', ts('Please enter a valid money value.'), 'money');
-    // add all the custom  searchable fields
-    $extends = array('Participant', 'Event');
-    $groupDetails = CRM_Core_BAO_CustomGroup::getGroupDetail(NULL, TRUE, $extends);
-    if ($groupDetails) {
-      $form->assign('participantGroupTree', $groupDetails);
-      foreach ($groupDetails as $group) {
-        foreach ($group['fields'] as $field) {
-          $fieldId = $field['id'];
-          $elementName = 'custom_' . $fieldId;
-          CRM_Core_BAO_CustomField::addQuickFormElement($form, $elementName, $fieldId, FALSE, TRUE);
-        }
-      }
-    }
+
+    self::addCustomFormFields($form, array('Participant', 'Event'));
 
     CRM_Campaign_BAO_Campaign::addCampaignInComponentSearch($form, 'participant_campaign_id');
 
     $form->assign('validCiviEvent', TRUE);
     $form->setDefaults(array('participant_test' => 0));
-  }
-
-  /**
-   * @param $row
-   * @param int $id
-   */
-  public static function searchAction(&$row, $id) {
   }
 
   /**

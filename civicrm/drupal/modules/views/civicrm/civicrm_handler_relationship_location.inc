@@ -67,7 +67,7 @@ class civicrm_handler_relationship_location extends views_handler_relationship {
       '#title' => t('Label'),
       '#default_value' => $label,
       '#dependency' => array(
-        'edit-options-custom-label' => array(1),
+          'edit-options-custom-label' => array(1),
       ),
       '#weight' => -102,
     );
@@ -105,7 +105,6 @@ class civicrm_handler_relationship_location extends views_handler_relationship {
     );
   }
 
-
   function location_extras() {
     $extra = array();
     if (!empty($this->options['location_type'])) {
@@ -127,13 +126,42 @@ class civicrm_handler_relationship_location extends views_handler_relationship {
     return $extra;
   }
 
+
+  function join_required($join = array()) {
+    if (!empty($this->options['required'])) {
+      $join->type = 'INNER';
+    }
+    return $join;
+  }
+
+  function join_location($join = array()) {
+    $extra = array();
+    if (isset($join->extra)) {
+      $extra = $join->extra;
+    }
+    $extra = array_merge($extra, $this::location_extras());
+    if (!empty($extra)) {
+      $join->extra = $extra;
+    }
+    $join->extra_type = self::$_locationOps[$this->options['location_op']];
+    return $join;
+  }
+
+  function get_join() {
+    $join = parent::get_join();
+    $join = $this->join_required($join);
+    $join = $this->join_location($join);
+    return $join;
+  }
+
   /**
    * Called to implement a relationship in a query.
    */
   function query() {
-    // Just ensure the one table. This is briefer than parent::query(), which
-    // attempts to create an additional join.
-    $this->ensure_my_table();
+    $join = $this->get_join();
+    $this->alias = $this->query->add_table($this->table, $this->relationship, $join);
+    //register relationship
+    $this->view->relationship[$this->options['id']]->alias = $this->alias;
+    $this->alias = $this->table_alias;
   }
 }
-

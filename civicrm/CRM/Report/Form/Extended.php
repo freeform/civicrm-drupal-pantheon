@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  *
  */
@@ -171,7 +171,7 @@ class CRM_Report_Form_Extended extends CRM_Report_Form {
     foreach ($rows as $index => & $row) {
       foreach ($row as $selectedfield => $value) {
         if (array_key_exists($selectedfield, $alterfunctions)) {
-          $rows[$index][$selectedfield] = $this->$alterfunctions[$selectedfield]($value, $row, $selectedfield, $altermap[$selectedfield]);
+          $rows[$index][$selectedfield] = $this->{$alterfunctions[$selectedfield]}($value, $row, $selectedfield, $altermap[$selectedfield]);
         }
       }
     }
@@ -315,7 +315,7 @@ class CRM_Report_Form_Extended extends CRM_Report_Form {
       'civicrm_participant' => array(
         'dao' => 'CRM_Event_DAO_Participant',
         'fields' => array(
-          'participant_id' => array('title' => 'Participant ID'),
+          'participant_id' => array('title' => ts('Participant ID')),
           'participant_record' => array(
             'name' => 'id',
             'title' => ts('Participant ID'),
@@ -358,7 +358,7 @@ class CRM_Report_Form_Extended extends CRM_Report_Form {
             'options' => CRM_Event_PseudoConstant::participantRole(),
           ),
           'participant_register_date' => array(
-            'title' => ' Registration Date',
+            'title' => ts('Registration Date'),
             'operatorType' => CRM_Report_Form::OP_DATE,
           ),
         ),
@@ -386,12 +386,12 @@ class CRM_Report_Form_Extended extends CRM_Report_Form {
         'grouping' => 'member-fields',
         'fields' => array(
           'membership_type_id' => array(
-            'title' => 'Membership Type',
+            'title' => ts('Membership Type'),
             'required' => TRUE,
             'alter_display' => 'alterMembershipTypeID',
           ),
           'status_id' => array(
-            'title' => 'Membership Status',
+            'title' => ts('Membership Status'),
             'required' => TRUE,
             'alter_display' => 'alterMembershipStatusID',
           ),
@@ -520,7 +520,7 @@ class CRM_Report_Form_Extended extends CRM_Report_Form {
             'title' => ts('Payment Method'),
             'alter_display' => 'alterPaymentType',
           ),
-          'source' => array('title' => 'Contribution Source'),
+          'source' => array('title' => ts('Contribution Source')),
           'trxn_id' => NULL,
           'receive_date' => array('default' => TRUE),
           'receipt_date' => NULL,
@@ -566,7 +566,7 @@ class CRM_Report_Form_Extended extends CRM_Report_Form {
             'title' => ts('Individual Contribution'),
             'name' => 'id',
           ),
-          'source' => array('title' => 'Contribution Source'),
+          'source' => array('title' => ts('Contribution Source')),
         ),
         'grouping' => 'contribution-fields',
       ),

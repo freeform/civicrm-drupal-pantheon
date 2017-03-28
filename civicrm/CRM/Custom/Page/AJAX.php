@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  *
  */
 
@@ -125,7 +125,7 @@ class CRM_Custom_Page_AJAX {
     $obj->_contactType = $contactType;
     $obj->_DTparams['offset'] = ($params['page'] - 1) * $params['rp'];
     $obj->_DTparams['rowCount'] = $params['rp'];
-    if ($params['sortBy']) {
+    if (!empty($params['sortBy'])) {
       $obj->_DTparams['sort'] = $params['sortBy'];
     }
 
@@ -153,6 +153,10 @@ class CRM_Custom_Page_AJAX {
     $multiRecordFields['data'] = $fieldList;
     $multiRecordFields['recordsTotal'] = $totalRecords;
     $multiRecordFields['recordsFiltered'] = $totalRecords;
+
+    if (!empty($_GET['is_unit_test'])) {
+      return $multiRecordFields;
+    }
 
     CRM_Utils_JSON::output($multiRecordFields);
   }

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -43,7 +43,7 @@
  * This provides greater consistency/predictability after flushing.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Core_PseudoConstant {
 
@@ -98,12 +98,6 @@ class CRM_Core_PseudoConstant {
    * @var array
    */
   private static $group;
-
-  /**
-   * GroupIterator
-   * @var mixed
-   */
-  private static $groupIterator;
 
   /**
    * RelationshipType
@@ -226,7 +220,7 @@ class CRM_Core_PseudoConstant {
     if (strpos($fieldName, 'custom_') === 0 && is_numeric($fieldName[7])) {
       $customField = new CRM_Core_BAO_CustomField();
       $customField->id = (int) substr($fieldName, 7);
-      $options = $customField->getOptions();
+      $options = $customField->getOptions($context);
       if ($options && $flip) {
         $options = array_flip($options);
       }
@@ -252,7 +246,7 @@ class CRM_Core_PseudoConstant {
 
       // if callback is specified..
       if (!empty($pseudoconstant['callback'])) {
-        $fieldOptions = call_user_func(Civi\Core\Resolver::singleton()->get($pseudoconstant['callback']));
+        $fieldOptions = call_user_func(Civi\Core\Resolver::singleton()->get($pseudoconstant['callback']), $context);
         //CRM-18223: Allow additions to field options via hook.
         CRM_Utils_Hook::fieldOptions($entity, $fieldName, $fieldOptions, $params);
         return $fieldOptions;
@@ -795,7 +789,7 @@ WHERE  id = %1";
    *
    * @param bool $applyLimit
    *
-   * @return array
+   * @return array|null
    *   array reference of all countries.
    */
   public static function country($id = FALSE, $applyLimit = TRUE) {
@@ -852,7 +846,7 @@ WHERE  id = %1";
         return self::$country[$id];
       }
       else {
-        return CRM_Core_DAO::$_nullObject;
+        return NULL;
       }
     }
     return self::$country;
@@ -922,28 +916,6 @@ WHERE  id = %1";
       self::populate(self::$group[$groupKey], 'CRM_Contact_DAO_Group', FALSE, 'title', 'is_active', $condition);
     }
     return self::$group[$groupKey];
-  }
-
-  /**
-   * Create or get groups iterator (iterates over nested groups in a
-   * logical fashion)
-   *
-   * The GroupNesting instance is returned; it's created if this is being
-   * called for the first time
-   *
-   *
-   *
-   * @param bool $styledLabels
-   *
-   * @return CRM_Contact_BAO_GroupNesting
-   */
-  public static function &groupIterator($styledLabels = FALSE) {
-    if (!self::$groupIterator) {
-      // When used as an object, GroupNesting implements Iterator
-      // and iterates nested groups in a logical manner for us
-      self::$groupIterator = new CRM_Contact_BAO_GroupNesting($styledLabels);
-    }
-    return self::$groupIterator;
   }
 
   /**
@@ -1031,7 +1003,7 @@ WHERE  id = %1";
    *   Db column name/label.
    * @param bool $reset
    *   Reset relationship types if true.
-   * @param bool|NULL $isActive
+   * @param bool $isActive
    *   Filter by is_active. NULL to disable.
    *
    * @return array
@@ -1646,12 +1618,12 @@ ORDER BY name";
    *
    * @param int $stateID
    *
-   * @return int
+   * @return int|null
    *   the country id that the state belongs to
    */
   public static function countryIDForStateID($stateID) {
     if (empty($stateID)) {
-      return CRM_Core_DAO::$_nullObject;
+      return NULL;
     }
 
     $query = "
@@ -1828,15 +1800,32 @@ WHERE  id = %1
   public static function getTaxRates() {
     if (!isset(Civi::$statics[__CLASS__]['taxRates'])) {
       Civi::$statics[__CLASS__]['taxRates'] = array();
+      $option = civicrm_api3('option_value', 'get', array(
+        'sequential' => 1,
+        'option_group_id' => 'account_relationship',
+        'name' => 'Sales Tax Account is',
+      ));
+      $value = array();
+      if ($option['count'] !== 0) {
+        if ($option['count'] > 1) {
+          foreach ($option['values'] as $opt) {
+            $value[] = $opt['value'];
+          }
+        }
+        else {
+          $value[] = $option['values'][0]['value'];
+        }
+        $where = 'AND efa.account_relationship IN (' . implode(', ', $value)  . ' )';
+      }
+      else {
+        $where = '';
+      }
       $sql = "
         SELECT fa.tax_rate, efa.entity_id
         FROM civicrm_entity_financial_account efa
         INNER JOIN civicrm_financial_account fa ON fa.id = efa.financial_account_id
-        INNER JOIN civicrm_option_value cov ON cov.value = efa.account_relationship
-        INNER JOIN civicrm_option_group cog ON cog.id = cov.option_group_id
         WHERE efa.entity_table = 'civicrm_financial_type'
-        AND cov.name = 'Sales Tax Account is'
-        AND cog.name = 'account_relationship'
+        {$where}
         AND fa.is_active = 1";
       $dao = CRM_Core_DAO::executeQuery($sql);
       while ($dao->fetch()) {

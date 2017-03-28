@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Campaign_BAO_Petition extends CRM_Campaign_BAO_Survey {
   /**
@@ -220,9 +220,10 @@ SELECT  petition.id                         as id,
         CRM_Core_BAO_CustomValueTable::store($params['custom'], 'civicrm_activity', $activity->id);
       }
 
-      // set permanent cookie to indicate this petition already signed on the computer
+      // Set browser cookie to indicate this petition was already signed.
       $config = CRM_Core_Config::singleton();
-      setcookie('signed_' . $params['sid'], $activity->id, time() + $this->cookieExpire, $config->userFrameworkBaseURL);
+      $url_parts = parse_url($config->userFrameworkBaseURL);
+      setcookie('signed_' . $params['sid'], $activity->id, time() + $this->cookieExpire, $url_parts['path'], $url_parts['host'], CRM_Utils_System::isSSL());
     }
 
     return $activity;
@@ -268,10 +269,13 @@ AND         tag_id = ( SELECT id FROM civicrm_tag WHERE name = %2 )";
       && isset($activity_id) && is_numeric($activity_id)) {
       // set permanent cookie to indicate this users email address now confirmed
       $config = CRM_Core_Config::singleton();
+      $url_parts = parse_url($config->userFrameworkBaseURL);
       setcookie("confirmed_{$petition_id}",
         $activity_id,
         time() + $this->cookieExpire,
-        $config->userFrameworkBaseURL
+        $url_parts['path'],
+        $url_parts['host'],
+        CRM_Utils_System::isSSL()
       );
       return TRUE;
     }

@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -61,25 +61,15 @@
 <script type="text/javascript">
 
   CRM.$(function($) {
-      buildChart( );
+    var chartData = {/literal}{$openFlashChartData}{literal};
+    $.each(chartData, function(chartID, chartValues) {
+      createSWFObject(chartID, chartValues.divName, chartValues.size.xSize, chartValues.size.ySize, 'loadData');
+    });
   });
-
-  function buildChart( ) {
-     var chartData = {/literal}{$openFlashChartData}{literal};
-     cj.each( chartData, function( chartID, chartValues ) {
-
-   var xSize   = eval( "chartValues.size.xSize" );
-   var ySize   = eval( "chartValues.size.ySize" );
-   var divName = eval( "chartValues.divName" );
-
-   createSWFObject( chartID, divName, xSize, ySize, 'loadData' );
-     });
-  }
 
   function loadData( chartID ) {
      var allData = {/literal}{$openFlashChartData}{literal};
-     var data    = eval( "allData." + chartID + ".object" );
-     return JSON.stringify( data );
+     return JSON.stringify(allData[chartID].object);
   }
 
   function byMonthOnClick( barIndex ) {

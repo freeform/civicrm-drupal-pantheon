@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -43,12 +43,7 @@
  * @throws \API_Exception
  */
 function civicrm_api3_word_replacement_get($params) {
-  // NEVER COPY THIS. No idea why a newish api would not use basic_get.
-  $bao = new CRM_Core_BAO_WordReplacement();
-  _civicrm_api3_dao_set_filter($bao, $params, TRUE);
-  $wordReplacements = _civicrm_api3_dao_to_array($bao, $params, TRUE, 'WordReplacement');
-
-  return civicrm_api3_create_success($wordReplacements, $params, 'WordReplacement', 'get', $bao);
+  return _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params);
 }
 
 
@@ -72,7 +67,9 @@ function civicrm_api3_word_replacement_create($params) {
  *   Array of parameters determined by getfields.
  */
 function _civicrm_api3_word_replacement_create_spec(&$params) {
-  unset($params['version']);
+  $params['find_word']['api.required'] = 1;
+  $params['replace_word']['api.required'] = 1;
+  $params['is_active']['api.default'] = 1;
 }
 
 /**

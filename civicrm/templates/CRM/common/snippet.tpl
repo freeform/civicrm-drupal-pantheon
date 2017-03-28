@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -50,7 +50,6 @@
           {include file="CRM/common/status.tpl"}
         {/if}
 
-        <!-- .tpl file invoked: {$tplFile}. Call via form.tpl if we have a form in the page. -->
         {if !empty($isForm)}
           {include file="CRM/Form/default.tpl"}
         {else}

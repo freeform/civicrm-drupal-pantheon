@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -233,7 +233,14 @@ class CRM_Contact_Form_CustomData extends CRM_Core_Form {
         $groupTree = CRM_Core_BAO_CustomGroup::getTree($this->_type,
           $this,
           $this->_entityId,
-          $this->_groupID
+          $this->_groupID,
+          array(),
+          NULL,
+          TRUE,
+          NULL,
+          FALSE,
+          TRUE,
+          $this->_copyValueId
         );
         $valueIdDefaults = array();
         $groupTreeValueId = CRM_Core_BAO_CustomGroup::formatGroupTree($groupTree, $this->_copyValueId, $this);

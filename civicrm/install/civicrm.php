@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  * @param $filesDirectory
  */
@@ -146,6 +146,13 @@ function civicrm_source($dsn, $fileName, $lineMode = FALSE) {
   global $crmPath;
 
   require_once "$crmPath/packages/DB.php";
+
+  // CRM-19699 See also CRM_Core_DAO for PHP7 mysqli compatiblity.
+  // Duplicated here because this is not using CRM_Core_DAO directly
+  // and this function may be called directly from Drush.
+  if (!defined('DB_DSN_MODE')) {
+    define('DB_DSN_MODE', 'auto');
+  }
 
   $db = DB::connect($dsn);
   if (PEAR::isError($db)) {

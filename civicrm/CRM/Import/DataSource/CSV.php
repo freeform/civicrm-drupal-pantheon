@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Import_DataSource_CSV extends CRM_Import_DataSource {
   const
@@ -235,7 +235,7 @@ class CRM_Import_DataSource_CSV extends CRM_Import_DataSource {
         function($string) {
           return trim($string, chr(0xC2) . chr(0xA0));
         }, $row);
-      $row = array_map('civicrm_mysql_real_escape_string', $row);
+      $row = array_map(array('CRM_Core_DAO', 'escapeString'), $row);
       $sql .= "('" . implode("', '", $row) . "')";
       $count++;
 
@@ -262,17 +262,4 @@ class CRM_Import_DataSource_CSV extends CRM_Import_DataSource {
     return $result;
   }
 
-}
-
-/**
- * @param $string
- *
- * @return string
- */
-function civicrm_mysql_real_escape_string($string) {
-  static $dao = NULL;
-  if (!$dao) {
-    $dao = new CRM_Core_DAO();
-  }
-  return $dao->escape($string);
 }

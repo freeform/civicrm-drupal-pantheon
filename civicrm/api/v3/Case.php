@@ -3,7 +3,7 @@
   +--------------------------------------------------------------------+
   | CiviCRM version 4.7                                                |
   +--------------------------------------------------------------------+
-  | Copyright CiviCRM LLC (c) 2004-2016                                |
+  | Copyright CiviCRM LLC (c) 2004-2017                                |
   +--------------------------------------------------------------------+
   | This file is a part of CiviCRM.                                    |
   |                                                                    |
@@ -140,13 +140,11 @@ function _civicrm_api3_case_get_spec(&$params) {
     'title' => 'Case Client',
     'description' => 'Contact id of one or more clients to retrieve cases for',
     'type' => CRM_Utils_Type::T_INT,
-    'FKApiName' => 'Contact',
   );
   $params['activity_id'] = array(
     'title' => 'Case Activity',
     'description' => 'Id of an activity in the case',
     'type' => CRM_Utils_Type::T_INT,
-    'FKApiName' => 'Activity',
   );
 }
 
@@ -163,7 +161,6 @@ function _civicrm_api3_case_create_spec(&$params) {
     'description' => 'Contact id of case client(s)',
     'api.required' => 1,
     'type' => CRM_Utils_Type::T_INT,
-    'FKApiName' => 'Contact',
   );
   $params['status_id']['api.default'] = 1;
   $params['status_id']['api.aliases'] = array('case_status');
@@ -313,6 +310,10 @@ function _civicrm_api3_case_deprecation() {
  *   api result array
  */
 function civicrm_api3_case_update($params) {
+  if (!isset($params['case_id']) && isset($params['id'])) {
+    $params['case_id'] = $params['id'];
+  }
+
   //check parameters
   civicrm_api3_verify_mandatory($params, NULL, array('id'));
 
@@ -452,6 +453,11 @@ function _civicrm_api3_case_format_params(&$params) {
 function civicrm_api3_case_getList($params) {
   require_once 'api/v3/Generic/Getlist.php';
   require_once 'api/v3/CaseContact.php';
+  //CRM:19956 - Assign case_id param if both id and case_id is passed to retrieve the case
+  if (!empty($params['id']) && !empty($params['params']) && !empty($params['params']['case_id'])) {
+    $params['params']['case_id'] = array('IN' => $params['id']);
+    unset($params['id']);
+  }
   $params['id_field'] = 'case_id';
   $params['label_field'] = $params['search_field'] = 'contact_id.sort_name';
   $params['description_field'] = array(
@@ -462,6 +468,7 @@ function civicrm_api3_case_getList($params) {
     'case_id.start_date',
   );
   $apiRequest = array(
+    'version' => 3,
     'entity' => 'CaseContact',
     'action' => 'getlist',
     'params' => $params,

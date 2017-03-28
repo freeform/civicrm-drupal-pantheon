@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,9 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
- * $Id$
- *
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
 
@@ -50,8 +48,7 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
   public $_drilldownReport = array('event/income' => 'Link to Detail Report');
 
   /**
-   */
-  /**
+   * Class constructor.
    */
   public function __construct() {
 
@@ -96,11 +93,11 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
             'options' => CRM_Core_OptionGroup::values('event_type'),
           ),
           'event_start_date' => array(
-            'title' => 'Event Start Date',
+            'title' => ts('Event Start Date'),
             'operatorType' => CRM_Report_Form::OP_DATE,
           ),
           'event_end_date' => array(
-            'title' => 'Event End Date',
+            'title' => ts('Event End Date'),
             'operatorType' => CRM_Report_Form::OP_DATE,
           ),
         ),
@@ -128,6 +125,7 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
       }
     }
 
+    $this->_selectClauses = $select;
     $this->_select = 'SELECT ' . implode(', ', $select);
   }
 
@@ -179,7 +177,7 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
 
   public function groupBy() {
     $this->assign('chartSupported', TRUE);
-    $this->_groupBy = " GROUP BY {$this->_aliases['civicrm_event']}.id";
+    $this->_groupBy = CRM_Contact_BAO_Query::getGroupByFromSelectColumns($this->_selectClauses, "{$this->_aliases['civicrm_event']}.id");
   }
 
   /**
@@ -263,8 +261,8 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
       }
     }
 
-    $statusType1 = CRM_Event_PseudoConstant::participantStatus(NULL, 'is_counted = 1');
-    $statusType2 = CRM_Event_PseudoConstant::participantStatus(NULL, 'is_counted = 0');
+    $statusType1 = CRM_Event_PseudoConstant::participantStatus(NULL, 'is_counted = 1', 'label');
+    $statusType2 = CRM_Event_PseudoConstant::participantStatus(NULL, 'is_counted = 0', 'label');
 
     //make column header for participant status  Registered/Attended
     $type1_header = implode('/', $statusType1);
@@ -281,7 +279,7 @@ class CRM_Report_Form_Event_Summary extends CRM_Report_Form_Event {
       'type' => CRM_Utils_Type::T_INT,
     );
     $this->_columnHeaders['totalAmount'] = array(
-      'title' => 'Total Income',
+      'title' => ts('Total Income'),
       'type' => CRM_Utils_Type::T_STRING,
     );
   }

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -106,6 +106,15 @@ class CRM_Batch_Form_Entry extends CRM_Core_Form {
       ->addSetting(array('setting' => array('monetaryThousandSeparator' => CRM_Core_Config::singleton()->monetaryThousandSeparator)))
       ->addSetting(array('setting' => array('monetaryDecimalPoint' => CRM_Core_Config::singleton()->monetaryDecimalPoint)));
 
+  }
+
+  /**
+   * Set Batch ID.
+   *
+   * @param int $id
+   */
+  public function setBatchID($id) {
+    $this->_batchId = $id;
   }
 
   /**
@@ -239,6 +248,15 @@ class CRM_Batch_Form_Entry extends CRM_Core_Form {
       }
     }
 
+    // CRM-19477: Display Error for Batch Sizes Exceeding php.ini max_input_vars
+    // Notes: $this->_elementIndex gives an approximate count of the variables being sent
+    // An offset value is set to deal with additional vars that are likely passed.
+    // There may be a more accurate way to do this...
+    $offset = 50; // set an offset to account for other vars we are not counting
+    if ((count($this->_elementIndex) + $offset) > ini_get("max_input_vars")) {
+      CRM_Core_Error::fatal(ts('Batch size is too large. Increase value of php.ini setting "max_input_vars" (current val = ' . ini_get("max_input_vars") . ')'));
+    }
+
     $this->assign('fields', $this->_fields);
     CRM_Core_Resources::singleton()
       ->addSetting(array(
@@ -263,7 +281,7 @@ class CRM_Batch_Form_Entry extends CRM_Core_Form {
    *   Posted values of the form.
    * @param array $files
    *   List of errors to be posted back to the form.
-   * @param array $self
+   * @param \CRM_Batch_Form_Entry $self
    *   Form object.
    *
    * @return array
@@ -364,9 +382,7 @@ class CRM_Batch_Form_Entry extends CRM_Core_Form {
     if ($this->_action & CRM_Core_Action::ADD) {
       list($currentDate, $currentTime) = CRM_Utils_Date::setDateDefaults(NULL, 'activityDateTime');
 
-      //get all status
-      $allStatus = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
-      $completeStatus = array_search('Completed', $allStatus);
+      $completeStatus = CRM_Contribute_PseudoConstant::getKey('CRM_Contribute_BAO_Contribution', 'contribution_status_id', 'Completed');
       $specialFields = array(
         'join_date' => $currentDate,
         'receive_date' => $currentDate,
@@ -542,7 +558,7 @@ class CRM_Batch_Form_Entry extends CRM_Core_Form {
         }
         $value['line_item'] = $lineItem;
         //finally call contribution create for all the magic
-        $contribution = CRM_Contribute_BAO_Contribution::create($value, CRM_Core_DAO::$_nullArray);
+        $contribution = CRM_Contribute_BAO_Contribution::create($value);
         $batchTypes = CRM_Core_Pseudoconstant::get('CRM_Batch_DAO_Batch', 'type_id', array('flip' => 1), 'validate');
         if (!empty($this->_batchInfo['type_id']) && ($this->_batchInfo['type_id'] == $batchTypes['Pledge Payment'])) {
           $adjustTotalAmount = FALSE;
@@ -818,7 +834,7 @@ class CRM_Batch_Form_Entry extends CRM_Core_Form {
             }
           }
           $membershipSource = CRM_Utils_Array::value('source', $value);
-          list($membership) = CRM_Member_BAO_Membership::renewMembership(
+          list($membership) = CRM_Member_BAO_Membership::processMembership(
             $value['contact_id'], $value['membership_type_id'], FALSE,
             //$numTerms should be default to 1.
             NULL, NULL, $value['custom'], 1, NULL, FALSE,

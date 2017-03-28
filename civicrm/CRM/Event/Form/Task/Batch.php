@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  *
  */
@@ -507,6 +507,8 @@ class CRM_Event_Form_Task_Batch extends CRM_Event_Form_Task {
     }
 
     //complete the contribution.
+    // @todo use the api - ie civicrm_api3('Contribution', 'completetransaction', $input);
+    // as this method is not preferred / supported.
     $baseIPN->completeTransaction($input, $ids, $objects, $transaction, FALSE);
 
     // reset template values before processing next transactions
@@ -521,12 +523,11 @@ class CRM_Event_Form_Task_Batch extends CRM_Event_Form_Task {
   public function assignToTemplate() {
     $notifyingStatuses = array('Pending from waitlist', 'Pending from approval', 'Expired', 'Cancelled');
     $notifyingStatuses = array_intersect($notifyingStatuses, CRM_Event_PseudoConstant::participantStatus());
-    $statuses = implode(', ', $notifyingStatuses);
-    $status = ts('Participants whose status is changed FROM Pending Pay Later TO Registered or Attended will receive a confirmation email and their payment status will be set to completed. If this is not you want to do, you can change their participant status by editing their event registration record directly.');
+    $this->assign('status', TRUE);
     if (!empty($notifyingStatuses)) {
-      $status .= '<br />' . ts("Participants whose status is changed TO any of the following will be automatically notified via email: %1", array(1 => $statuses));
+      $s = '<em>' . implode('</em>, <em>', $notifyingStatuses) . '</em>';
+      $this->assign('notifyingStatuses', $s);
     }
-    $this->assign('status', $status);
   }
 
 }

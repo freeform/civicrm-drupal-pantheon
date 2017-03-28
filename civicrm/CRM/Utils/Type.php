@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Utils_Type {
   const
@@ -49,7 +49,10 @@ class CRM_Utils_Type {
     T_CCNUM = 8192,
     T_MEDIUMBLOB = 16384;
 
-  // @todo What's the point of these constants? Backwards compatibility?
+  // @TODO What's the point of these constants? Backwards compatibility?
+  //
+  // These are used for field size (<input type=text size=2>), but redundant TWO=2
+  // usages are rare and should be eliminated. See CRM-18810.
   const
     TWO = 2,
     FOUR = 4,
@@ -141,7 +144,29 @@ class CRM_Utils_Type {
   }
 
   /**
-   * Helper function to call escape on arrays
+   * Get the data_type for the field.
+   *
+   * @param array $fieldMetadata
+   *   Metadata about the field.
+   *
+   * @return string
+   */
+  public static function getDataTypeFromFieldMetadata($fieldMetadata) {
+    if (isset($fieldMetadata['data_type'])) {
+      return $fieldMetadata['data_type'];
+    }
+    if (empty($fieldMetadata['type'])) {
+      // I would prefer to throw an e-notice but there is some,
+      // probably unnecessary logic, that only retrieves activity fields
+      // if they are 'in the profile' and probably they are not 'in'
+      // until they are added - which might lead to ? who knows!
+      return '';
+    }
+    return self::typeToString($fieldMetadata['type']);
+  }
+
+  /**
+   * Helper function to call escape on arrays.
    *
    * @see escape
    */
@@ -451,6 +476,24 @@ class CRM_Utils_Type {
     }
 
     return $output;
+  }
+
+  /**
+   * Get list of avaliable Data Tupes for Option Groups
+   *
+   * @return array
+   */
+  public static function dataTypes() {
+    $types = array(
+      'Integer',
+      'String',
+      'Date',
+      'Time',
+      'Timestamp',
+      'Money',
+      'Email',
+    );
+    return array_combine($types, $types);
   }
 
 }

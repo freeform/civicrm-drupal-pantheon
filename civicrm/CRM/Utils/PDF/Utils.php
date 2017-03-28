@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -25,14 +25,13 @@
  +--------------------------------------------------------------------+
  */
 
-// CRM-12165 - Remote file support required for image handling.
-define("DOMPDF_ENABLE_REMOTE", TRUE);
-define('DOMPDF_ENABLE_AUTOLOAD', FALSE);
 
+use Dompdf\Dompdf;
+use Dompdf\Options;
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Utils_PDF_Utils {
 
@@ -198,9 +197,11 @@ class CRM_Utils_PDF_Utils {
    * @return string
    */
   public static function _html2pdf_dompdf($paper_size, $orientation, $html, $output, $fileName) {
-    require_once 'vendor/dompdf/dompdf/dompdf_config.inc.php';
+    // CRM-12165 - Remote file support required for image handling.
+    $options = new Options();
+    $options->set('isRemoteEnabled', TRUE);
 
-    $dompdf = new DOMPDF();
+    $dompdf = new DOMPDF($options);
     $dompdf->set_paper($paper_size, $orientation);
     $dompdf->load_html($html);
     $dompdf->render();
@@ -209,6 +210,8 @@ class CRM_Utils_PDF_Utils {
       return $dompdf->output();
     }
     else {
+      // CRM-19183 remove .pdf extension from filename
+      $fileName = basename($fileName, ".pdf");
       $dompdf->stream($fileName);
     }
   }

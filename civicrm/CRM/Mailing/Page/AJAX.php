@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -53,6 +53,11 @@ class CRM_Mailing_Page_AJAX {
       'msg_html' => $messageTemplate->msg_html,
       'pdf_format_id' => $messageTemplate->pdf_format_id,
     );
+
+    $documentInfo = CRM_Core_BAO_File::getEntityFile('civicrm_msg_template', $templateId);
+    foreach ((array) $documentInfo as $info) {
+      list($messages['document_body']) = CRM_Utils_PDF_Document::docReader($info['fullPath'], $info['mime_type']);
+    }
 
     CRM_Utils_JSON::output($messages);
   }

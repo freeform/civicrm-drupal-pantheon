@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  *
  */
@@ -78,5 +78,19 @@ return array(
     'description' => NULL,
     'help_text' => 'Web Service URL',
     'validate_callback' => 'CRM_Utils_Rule::url',
+  ),
+  'hideCountryMailingLabels' => array(
+    'group_name' => 'Address Preferences',
+    'group' => 'address',
+    'name'  => 'hideCountryMailingLabels',
+    'type' => 'Boolean',
+    'quick_form_type' => 'YesNo',
+    'default' => 0,
+    'add' => '4.7',
+    'title' => 'Hide Country in Mailing Labels when same as domain country',
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'description' => 'Do not display the country field in mailing labels when the country is the same as that of the domain',
+    'help_text' => NULL,
   ),
 );

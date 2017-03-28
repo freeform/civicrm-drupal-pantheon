@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Mailing_Form_Search extends CRM_Core_Form {
 
@@ -59,6 +59,13 @@ class CRM_Mailing_Form_Search extends CRM_Core_Form {
     }
     $this->addElement('checkbox', 'status_unscheduled', NULL, ts('Draft / Unscheduled'));
     $this->addYesNo('is_archived', ts('Mailing is Archived'), TRUE);
+
+    // Search by language, if multi-lingual
+    $enabledLanguages = CRM_Core_I18n::languages(TRUE);
+
+    if (count($enabledLanguages) > 1) {
+      $this->addElement('select', 'language', ts('Language'), array('' => ts('- all languages -')) + $enabledLanguages, array('class' => 'crm-select2'));
+    }
 
     if ($parent->_sms) {
       $this->addElement('hidden', 'sms', $parent->_sms);
@@ -118,6 +125,7 @@ class CRM_Mailing_Form_Search extends CRM_Core_Form {
         'sms',
         'status_unscheduled',
         'is_archived',
+        'language',
         'hidden_find_mailings',
       );
       foreach ($fields as $field) {

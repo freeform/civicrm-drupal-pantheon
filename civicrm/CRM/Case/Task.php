@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -86,15 +86,22 @@ class CRM_Case_Task {
           'class' => 'CRM_Case_Form_Task_Restore',
           'result' => FALSE,
         ),
+        5 => array(
+          'title' => ts('Print/merge Document'),
+          'class' => 'CRM_Case_Form_Task_PDF',
+          'result' => FALSE,
+        ),
       );
+
       //CRM-4418, check for delete
       if (!CRM_Core_Permission::check('delete in CiviCase')) {
         unset(self::$_tasks[1]);
       }
+
+      CRM_Utils_Hook::searchTasks('case', self::$_tasks);
+      asort(self::$_tasks);
     }
 
-    CRM_Utils_Hook::searchTasks('case', self::$_tasks);
-    asort(self::$_tasks);
     return self::$_tasks;
   }
 

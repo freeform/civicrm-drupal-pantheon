@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -138,6 +138,10 @@ class CRM_Contact_Form_Edit_CommunicationPreferences {
         );
       }
     }
+
+    if (array_key_exists('preferred_mail_format', $fields) && empty($fields['preferred_mail_format'])) {
+      $errors['preferred_mail_format'] = ts('Please select an email format preferred by this contact.');
+    }
     return empty($errors) ? TRUE : $errors;
   }
 
@@ -167,6 +171,9 @@ class CRM_Contact_Form_Edit_CommunicationPreferences {
     // CRM-17778 -- set preferred_mail_format to default if unset
     if (empty($defaults['preferred_mail_format'])) {
       $defaults['preferred_mail_format'] = 'Both';
+    }
+    else {
+      $defaults['preferred_mail_format'] = array_search($defaults['preferred_mail_format'], CRM_Core_SelectValues::pmf());
     }
 
     //set default from greeting types CRM-4575, CRM-9739

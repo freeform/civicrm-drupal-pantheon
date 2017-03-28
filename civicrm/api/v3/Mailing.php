@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -43,6 +43,9 @@
  * @throws \Civi\API\Exception\UnauthorizedException
  */
 function civicrm_api3_mailing_create($params) {
+  if (isset($params['template_options']) && is_array($params['template_options'])) {
+    $params['template_options'] = ($params['template_options'] === array()) ? '{}' : json_encode($params['template_options']);
+  }
   if (CRM_Mailing_Info::workflowEnabled()) {
     // Note: 'schedule mailings' and 'approve mailings' can update certain fields, but can't create.
 
@@ -64,7 +67,8 @@ function civicrm_api3_mailing_create($params) {
     $safeParams = $params;
   }
   $safeParams['_evil_bao_validator_'] = 'CRM_Mailing_BAO_Mailing::checkSendable';
-  return _civicrm_api3_basic_create(_civicrm_api3_get_BAO(__FUNCTION__), $safeParams);
+  $result = _civicrm_api3_basic_create(_civicrm_api3_get_BAO(__FUNCTION__), $safeParams);
+  return _civicrm_api3_mailing_get_formatResult($result);
 
 }
 
@@ -238,7 +242,27 @@ function civicrm_api3_mailing_delete($params) {
  * @return array
  */
 function civicrm_api3_mailing_get($params) {
-  return _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params);
+  $result = _civicrm_api3_basic_get(_civicrm_api3_get_BAO(__FUNCTION__), $params);
+  return _civicrm_api3_mailing_get_formatResult($result);
+}
+
+/**
+ * Format definition.
+ *
+ * @param array $result
+ *
+ * @return array
+ * @throws \CRM_Core_Exception
+ */
+function _civicrm_api3_mailing_get_formatResult($result) {
+  if (isset($result['values']) && is_array($result['values'])) {
+    foreach ($result['values'] as $key => $caseType) {
+      if (isset($result['values'][$key]['template_options']) && is_string($result['values'][$key]['template_options'])) {
+        $result['values'][$key]['template_options'] = json_decode($result['values'][$key]['template_options'], TRUE);
+      }
+    }
+  }
+  return $result;
 }
 
 /**
@@ -588,9 +612,11 @@ function civicrm_api3_mailing_send_test($params) {
 
   $testEmailParams = _civicrm_api3_generic_replace_base_params($params);
   $testEmailParams['is_test'] = 1;
+  $testEmailParams['status'] = 'Scheduled';
+  $testEmailParams['scheduled_date'] = CRM_Utils_Date::processDate(date('Y-m-d'), date('H:i:s'));
   $job = civicrm_api3('MailingJob', 'create', $testEmailParams);
   $testEmailParams['job_id'] = $job['id'];
-  $testEmailParams['emails'] = explode(',', $testEmailParams['test_email']);
+  $testEmailParams['emails'] = array_key_exists('test_email', $testEmailParams) ? explode(',', $testEmailParams['test_email']) : NULL;
   if (!empty($params['test_email'])) {
     $query = CRM_Utils_SQL_Select::from('civicrm_email e')
         ->select(array('e.id', 'e.contact_id', 'e.email'))

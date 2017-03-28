@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  *
  */
@@ -142,6 +142,22 @@ class CRM_Core_BAO_OptionGroup extends CRM_Core_DAO_OptionGroup {
   }
 
   /**
+   * Get DataType for a specified option Group
+   *
+   * @param int $optionGroupId
+   *   Id of the Option Group.
+   *
+   * @return string|null
+   *   Data Type
+   */
+  public static function getDataType($optionGroupId) {
+    $optionGroup = new CRM_Core_DAO_OptionGroup();
+    $optionGroup->id = $optionGroupId;
+    $optionGroup->find(TRUE);
+    return $optionGroup->data_type;
+  }
+
+  /**
    * Ensure an option group exists.
    *
    * This function is intended to be called from the upgrade script to ensure
@@ -157,6 +173,7 @@ class CRM_Core_BAO_OptionGroup extends CRM_Core_DAO_OptionGroup {
   public static function ensureOptionGroupExists($params) {
     $existingValues = civicrm_api3('OptionGroup', 'get', array(
       'name' => $params['name'],
+      'return' => 'id',
     ));
     if (!$existingValues['count']) {
       $result = civicrm_api3('OptionGroup', 'create', $params);

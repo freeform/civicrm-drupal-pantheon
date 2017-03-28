@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -33,16 +33,42 @@
  */
 
 /**
+ * Adjust Metadata for Delete action.
+ *
+ * The metadata is used for setting defaults, documentation & validation.
+ *
+ * @param array $params
+ *   Array of parameters determined by getfields.
+ */
+function _civicrm_api3_membership_delete_spec(&$params) {
+  $params['preserve_contribution'] = array(
+    'api.required' => 0,
+    'title' => 'Preserve Contribution',
+    'description' => 'By default this is 0, or 0 if not set. Set to 1 to preserve the associated contribution record when membership is deleted.',
+    'type' => CRM_Utils_Type::T_BOOLEAN,
+  );
+}
+
+/**
  * Deletes an existing contact Membership.
  *
  * @param array $params
  *   Array array holding id - Id of the contact membership to be deleted.
- *
- * @return array
- *   API result array.
+ * @return array API result array.
+ * @throws API_Exception
  */
 function civicrm_api3_membership_delete($params) {
-  return _civicrm_api3_basic_delete(_civicrm_api3_get_BAO(__FUNCTION__), $params);
+  if (isset($params['preserve_contribution'])) {
+    if (CRM_Member_BAO_Membership::del($params['id'], $params['preserve_contribution'])) {
+      return civicrm_api3_create_success(TRUE, $params);
+    }
+    else {
+      throw new API_Exception(ts('Could not delete membership'));
+    }
+  }
+  else {
+    return _civicrm_api3_basic_delete(_civicrm_api3_get_BAO(__FUNCTION__), $params);
+  }
 }
 
 /**
@@ -109,16 +135,13 @@ function civicrm_api3_membership_create($params) {
     $ids['userId'] = $params['contact_id'];
   }
   //for edit membership id should be present
+  // probably not required now.
   if (!empty($params['id'])) {
     $ids['membership'] = $params['id'];
     $action = CRM_Core_Action::UPDATE;
   }
   //need to pass action to handle related memberships.
   $params['action'] = $action;
-
-  if (empty($params['line_item']) && !empty($params['membership_type_id'])) {
-    CRM_Price_BAO_LineItem::getLineItemArray($params, NULL, 'membership', $params['membership_type_id']);
-  }
 
   $membershipBAO = CRM_Member_BAO_Membership::create($params, $ids, TRUE);
 

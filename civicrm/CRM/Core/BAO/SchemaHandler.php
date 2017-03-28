@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -370,10 +370,25 @@ ALTER TABLE {$tableName}
   /**
    * @param string $tableName
    * @param string $columnName
+   * @param bool $l18n
+   *
    */
-  public static function dropColumn($tableName, $columnName) {
-    $sql = "ALTER TABLE $tableName DROP COLUMN $columnName";
-    CRM_Core_DAO::executeQuery($sql);
+  public static function dropColumn($tableName, $columnName, $l18n = FALSE) {
+    if (self::checkIfFieldExists($tableName, $columnName)) {
+      $sql = "ALTER TABLE $tableName DROP COLUMN $columnName";
+      if ($l18n) {
+        CRM_Core_DAO::executeQuery($sql);
+      }
+      else {
+        CRM_Core_DAO::executeQuery($sql, array(), TRUE, NULL, FALSE, FALSE);
+      }
+      $domain = new CRM_Core_DAO_Domain();
+      $domain->find(TRUE);
+      if ($domain->locales) {
+        $locales = explode(CRM_Core_DAO::VALUE_SEPARATOR, $domain->locales);
+        CRM_Core_I18n_Schema::rebuildMultilingualSchema($locales, NULL);
+      }
+    }
   }
 
   /**
@@ -593,6 +608,37 @@ MODIFY      {$columnName} varchar( $length )
       array(1 => array($columnName, 'String'))
     );
     if ($result->fetch()) {
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+  /**
+   * Remove a foreign key from a table if it exists
+   *
+   * @param $table_name
+   * @param $constraint_name
+   */
+  public static function safeRemoveFK($table_name, $constraint_name) {
+
+    $config = CRM_Core_Config::singleton();
+    $dbUf = DB::parseDSN($config->dsn);
+    $query = "
+      SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+      WHERE TABLE_SCHEMA = %1
+      AND TABLE_NAME = %2
+      AND CONSTRAINT_NAME = %3
+      AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+    ";
+    $params = array(
+      1 => array($dbUf['database'], 'String'),
+      2 => array($table_name, 'String'),
+      3 => array($constraint_name, 'String'),
+    );
+    $dao = CRM_Core_DAO::executeQuery($query, $params);
+
+    if ($dao->fetch()) {
+      CRM_Core_DAO::executeQuery("ALTER TABLE {$table_name} DROP FOREIGN KEY {$constraint_name}", array());
       return TRUE;
     }
     return FALSE;

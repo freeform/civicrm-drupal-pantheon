@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -76,7 +76,7 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
     // we allow the controller to set force/reset externally, useful when we are being
     // driven by the wizard framework
 
-    $this->_reset = CRM_Utils_Request::retrieve('reset', 'Boolean', CRM_Core_DAO::$_nullObject);
+    $this->_reset = CRM_Utils_Request::retrieve('reset', 'Boolean');
     $this->_force = CRM_Utils_Request::retrieve('force', 'Boolean', $this, FALSE);
     $this->_limit = CRM_Utils_Request::retrieve('limit', 'Positive', $this);
     $this->_context = CRM_Utils_Request::retrieve('context', 'String', $this, FALSE, 'search');
@@ -331,26 +331,20 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
     }
 
     // set pledge payment related fields
-    $status = CRM_Utils_Request::retrieve('status', 'String',
-      CRM_Core_DAO::$_nullObject
-    );
+    $status = CRM_Utils_Request::retrieve('status', 'String');
     if ($status) {
       $this->_formValues['pledge_payment_status_id'] = array($status => 1);
       $this->_defaults['pledge_payment_status_id'] = array($status => 1);
     }
 
-    $fromDate = CRM_Utils_Request::retrieve('start', 'Date',
-      CRM_Core_DAO::$_nullObject
-    );
+    $fromDate = CRM_Utils_Request::retrieve('start', 'Date');
     if ($fromDate) {
       list($date) = CRM_Utils_Date::setDateDefaults($fromDate);
       $this->_formValues['pledge_payment_date_low'] = $date;
       $this->_defaults['pledge_payment_date_low'] = $date;
     }
 
-    $toDate = CRM_Utils_Request::retrieve('end', 'Date',
-      CRM_Core_DAO::$_nullObject
-    );
+    $toDate = CRM_Utils_Request::retrieve('end', 'Date');
     if ($toDate) {
       list($date) = CRM_Utils_Date::setDateDefaults($toDate);
       $this->_formValues['pledge_payment_date_high'] = $date;
@@ -358,14 +352,10 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
     }
 
     // set pledge related fields
-    $pledgeStatus = CRM_Utils_Request::retrieve('pstatus', 'String',
-      CRM_Core_DAO::$_nullObject
-    );
-    if ($pledgeStatus) {
-      $statusValues = CRM_Contribute_PseudoConstant::contributionStatus();
+    $pledgeStatus = CRM_Utils_Request::retrieve('pstatus', 'String');
 
-      // Remove status values that are only used for recurring contributions for now (Failed).
-      unset($statusValues['4']);
+    if ($pledgeStatus) {
+      $statusValues = CRM_Pledge_BAO_Pledge::buildOptions('status_id');
 
       // we need set all statuses except Cancelled
       unset($statusValues[$pledgeStatus]);
@@ -379,17 +369,13 @@ class CRM_Pledge_Form_Search extends CRM_Core_Form_Search {
       $this->_defaults['pledge_status_id'] = $statuses;
     }
 
-    $pledgeFromDate = CRM_Utils_Request::retrieve('pstart', 'Date',
-      CRM_Core_DAO::$_nullObject
-    );
+    $pledgeFromDate = CRM_Utils_Request::retrieve('pstart', 'Date');
     if ($pledgeFromDate) {
       list($date) = CRM_Utils_Date::setDateDefaults($pledgeFromDate);
       $this->_formValues['pledge_create_date_low'] = $this->_defaults['pledge_create_date_low'] = $date;
     }
 
-    $pledgeToDate = CRM_Utils_Request::retrieve('pend', 'Date',
-      CRM_Core_DAO::$_nullObject
-    );
+    $pledgeToDate = CRM_Utils_Request::retrieve('pend', 'Date');
     if ($pledgeToDate) {
       list($date) = CRM_Utils_Date::setDateDefaults($pledgeToDate);
       $this->_formValues['pledge_create_date_high'] = $this->_defaults['pledge_create_date_high'] = $date;

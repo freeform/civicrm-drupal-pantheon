@@ -89,21 +89,6 @@
      <weight>0</weight>
   </item>
   <item>
-     <path>civicrm/admin/tag</path>
-     <title>Tags (Categories)</title>
-     <desc>Tags are useful for segmenting the contacts in your database into categories (e.g. Staff Member, Donor, Volunteer, etc.). Create and edit available tags here.</desc>
-     <page_callback>CRM_Admin_Page_Tag</page_callback>
-     <adminGroup>Customize Data and Screens</adminGroup>
-     <icon>admin/small/11.png</icon>
-     <weight>25</weight>
-  </item>
-  <item>
-     <path>civicrm/admin/tag/add</path>
-     <title>New Tag</title>
-     <page_callback>CRM_Admin_Page_Tag</page_callback>
-     <path_arguments>action=add</path_arguments>
-  </item>
-  <item>
      <path>civicrm/admin/options/activity_type</path>
      <title>Activity Types</title>
      <desc>CiviCRM has several built-in activity types (meetings, phone calls, emails sent). Track other types of interactions by creating custom activity types here.</desc>
@@ -132,7 +117,7 @@
   <item>
      <path>civicrm/admin/options/gender</path>
      <title>Gender Options</title>
-     <desc>Options for assigning gender to individual contacts (e.g. Male, Female, Transgender).</desc>
+     <desc>Options for assigning gender to individual contacts (e.g. Male, Female, Other).</desc>
      <page_callback>CRM_Admin_Page_Options</page_callback>
      <adminGroup>Customize Data and Screens</adminGroup>
      <icon>admin/small/01.png</icon>
@@ -669,11 +654,6 @@
      <access_arguments>access CiviCRM</access_arguments>
   </item>
   <item>
-     <path>civicrm/ajax/mergeTags</path>
-     <page_callback>CRM_Admin_Page_AJAX::mergeTags</page_callback>
-     <access_arguments>access CiviCRM</access_arguments>
-  </item>
-  <item>
      <path>civicrm/admin/price</path>
      <title>Price Sets</title>
      <page_callback>CRM_Price_Page_Set</page_callback>
@@ -701,11 +681,6 @@
      <path>civicrm/admin/price/field/option</path>
      <title>Price Field Options</title>
      <page_callback>CRM_Price_Page_Option</page_callback>
-  </item>
-  <item>
-       <path>civicrm/ajax/mergeTagList</path>
-       <page_callback>CRM_Admin_Page_AJAX::mergeTagList</page_callback>
-       <access_arguments>access CiviCRM</access_arguments>
   </item>
   <item>
      <path>civicrm/admin/tplstrings/add</path>

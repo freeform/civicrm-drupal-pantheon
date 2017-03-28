@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -341,7 +341,7 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
       return TRUE;
     }
 
-    return parent::formrule($fields, $files, $self);
+    return parent::formRule($fields, $files, $self);
   }
 
   /**
@@ -597,7 +597,7 @@ class CRM_Case_Form_Activity extends CRM_Activity_Form_Activity {
 
     foreach ($vvalue as $vkey => $vval) {
       foreach ($selectedContacts as $dnt => $val) {
-        if (array_key_exists($val, $params) && !CRM_Utils_array::crmIsEmptyArray($params[$val])) {
+        if (array_key_exists($val, $params) && !CRM_Utils_Array::crmIsEmptyArray($params[$val])) {
           if ($val == 'contact_check') {
             $mailStatus = ts("A copy of the activity has also been sent to selected contacts(s).");
           }

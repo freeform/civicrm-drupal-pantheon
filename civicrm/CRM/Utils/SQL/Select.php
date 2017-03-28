@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -79,7 +79,7 @@
  * @endcode
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Utils_SQL_Select implements ArrayAccess {
 
@@ -179,7 +179,7 @@ class CRM_Utils_SQL_Select implements ArrayAccess {
    * @param CRM_Utils_SQL_Select $other
    * @param array|NULL $parts
    *   ex: 'joins', 'wheres'
-   * @return $this
+   * @return CRM_Utils_SQL_Select
    */
   public function merge($other, $parts = NULL) {
     if ($other === NULL) {
@@ -340,7 +340,10 @@ class CRM_Utils_SQL_Select implements ArrayAccess {
    * @param array|string $keys
    *   Key name, or an array of key-value pairs.
    * @param null|mixed $value
-   * @return $this
+   *   The new value of the parameter.
+   *   Values may be strings, ints, or arrays thereof -- provided that the
+   *   SQL query uses appropriate prefix (e.g. "@", "!", "#").
+   * @return \CRM_Utils_SQL_Select
    */
   public function param($keys, $value = NULL) {
     if ($this->mode === self::INTERPOLATE_AUTO) {
@@ -389,7 +392,7 @@ class CRM_Utils_SQL_Select implements ArrayAccess {
    *   The name of the other table (which receives new data).
    * @param array $fields
    *   The fields to fill in the other table (in order).
-   * @return $this
+   * @return CRM_Utils_SQL_Select
    * @see insertIntoField
    */
   public function insertInto($table, $fields = array()) {
@@ -401,7 +404,7 @@ class CRM_Utils_SQL_Select implements ArrayAccess {
   /**
    * @param array $fields
    *   The fields to fill in the other table (in order).
-   * @return $this
+   * @return CRM_Utils_SQL_Select
    */
   public function insertIntoField($fields) {
     $fields = (array) $fields;
@@ -449,7 +452,7 @@ class CRM_Utils_SQL_Select implements ArrayAccess {
    * In strict mode, unknown variables will generate exceptions.
    *
    * @param bool $strict
-   * @return $this
+   * @return CRM_Utils_SQL_Select
    */
   public function strict($strict = TRUE) {
     $this->strict = $strict;
@@ -459,7 +462,7 @@ class CRM_Utils_SQL_Select implements ArrayAccess {
   /**
    * Given a string like "field_name = @value", replace "@value" with an escaped SQL string
    *
-   * @param $expr SQL expression
+   * @param string $expr SQL expression
    * @param null|array $args a list of values to insert into the SQL expression; keys are prefix-coded:
    *   prefix '@' => escape SQL
    *   prefix '#' => literal number, skip escaping but do validation
@@ -585,18 +588,63 @@ class CRM_Utils_SQL_Select implements ArrayAccess {
     return $sql;
   }
 
+  /**
+   * Has an offset been set.
+   *
+   * @param string $offset
+   *
+   * @return bool
+   */
   public function offsetExists($offset) {
     return isset($this->params[$offset]);
   }
 
+  /**
+   * Get the value of a SQL parameter.
+   *
+   * @code
+   *   $select['cid'] = 123;
+   *   $select->where('contact.id = #cid');
+   *   echo $select['cid'];
+   * @endCode
+   *
+   * @param string $offset
+   * @return mixed
+   * @see param()
+   * @see ArrayAccess::offsetGet
+   */
   public function offsetGet($offset) {
     return $this->params[$offset];
   }
 
+  /**
+   * Set the value of a SQL parameter.
+   *
+   * @code
+   *   $select['cid'] = 123;
+   *   $select->where('contact.id = #cid');
+   *   echo $select['cid'];
+   * @endCode
+   *
+   * @param string $offset
+   * @param mixed $value
+   *   The new value of the parameter.
+   *   Values may be strings, ints, or arrays thereof -- provided that the
+   *   SQL query uses appropriate prefix (e.g. "@", "!", "#").
+   * @see param()
+   * @see ArrayAccess::offsetSet
+   */
   public function offsetSet($offset, $value) {
     $this->param($offset, $value);
   }
 
+  /**
+   * Unset the value of a SQL parameter.
+   *
+   * @param string $offset
+   * @see param()
+   * @see ArrayAccess::offsetUnset
+   */
   public function offsetUnset($offset) {
     unset($this->params[$offset]);
   }

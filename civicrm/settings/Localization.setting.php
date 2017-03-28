@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  *
  */
@@ -343,6 +343,25 @@ return array(
     ),
     'default' => '%m/%d/%Y',
     'title' => 'Date Format: Financial Batch',
+    'description' => '',
+  ),
+  'dateformatshortdate' => array(
+    'add' => '4.7',
+    'help_text' => NULL,
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'group_name' => 'Localization Preferences',
+    'group' => 'localization',
+    'name' => 'dateformatshortdate',
+    'type' => 'String',
+    'quick_form_type' => 'Element',
+    'html_type' => 'text',
+    'html_attributes' => array(
+      'size' => '12',
+      'maxlength' => '60',
+    ),
+    'default' => '%m/%d/%Y',
+    'title' => 'Date Format: Short date Month Day Year',
     'description' => '',
   ),
   'dateInputFormat' => array(

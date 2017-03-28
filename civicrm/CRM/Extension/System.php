@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -30,7 +30,7 @@
  * system.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Extension_System {
   private static $singleton;
@@ -144,7 +144,7 @@ class CRM_Extension_System {
         if (is_dir($vendorPath)) {
           $containers['cmsvendor'] = new CRM_Extension_Container_Basic(
             $vendorPath,
-            $this->parameters['userFrameworkBaseURL'] . DIRECTORY_SEPARATOR . 'vendor',
+            CRM_Utils_File::addTrailingSlash($this->parameters['userFrameworkBaseURL'], '/') . 'vendor',
             $this->getCache(),
             'cmsvendor'
           );
@@ -283,6 +283,56 @@ class CRM_Extension_System {
       }
     }
     return $this->_repoUrl;
+  }
+
+  /**
+   * Take an extension's raw XML info and add information about the
+   * extension's status on the local system.
+   *
+   * The result format resembles the old CRM_Core_Extensions_Extension.
+   *
+   * @param CRM_Extension_Info $obj
+   *
+   * @return array
+   */
+  public static function createExtendedInfo(CRM_Extension_Info $obj) {
+    $mapper = CRM_Extension_System::singleton()->getMapper();
+    $manager = CRM_Extension_System::singleton()->getManager();
+
+    $extensionRow = (array) $obj;
+    try {
+      $extensionRow['path'] = $mapper->keyToBasePath($obj->key);
+    }
+    catch (CRM_Extension_Exception $e) {
+      $extensionRow['path'] = '';
+    }
+    $extensionRow['status'] = $manager->getStatus($obj->key);
+
+    switch ($extensionRow['status']) {
+      case CRM_Extension_Manager::STATUS_UNINSTALLED:
+        $extensionRow['statusLabel'] = ''; // ts('Uninstalled');
+        break;
+
+      case CRM_Extension_Manager::STATUS_DISABLED:
+        $extensionRow['statusLabel'] = ts('Disabled');
+        break;
+
+      case CRM_Extension_Manager::STATUS_INSTALLED:
+        $extensionRow['statusLabel'] = ts('Enabled'); // ts('Installed');
+        break;
+
+      case CRM_Extension_Manager::STATUS_DISABLED_MISSING:
+        $extensionRow['statusLabel'] = ts('Disabled (Missing)');
+        break;
+
+      case CRM_Extension_Manager::STATUS_INSTALLED_MISSING:
+        $extensionRow['statusLabel'] = ts('Enabled (Missing)'); // ts('Installed');
+        break;
+
+      default:
+        $extensionRow['statusLabel'] = '(' . $extensionRow['status'] . ')';
+    }
+    return $extensionRow;
   }
 
 }

@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -35,6 +35,9 @@
       <a class="button" href="{crmURL p='civicrm/contact/view/contribution' q=$urlParams}" accesskey="e"><span>
           <i class="crm-i fa-pencil"></i> {ts}Edit{/ts}</span>
       </a>
+      {if $paymentButtonName}
+        <a class="button" href='{crmURL p="civicrm/payment" q="action=add&reset=1&component=`$component`&id=`$id`&cid=`$contact_id`"}'><i class="crm-i fa-plus-circle"></i> {ts}{$paymentButtonName}{/ts}</a>
+      {/if}
     {/if}
     {if (call_user_func(array('CRM_Core_Permission','check'), 'delete in CiviContribute') && call_user_func(array('CRM_Core_Permission', 'check'), "delete contributions of type $financial_type") && $canDelete)     || (call_user_func(array('CRM_Core_Permission','check'), 'delete in CiviContribute') && $noACL)}
       {assign var='urlParams' value="reset=1&id=$id&cid=$contact_id&action=delete&context=$context"}
@@ -73,7 +76,7 @@
     <td class="label">{ts}Financial Type{/ts}</td>
     <td>{$financial_type}{if $is_test} {ts}(test){/ts} {/if}</td>
   </tr>
-  {if $lineItem}
+  {if $displayLineItems}
     <tr>
       <td class="label">{ts}Contribution Amount{/ts}</td>
       <td>{include file="CRM/Price/Page/LineItem.tpl" context="Contribution"}
@@ -87,7 +90,10 @@
   {else}
     <tr>
       <td class="label">{ts}Total Amount{/ts}</td>
-      <td><strong>{$total_amount|crmMoney:$currency}</strong>&nbsp;
+      <td><strong><a class="nowrap bold crm-expand-row" title="{ts}view payments{/ts}"
+        href="{crmURL p='civicrm/payment' q="view=transaction&component=contribution&action=browse&cid=`$contact_id`&id=`$contribution_id`&selector=1"}">
+               &nbsp; {$total_amount|crmMoney:$currency}
+            </strong></a>&nbsp;
         {if $contribution_recur_id}
           <strong>{ts}Recurring Contribution{/ts}</strong>
           <br/>
@@ -120,7 +126,12 @@
       <td>{$net_amount|crmMoney:$currency}</td>
     </tr>
   {/if}
-
+  {if $isDeferred AND $revenue_recognition_date}
+    <tr>
+      <td class="label">{ts}Revenue Recognition Date{/ts}</td>
+      <td>{$revenue_recognition_date|crmDate:"%B, %Y"}</td>
+    </tr>
+  {/if}
   <tr>
     <td class="label">{ts}Received{/ts}</td>
     <td>{if $receive_date}{$receive_date|crmDate}{else}({ts}not available{/ts}){/if}</td>
@@ -219,6 +230,12 @@
       <td>{$thankyou_date|crmDate}</td>
     </tr>
   {/if}
+  {if $addRecordPayment}
+    <tr>
+      <td class='label'>{ts}Fees{/ts}</td>
+      <td id='payment-info'></td>
+    </tr>
+  {/if}
 </table>
 
 {if count($softContributions)} {* We show soft credit name with PCP section if contribution is linked to a PCP. *}
@@ -314,6 +331,9 @@
     </div>
   </fieldset>
 {/if}
+{if $addRecordPayment}
+  {include file="CRM/Contribute/Page/PaymentInfo.tpl" show='payments'}
+{/if}
 
 <div class="crm-submit-buttons">
   {if (call_user_func(array('CRM_Core_Permission','check'), 'edit contributions') && call_user_func(array('CRM_Core_Permission', 'check'), "edit contributions of type $financial_type") && $canEdit) ||
@@ -323,6 +343,9 @@
       {assign var='urlParams' value="reset=1&id=$id&cid=$contact_id&action=update&context=$context&key=$searchKey"}
     {/if}
     <a class="button" href="{crmURL p='civicrm/contact/view/contribution' q=$urlParams}" accesskey="e"><span><i class="crm-i fa-pencil"></i> {ts}Edit{/ts}</span></a>
+    {if $paymentButtonName}
+      <a class="button" href='{crmURL p="civicrm/payment" q="action=add&reset=1&component=`$component`&id=`$id`&cid=`$contact_id`"}'><i class="crm-i fa-plus-circle"></i> {ts}{$paymentButtonName}{/ts}</a>
+    {/if}
   {/if}
   {if (call_user_func(array('CRM_Core_Permission','check'), 'delete in CiviContribute') && call_user_func(array('CRM_Core_Permission', 'check'), "delete contributions of type $financial_type") && $canDelete)     || (call_user_func(array('CRM_Core_Permission','check'), 'delete in CiviContribute') && $noACL)}
     {assign var='urlParams' value="reset=1&id=$id&cid=$contact_id&action=delete&context=$context"}
@@ -334,3 +357,4 @@
   {include file="CRM/common/formButtons.tpl" location="bottom"}
 </div>
 </div>
+{crmScript file='js/crm.expandRow.js'}

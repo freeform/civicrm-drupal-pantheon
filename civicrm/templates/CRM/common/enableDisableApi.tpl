@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -31,7 +31,7 @@
 
     function successMsg() {
       {/literal} {* client-side variable substitutions in smarty are AWKWARD! *}
-      var msg = enabled ? '{ts escape="js" 1="<em>%1</em>"}%1 Disabled{/ts}' : '{ts escape="js" 1="<em>%1</em>"}%1 Enabled{/ts}'{literal};
+      var msg = enabled ? '{ts escape="js" 1="%1"}%1 Disabled{/ts}' : '{ts escape="js" 1="%1"}%1 Enabled{/ts}'{literal};
       return ts(msg, {1: fieldLabel});
     }
 

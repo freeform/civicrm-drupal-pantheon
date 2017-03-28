@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  *
  */
@@ -165,7 +165,7 @@ class CRM_Core_BAO_File extends CRM_Core_DAO_File {
 
     //save free tags
     if (isset($fileParams['attachment_taglist']) && !empty($fileParams['attachment_taglist'])) {
-      CRM_Core_Form_Tag::postProcess($fileParams['attachment_taglist'], $entityFileDAO->id, 'civicrm_file', CRM_Core_DAO::$_nullObject);
+      CRM_Core_Form_Tag::postProcess($fileParams['attachment_taglist'], $entityFileDAO->id, 'civicrm_file');
     }
 
     // lets call the post hook here so attachments code can do the right stuff
@@ -532,8 +532,6 @@ AND       CEF.entity_id    = %2";
 
     $numAttachments = Civi::settings()->get('max_attachments');
 
-    $now = date('YmdHis');
-
     // setup all attachments
     for ($i = 1; $i <= $numAttachments; $i++) {
       $attachName = "attachFile_$i";
@@ -551,17 +549,19 @@ AND       CEF.entity_id    = %2";
 
         // we dont care if the file is empty or not
         // CRM-7448
-        $fileParams = array(
-          'uri' => $formValues[$attachName]['name'],
-          'type' => $formValues[$attachName]['type'],
-          'location' => $formValues[$attachName]['name'],
+        $extraParams = array(
           'description' => $formValues[$attachDesc],
-          'upload_date' => $now,
           'tag' => $tagParams,
           'attachment_taglist' => CRM_Utils_Array::value($attachFreeTags, $formValues, array()),
         );
 
-        $params[$attachName] = $fileParams;
+        CRM_Utils_File::formatFile($formValues, $attachName, $extraParams);
+
+        // set the formatted attachment attributes to $params, later used by
+        // CRM_Activity_BAO_Activity::sendEmail(...) to send mail with desired attachments
+        if (!empty($formValues[$attachName])) {
+          $params[$attachName] = $formValues[$attachName];
+        }
       }
     }
   }

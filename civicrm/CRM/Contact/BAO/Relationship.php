@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -509,7 +509,7 @@ class CRM_Contact_BAO_Relationship extends CRM_Contact_DAO_Relationship {
    * @param string $column
    *   Name/label that going to retrieve from db.
    * @param bool $biDirectional
-   * @param string $contactSubType
+   * @param array $contactSubType
    *   Includes relationship types between this subtype.
    * @param bool $onlySubTypeRelationTypes
    *   If set only subtype which is passed by $contactSubType
@@ -551,7 +551,7 @@ class CRM_Contact_BAO_Relationship extends CRM_Contact_DAO_Relationship {
       }
     }
 
-    $contactSubType = array();
+    $contactSubType = (array) $contactSubType;
     if ($contactId) {
       $contactType = CRM_Contact_BAO_Contact::getContactType($contactId);
       $contactSubType = CRM_Contact_BAO_Contact::getContactSubType($contactId);
@@ -595,14 +595,44 @@ class CRM_Contact_BAO_Relationship extends CRM_Contact_DAO_Relationship {
     }
 
     if ($biDirectional) {
-      // lets clean up the data and eliminate all duplicate values
-      // (i.e. the relationship is bi-directional)
-      $relationshipType = array_unique($relationshipType);
+      $relationshipType = self::removeRelationshipTypeDuplicates($relationshipType, $contactSuffix);
     }
 
     // sort the relationshipType in ascending order CRM-7736
     asort($relationshipType);
     return $relationshipType;
+  }
+
+  /**
+   * Given a list of relationship types, return the list with duplicate types
+   * removed, being careful to retain only the duplicate which matches the given
+   * 'a_b' or 'b_a' suffix.
+   *
+   * @param array $relationshipTypeList A list of relationship types, in the format
+   *   returned by self::getContactRelationshipType().
+   * @param string $suffix Either 'a_b' or 'b_a'; defaults to 'a_b'
+   *
+   * @return array The modified value of $relationshipType
+   */
+  public static function removeRelationshipTypeDuplicates($relationshipTypeList, $suffix = NULL) {
+    if (empty($suffix)) {
+      $suffix = 'a_b';
+    }
+
+    // Find those labels which are listed more than once.
+    $duplicateValues = array_diff_assoc($relationshipTypeList, array_unique($relationshipTypeList));
+
+    // For each duplicate label, find its keys, and remove from $relationshipType
+    // the key which does not match $suffix.
+    foreach ($duplicateValues as $value) {
+      $keys = array_keys($relationshipTypeList, $value);
+      foreach ($keys as $key) {
+        if (substr($key, -3) != $suffix) {
+          unset($relationshipTypeList[$key]);
+        }
+      }
+    }
+    return $relationshipTypeList;
   }
 
   /**
@@ -1081,6 +1111,7 @@ WHERE  relationship_type_id = " . CRM_Utils_Type::escape($type, 'Integer');
                               civicrm_country.name as country,
                               civicrm_email.email as email,
                               civicrm_contact.contact_type as contact_type,
+                              civicrm_contact.contact_sub_type as contact_sub_type,
                               civicrm_phone.phone as phone,
                               civicrm_contact.id as civicrm_contact_id,
                               civicrm_relationship.contact_id_b as contact_id_b,
@@ -1304,6 +1335,7 @@ LEFT JOIN  civicrm_country ON (civicrm_address.country_id = civicrm_country.id)
         $values[$rid]['contact_id_a'] = $relationship->contact_id_a;
         $values[$rid]['contact_id_b'] = $relationship->contact_id_b;
         $values[$rid]['contact_type'] = $relationship->contact_type;
+        $values[$rid]['contact_sub_type'] = $relationship->contact_sub_type;
         $values[$rid]['relationship_type_id'] = $relationship->civicrm_relationship_type_id;
         $values[$rid]['relation'] = $relationship->relation;
         $values[$rid]['name'] = $relationship->sort_name;
@@ -2060,8 +2092,9 @@ AND cc.sort_name LIKE '%$name%'";
         $relationship['DT_RowAttr']['data-entity'] = 'relationship';
         $relationship['DT_RowAttr']['data-id'] = $values['id'];
 
-        //Add image icon for related contacts: CRM-14919
-        $icon = CRM_Contact_BAO_Contact_Utils::getImage($values['contact_type'],
+        //Add image icon for related contacts: CRM-14919; CRM-19668
+        $contactType = (!empty($values['contact_sub_type'])) ? $values['contact_sub_type'] : $values['contact_type'];
+        $icon = CRM_Contact_BAO_Contact_Utils::getImage($contactType,
           FALSE,
           $values['cid']
         );

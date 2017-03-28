@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -53,6 +53,7 @@
     <li>{ts}Select "Failed" to display memberships with failed subscription payment.{/ts}</li>
     <li>{ts}Select "Cancelled" to display memberships with cancelled auto-renew subscriptions.{/ts}</li>
     <li>{ts}Select "Ended" to display memberships with an ended auto-renew subscription.{/ts}</li>
+    <li>{ts}Select "Any" to display memberships with auto-renew subscription irrespective of their status.{/ts}</li>
   </ul>
 {/htxt}
 

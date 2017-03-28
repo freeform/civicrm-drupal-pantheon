@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -25,7 +25,6 @@
 *}
 {* printBody.tpl: wrapper for Print views without HTML surrounds. *}
 
-<!-- .tpl file invoked: {$tplFile}. Call via form.tpl if we have a form in the page. -->
 {if $isForm and isset($formTpl)}
     {include file="CRM/Form/$formTpl.tpl"}
 {else}

@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -92,12 +92,14 @@ function civicrm_api3_group_get($params) {
  *
  * @param array $params
  *   [id]
- *
- * @return array
- *   API result array
+ * @return array API result array
+ * @throws API_Exception
  */
 function civicrm_api3_group_delete($params) {
-
+  $group = civicrm_api3_group_get(array('id' => $params['id']));
+  if ($group['count'] == 0) {
+    throw new API_Exception('Could not delete group ' . $params['id']);
+  }
   CRM_Contact_BAO_Group::discard($params['id']);
   return civicrm_api3_create_success(TRUE);
 }

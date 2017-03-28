@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,11 +28,12 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  * $Id$
  *
  */
-/*
+
+/**
  * Settings metadata file
  */
 return array(
@@ -174,6 +175,21 @@ return array(
     'is_domain' => 1,
     'is_contact' => 0,
     'description' => NULL,
+    'help_text' => NULL,
+  ),
+  'remote_profile_submissions' => array(
+    'group_name' => 'CiviCRM Preferences',
+    'group' => 'core',
+    'name' => 'remote_profile_submissions',
+    'type' => 'Boolean',
+    'quick_form_type' => 'YesNo',
+    'default' => FALSE,
+    'html_type' => 'radio',
+    'add' => '4.7',
+    'title' => 'Accept profile submissions from external sites',
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'description' => 'If enabled, CiviCRM will permit submissions from external sites to profiles. This is disabled by default to limit abuse.',
     'help_text' => NULL,
   ),
   'editor_id' => array(
@@ -497,25 +513,6 @@ return array(
     'description' => NULL,
     'help_text' => NULL,
   ),
-  'dashboardCacheTimeout' => array(
-    'group_name' => 'CiviCRM Preferences',
-    'group' => 'core',
-    'name' => 'dashboardCacheTimeout',
-    'type' => 'Integer',
-    'quick_form_type' => 'Element',
-    'html_attributes' => array(
-      'size' => 3,
-      'maxlength' => 5,
-    ),
-    'html_type' => 'Text',
-    'default' => NULL,
-    'add' => '4.3',
-    'title' => 'Dashboard cache timeout',
-    'is_domain' => 1,
-    'is_contact' => 0,
-    'description' => NULL,
-    'help_text' => NULL,
-  ),
   'checksum_timeout' => array(
     'group_name' => 'CiviCRM Preferences',
     'group' => 'core',
@@ -816,6 +813,25 @@ return array(
     'description' => 'CiviCRM will use this setting as path to bootstrap WP.',
     'help_text' => NULL,
   ),
+  'secure_cache_timeout_minutes' => array(
+    'group_name' => 'CiviCRM Preferences',
+    'group' => 'core',
+    'name' => 'secure_cache_timeout_minutes',
+    'type' => 'Integer',
+    'quick_form_type' => 'Element',
+    'html_type' => 'text',
+    'html_attributes' => array(
+      'size' => 2,
+      'maxlength' => 8,
+    ),
+    'default' => 20,
+    'add' => '4.7',
+    'title' => 'Secure Cache Timeout',
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'description' => 'Maximum number of minutes that secure form data should linger',
+    'help_text' => NULL,
+  ),
   'site_id' => array(
     'group_name' => 'CiviCRM Preferences',
     'group' => 'core',
@@ -901,5 +917,19 @@ return array(
     'is_contact' => 0,
     'description' => ts('Default to only loading matches against this number of contacts'),
     'help_text' => ts('Deduping larger databases can crash the server. By configuring a limit other than 0 here the dedupe query will only search for matches against a limited number of contacts.'),
+  ),
+  'syncCMSEmail' => array(
+    'group_name' => 'CiviCRM Preferences',
+    'group' => 'core',
+    'name' => 'syncCMSEmail',
+    'type' => 'Boolean',
+    'quick_form_type' => 'YesNo',
+    'default' => 1,
+    'add' => '4.7',
+    'title' => 'Sync CMS Email',
+    'is_domain' => 1,
+    'is_contact' => 0,
+    'description' => 'If enabled, then CMS email id will be syncronised with CiviCRM contacts\'s primary email.',
+    'help_text' => NULL,
   ),
 );

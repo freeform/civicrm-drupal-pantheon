@@ -20,8 +20,7 @@
     docCodeTpl = _.template($('#doc-code-tpl').html()),
     joinTpl = _.template($('#join-tpl').html()),
 
-    // The following apis do not support the syntax for joins
-    // FIXME: the solution is to convert these apis to use _civicrm_api3_basic_get
+    // The following apis do not use Api3SelectQuery so do not support advanced features like joins or OR
     NO_JOINS = ['Contact', 'Contribution', 'Pledge', 'Participant'],
 
     // These types of entityRef don't require any input to open
@@ -56,11 +55,22 @@
   }
 
   /**
-   * Data provider for select2 "field" selectors
+   * Data provider for select2 "fields to return" selector
    * @returns {{results: Array.<T>}}
    */
   function returnFields() {
     return {results: fields.concat({id: '-', text: ts('Other') + '...', description: ts('Choose a field not in this list')})};
+  }
+
+  /**
+   * Data provider for select2 "field" selectors
+   * @returns {{results: Array.<T>}}
+   */
+  function selectFields() {
+    var items = _.filter(fields, function(field) {
+      return params[field.id] === undefined;
+    });
+    return {results: items.concat({id: '-', text: ts('Other') + '...', description: ts('Choose a field not in this list')})};
   }
 
   /**
@@ -98,24 +108,40 @@
    * @returns {*}
    */
   function getField(name) {
-    if (!name) {
-      return {};
-    }
-    if (getFieldData[name]) {
-      return getFieldData[name];
-    }
-    var ent = entity,
-      act = action,
-      prefix = '';
-    _.each(name.split('.'), function(piece) {
-      if (joins[prefix]) {
-        ent = joins[prefix];
-        act = 'get';
+    var field = {};
+    if (name && getFieldData[name]) {
+      field = _.cloneDeep(getFieldData[name]);
+    } else if (name) {
+      var ent = entity,
+        act = action,
+        prefix = '';
+      _.each(name.split('.'), function(piece) {
+        if (joins[prefix]) {
+          ent = joins[prefix];
+          act = 'get';
+        }
+        name = piece;
+        prefix += (prefix.length ? '.' : '') + piece;
+      });
+      if (getFieldsCache[ent+act].values[name]) {
+        field = _.cloneDeep(getFieldsCache[ent+act].values[name]);
       }
-      name = piece;
-      prefix += (prefix.length ? '.' : '') + piece;
-    });
-    return getFieldsCache[ent+act].values[name] || {};
+    }
+    addJoinInfo(field, name);
+    return field;
+  }
+
+  function addJoinInfo(field, name) {
+    if (field.name === 'entity_id') {
+      var entityTableParam = name.slice(0, -2) + 'table',
+        entityField = params[entityTableParam] ? getField(entityTableParam) : {};
+      if (entityField.options) {
+        field.FKApiName = entityField.options[params[entityTableParam]];
+      }
+    }
+    if (field.pseudoconstant && field.pseudoconstant.optionGroupName) {
+      field.FKApiName = 'OptionValue';
+    }
   }
 
   /**
@@ -126,7 +152,8 @@
     $('#api-params').append($(fieldTpl({name: name || '', noOps: _.includes(NO_OPERATORS, action)})));
     var $row = $('tr:last-child', '#api-params');
     $('input.api-param-name', $row).crmSelect2({
-      data: returnFields,
+      data: selectFields,
+      allowClear: false,
       formatSelection: function(field) {
         return field.text +
           (field.required ? ' <span class="crm-marker">*</span>' : '');
@@ -149,13 +176,20 @@
       $('#api-params').append($(optionsTpl({})));
     }
     var $row = $('.api-options-row:last', '#api-params');
-    $('.api-option-name', $row).crmSelect2({data: [
-      {id: 'limit', text: 'limit'},
-      {id: 'offset', text: 'offset'},
-      {id: 'sort', text: 'sort'},
-      {id: 'metadata', text: 'metadata'},
-      {id: '-', text: ts('Other') + '...'}
-    ]});
+    $('.api-option-name', $row).crmSelect2({
+      data: [
+        {id: 'limit', text: 'limit'},
+        {id: 'offset', text: 'offset'},
+        {id: 'match', text: 'match'},
+        {id: 'match-mandatory', text: 'match-mandatory'},
+        {id: 'metadata', text: 'metadata'},
+        {id: 'reload', text: 'reload'},
+        {id: 'sort', text: 'sort'},
+        {id: '-', text: ts('Other') + '...'}
+      ],
+      allowClear: false
+    })
+      .select2('open');
   }
 
   /**
@@ -170,8 +204,10 @@
           ($(item.element).hasClass('strikethrough') ? '<span class="strikethrough">' + item.text + '</span>' : item.text);
       },
       placeholder: '<i class="crm-i fa-link"></i> ' + ts('Entity'),
+      allowClear: false,
       escapeMarkup: function(m) {return m;}
-    });
+    })
+      .select2('open');
   }
 
   /**
@@ -255,6 +291,7 @@
           return ret;
         }, {})
       };
+      getFieldsCache[entity+action] = {values: _.cloneDeep(getFieldData)};
       showFields(['api_action']);
       renderJoinSelector();
       return;
@@ -274,6 +311,15 @@
         showReturn();
       }
     });
+  }
+
+  function changeFKEntity() {
+    var $row = $(this).closest('tr'),
+      name = $('input.api-param-name', $row).val(),
+      operator = $('.api-param-op', $row).val();
+    if (name && name.slice(-12) === 'entity_table') {
+      $('input[value=' + name.slice(0, -5) + 'id]', '#api-join').prop('checked', false).change();
+    }
   }
 
   /**
@@ -301,6 +347,11 @@
     }
     $('#api-params').prepend($(returnTpl({title: title, required: action == 'getvalue'})));
     $('#api-return-value').crmSelect2(params);
+    $("#api-return-value").select2("container").find("ul.select2-choices").sortable({
+      containment: 'parent',
+      start: function() { $("#api-return-value").select2("onSortStart"); },
+      update: function() { $("#api-return-value").select2("onSortEnd"); }
+    });
   }
 
   /**
@@ -395,7 +446,7 @@
     if (operator !== '=') {
       return false;
     }
-    return true;
+    return fieldName !== 'entity_table';
     /*
      * Attempt to resolve the ambiguity of the = operator using metadata
      * commented out because there is not enough metadata in the api at this time
@@ -609,6 +660,7 @@
       }
     });
     if (entity && action) {
+      handleAndOr();
       formatQuery();
     }
   }
@@ -658,8 +710,8 @@
     $.each(params, function(key, value) {
       var json = JSON.stringify(value),
         // Encourage 'return' to be an array - at least in php & js
-        js = key === 'return' ? JSON.stringify(evaluate(value, true)) : json,
-        php = key === 'return' ? phpFormat(evaluate(value, true)) : phpFormat(value);
+        js = key === 'return' && action !== 'getvalue' ? JSON.stringify(evaluate(value, true)) : json,
+        php = key === 'return' && action !== 'getvalue' ? phpFormat(evaluate(value, true)) : phpFormat(value);
       if (!(i++)) {
         q.php += ", array(\n";
         q.json += ", {\n";
@@ -828,15 +880,16 @@
    */
   function renderJoinSelector() {
     $('#api-join').hide();
-    if (!_.includes(NO_JOINS, entity) && _.includes(['get', 'getsingle'], action)) {
+    if (!_.includes(NO_JOINS, entity) && _.includes(['get', 'getsingle', 'getcount'], action)) {
       var joinable = {};
       (function recurse(fields, joinable, prefix, depth, entities) {
         _.each(fields, function(field) {
+          var name = prefix + field.name;
+          addJoinInfo(field, name);
           var entity = field.FKApiName;
-          if (entity && field.FKClassName) {
-            var name = prefix + field.name;
+          if (entity && (field.is_core_field || field.supports_joins)) {
             joinable[name] = {
-              title: field.title,
+              title: field.title + ' (' + field.FKApiName + ')',
               entity: entity,
               checked: !!joins[name]
             };
@@ -845,9 +898,15 @@
               joinable[name].children = {};
               recurse(getFieldsCache[entity+'get'].values, joinable[name].children, name + '.', depth+1, entities.concat(entity));
             }
+          } else if (field.name == 'entity_id' && fields.entity_table && fields.entity_table.options) {
+            joinable[name] = {
+              title: field.title + ' (' + ts('First select %1', {1: fields.entity_table.title}) + ')',
+              entity: '',
+              disabled: true
+            };
           }
         });
-      })(getFieldData, joinable, '', 1, [entity]);
+      })(_.cloneDeep(getFieldData), joinable, '', 1, [entity]);
       if (!_.isEmpty(joinable)) {
         // Send joinTpl as a param so it can recursively call itself to render children
         $('#api-join').show().children('div').html(joinTpl({joins: joinable, tpl: joinTpl}));
@@ -878,6 +937,40 @@
       renderJoinSelector();
       populateFields(fields, entity, action, '');
     }
+  }
+
+  function handleAndOr() {
+    if (!_.includes(NO_JOINS, entity) && _.includes(['get', 'getsingle', 'getcount'], action)) {
+      var or = [];
+      $('tr.api-param-row').each(function() {
+        if ($(this).next().is('tr.api-param-row') && $('input.api-param-name', this).val()) {
+          $('.api-and-or', this).show();
+        } else {
+          $(this).removeClass('or').find('.api-and-or').hide();
+        }
+      });
+      $('tr.api-param-row.or').each(function() {
+        var val = $(this).next().find('input.api-param-name').val();
+        if (val) {
+          if ($(this).prev().is('.or')) {
+            or[or.length - 1].push(val);
+          } else {
+            or.push([$('input.api-param-name', this).val(), val]);
+          }
+        }
+      });
+      if (or.length) {
+        params.options = params.options || {};
+        params.options.or = or;
+      }
+    } else {
+      $('.api-and-or').hide();
+    }
+  }
+
+  function toggleAndOr() {
+    $(this).closest('tr').toggleClass('or');
+    buildParams();
   }
 
   $(document).ready(function() {
@@ -918,6 +1011,7 @@
         checkBookKeepingEntity(entity, action);
       })
       .on('change keyup', 'input.api-input, #api-params select', buildParams)
+      .on('change', '.api-param-name, .api-param-value, .api-param-op', changeFKEntity)
       .on('submit', submit);
 
     $('#api-params')
@@ -937,7 +1031,13 @@
         $(this).closest('tr').remove();
         buildParams();
       })
-      .on('change', 'select.api-chain-entity', getChainedAction);
+      .on('click', '.api-and-or > span', toggleAndOr)
+      .on('change', 'select.api-chain-entity', getChainedAction)
+      .on('sortupdate', buildParams)
+      .sortable({
+        handle: '.api-sort-handle',
+        items: '.api-chain-row, .api-param-row'
+      });
     $('#api-join').on('change', 'input', onSelectJoin);
     $('#example-entity').on('change', getExamples);
     $('#example-action').on('change', getExample);
@@ -946,6 +1046,7 @@
     $('#api-params-add').on('click', function(e) {
       e.preventDefault();
       addField();
+      $('tr:last-child input.api-param-name', '#api-params').select2('open');
     });
     $('#api-option-add').on('click', function(e) {
       e.preventDefault();

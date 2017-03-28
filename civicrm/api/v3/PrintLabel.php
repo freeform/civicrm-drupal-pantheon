@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -40,6 +40,15 @@
  */
 function civicrm_api3_print_label_create($params) {
   return _civicrm_api3_basic_create(_civicrm_api3_get_BAO(__FUNCTION__), $params);
+}
+
+/**
+ * Adjust metadata for navigation create action.
+ *
+ * @param array $params
+ */
+function _civicrm_api3_print_label_create_spec(&$params) {
+  $params['name']['api.required'] = 1;
 }
 
 /**

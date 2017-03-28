@@ -2,7 +2,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -38,6 +38,12 @@
                 <span class="description">{ts}Content and format for mailing labels.{/ts}</span>
             </td>
         </tr>
+         <tr class="crm-preferences-address-form-block-hideCountryMailingLabels">
+           <td class="label">{$form.hideCountryMailingLabels.label}
+           <td>{$form.hideCountryMailingLabels.html}
+           </td>
+        </tr>
+
       </table>
 
     <h3>{ts}Address Display{/ts}</h3>

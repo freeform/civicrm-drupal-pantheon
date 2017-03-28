@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -29,7 +29,7 @@
  * Provides a collection of static methods for array manipulation.
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 class CRM_Utils_Array {
 
@@ -1030,8 +1030,10 @@ class CRM_Utils_Array {
    * Convert array where key(s) holds the actual value and value(s) as 1 into array of actual values
    *  Ex: array('foobar' => 1, 4 => 1) formatted into array('foobar', 4)
    *
+   * @deprecated use convertCheckboxInputToArray instead (after testing)
+   * https://github.com/civicrm/civicrm-core/pull/8169
+   *
    * @param array $array
-   * @return void
    */
   public static function formatArrayKeys(&$array) {
     if (!is_array($array)) {
@@ -1048,6 +1050,100 @@ class CRM_Utils_Array {
     ) {
       $array = $keys;
     }
+  }
+
+  /**
+   * Convert the data format coming in from checkboxes to an array of values.
+   *
+   * The input format from check boxes looks like
+   *   array('value1' => 1, 'value2' => 1). This function converts those values to
+   *   array(''value1', 'value2).
+   *
+   * The function will only alter the array if all values are equal to 1.
+   *
+   * @param array $input
+   *
+   * @return array
+   */
+  public static function convertCheckboxFormatToArray($input) {
+    if (isset($input[0])) {
+      return $input;
+    }
+    $keys = array_keys($input, 1);
+    if ((count($keys) == count($input))) {
+      return $keys;
+    }
+    return $input;
+  }
+
+  /**
+   * Ensure that array is encoded in utf8 format.
+   *
+   * @param array $array
+   *
+   * @return array $array utf8-encoded.
+   */
+  public static function encode_items($array) {
+    foreach ($array as $key => $value) {
+      if (is_array($value)) {
+        $array[$key] = self::encode_items($value);
+      }
+      elseif (is_string($value)) {
+        $array[$key] = mb_convert_encoding($value, mb_detect_encoding($value, mb_detect_order(), TRUE), 'UTF-8');
+      }
+      else {
+        $array[$key] = $value;
+      }
+    }
+    return $array;
+  }
+
+  /**
+   * Build tree of elements.
+   *
+   * @param array $elements
+   * @param int|null $parentId
+   *
+   * @return array
+   */
+  public static function buildTree($elements, $parentId = NULL) {
+    $branch = array();
+
+    foreach ($elements as $element) {
+      if ($element['parent_id'] == $parentId) {
+        $children = self::buildTree($elements, $element['id']);
+        if ($children) {
+          $element['children'] = $children;
+        }
+        $branch[] = $element;
+      }
+    }
+
+    return $branch;
+  }
+
+  /**
+   * Find search string in tree.
+   *
+   * @param string $search
+   * @param array $tree
+   * @param string $field
+   *
+   * @return array|null
+   */
+  public static function findInTree($search, $tree, $field = 'id') {
+    foreach ($tree as $item) {
+      if ($item[$field] == $search) {
+        return $item;
+      }
+      if (!empty($item['children'])) {
+        $found = self::findInTree($search, $item['children']);
+        if ($found) {
+          return $found;
+        }
+      }
+    }
+    return NULL;
   }
 
 }

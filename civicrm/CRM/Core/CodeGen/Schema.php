@@ -4,10 +4,14 @@
  * Create SQL files to create and populate a new schema.
  */
 class CRM_Core_CodeGen_Schema extends CRM_Core_CodeGen_BaseTask {
+
   /**
+   * CRM_Core_CodeGen_Schema constructor.
+   *
+   * @param \CRM_Core_CodeGen_Main $config
    */
-  public function __construct() {
-    parent::__construct();
+  public function __construct($config) {
+    parent::__construct($config);
     $this->locales = $this->findLocales();
   }
 

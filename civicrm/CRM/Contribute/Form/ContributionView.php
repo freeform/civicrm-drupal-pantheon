@@ -3,7 +3,7 @@
  +--------------------------------------------------------------------+
  | CiviCRM version 4.7                                                |
  +--------------------------------------------------------------------+
- | Copyright CiviCRM LLC (c) 2004-2016                                |
+ | Copyright CiviCRM LLC (c) 2004-2017                                |
  +--------------------------------------------------------------------+
  | This file is a part of CiviCRM.                                    |
  |                                                                    |
@@ -28,7 +28,7 @@
 /**
  *
  * @package CRM
- * @copyright CiviCRM LLC (c) 2004-2016
+ * @copyright CiviCRM LLC (c) 2004-2017
  */
 
 /**
@@ -151,15 +151,17 @@ class CRM_Contribute_Form_ContributionView extends CRM_Core_Form {
     }
 
     $lineItems = array();
+    $displayLineItems = FALSE;
     if ($id) {
-      $lineItem = CRM_Price_BAO_LineItem::getLineItems($id, 'contribution', 1, TRUE, TRUE);
-      if (!empty($lineItem)) {
-        $lineItems[] = $lineItem;
-      }
-
+      $lineItems = array(CRM_Price_BAO_LineItem::getLineItemsByContributionID(($id)));
+      $firstLineItem = reset($lineItems[0]);
+      $priceSet = civicrm_api3('PriceSet', 'getsingle', array('id' => $firstLineItem['price_set_id'], 'return' => 'is_quick_config, id'));
+      $displayLineItems = !$priceSet['is_quick_config'];
     }
-    $this->assign('lineItem', empty($lineItems) ? FALSE : $lineItems);
+    $this->assign('lineItem', $lineItems);
+    $this->assign('displayLineItems', $displayLineItems);
     $values['totalAmount'] = $values['total_amount'];
+    $this->assign('displayLineItemFinancialType', TRUE);
 
     //do check for campaigns
     if ($campaignId = CRM_Utils_Array::value('campaign_id', $values)) {
@@ -167,7 +169,7 @@ class CRM_Contribute_Form_ContributionView extends CRM_Core_Form {
       $values['campaign'] = $campaigns[$campaignId];
     }
     if ($values['contribution_status'] == 'Refunded') {
-      $this->assign('refund_trxn_id', CRM_Core_BAO_FinancialTrxn::getRefundTransactionTrxnIDgi($id));
+      $this->assign('refund_trxn_id', CRM_Core_BAO_FinancialTrxn::getRefundTransactionTrxnID($id));
     }
 
     // assign values to the template
@@ -175,6 +177,7 @@ class CRM_Contribute_Form_ContributionView extends CRM_Core_Form {
     $invoiceSettings = Civi::settings()->get('contribution_invoice_settings');
     $invoicing = CRM_Utils_Array::value('invoicing', $invoiceSettings);
     $this->assign('invoicing', $invoicing);
+    $this->assign('isDeferred', CRM_Utils_Array::value('deferred_revenue_enabled', $invoiceSettings));
     if ($invoicing && isset($values['tax_amount'])) {
       $this->assign('totalTaxAmount', $values['tax_amount']);
     }
@@ -216,6 +219,21 @@ class CRM_Contribute_Form_ContributionView extends CRM_Core_Form {
       NULL,
       $recentOther
     );
+    $contributionStatus = $status[$values['contribution_status_id']];
+    if (in_array($contributionStatus, array('Partially paid', 'Pending refund'))
+        || ($contributionStatus == 'Pending' && $values['is_pay_later'])
+        ) {
+      if ($contributionStatus == 'Pending refund') {
+        $this->assign('paymentButtonName', ts('Record Refund'));
+      }
+      else {
+        $this->assign('paymentButtonName', ts('Record Payment'));
+      }
+      $this->assign('addRecordPayment', TRUE);
+      $this->assign('contactId', $values['contact_id']);
+      $this->assign('componentId', $id);
+      $this->assign('component', 'contribution');
+    }
   }
 
   /**
