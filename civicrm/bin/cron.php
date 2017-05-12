@@ -25,6 +25,10 @@
  +--------------------------------------------------------------------+
  */
 
+if (!empty($_SERVER['PRESSFLOW_SETTINGS'])) {
+  ini_set('session.save_handler', 'files');
+}
+session_start();
 
 require_once '../civicrm.config.php';
 require_once 'CRM/Core/Config.php';

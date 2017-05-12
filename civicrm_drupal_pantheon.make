@@ -20,6 +20,7 @@ libraries[civicrm][patch][pantheonsettings] = ./patches/pantheon-settings-47.pat
 libraries[civicrm][patch][2063371] = http://drupal.org/files/2063371-add-modulePath-var-4-4.patch
 
 libraries[civicrm][patch][externbootstrap] = ./patches/extern-cms-bootstrap.patch
+libraries[civicrm][patch][cron] = ./patches/cron.patch
 ;libraries[civicrm][patch][ipn] = ./patches/ipn.patch
 ;libraries[civicrm][patch][ipnstd] = ./patches/ipnStd.patch
 
