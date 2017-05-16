@@ -122,7 +122,7 @@ if (!defined('CIVICRM_UF_DSN') && CIVICRM_UF !== 'UnitTests') {
 if (!defined('CIVICRM_DSN')) {
   if (CIVICRM_UF === 'UnitTests' && isset($GLOBALS['_CV']['TEST_DB_DSN'])) {
     define('CIVICRM_DSN', $GLOBALS['_CV']['TEST_DB_DSN']);
-  } 
+  }
   if (isset($pantheon_conf)) {
     define('CIVICRM_DSN', $pantheon_db_string);
   }
@@ -247,10 +247,13 @@ if (!defined('CIVICRM_TEMPLATE_COMPILEDIR')) {
  *      define( 'CIVICRM_UF_BASEURL' , 'http://www.example.com/joomla/');
  *
  */
-global $base_url;
- 
 if (!defined('CIVICRM_UF_BASEURL')) {
-  define( 'CIVICRM_UF_BASEURL'      , $base_url);
+  global $base_url;
+  if (!empty($base_url)) {
+    define( 'CIVICRM_UF_BASEURL'      , $base_url . '/');
+  } else {
+    define( 'CIVICRM_UF_BASEURL'      , '%%baseURL%%');
+  }
 }
 
 /**
@@ -260,19 +263,21 @@ if (!defined('CIVICRM_UF_BASEURL')) {
  */
 
 global $civicrm_setting;
- 
+
 if (isset($pantheon_conf)) {
   $civicrm_setting['Directory Preferences']['uploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/upload/';
   $civicrm_setting['Directory Preferences']['customFileUploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/custom/';
   $civicrm_setting['Directory Preferences']['imageUploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/persist/contribute/';
   $civicrm_setting['Directory Preferences']['extensionsDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/all/civicrm_custom/extensions/';
-  $civicrm_setting['URL Preferences']['extensionsURL'] = $base_url . '/sites/all/extensions';
-  
+  $civicrm_setting['URL Preferences']['extensionsURL'] = CIVICRM_UF_BASEURL . 'sites/all/civicrm_custom/extensions';
+  $civicrm_setting['URL Preferences']['userFrameworkResourceURL'] = CIVICRM_UF_BASEURL . 'sites/all/civicrm/';
+  $civicrm_setting['URL Preferences']['imageUploadURL'] = CIVICRM_UF_BASEURL . 'sites/default/files/private/civicrm/persist/contribute/';
+
   // Pantheon: Disable automatic download / installation of extensions on live
   if ($pantheon_conf['pantheon_environment'] == 'live') {
     $civicrm_setting['Extension Preferences']['ext_repo_url'] = false;
   }
-  
+
   // Pantheon: uncomment if customizing core PHP or template files
   // $civicrm_setting['Directory Preferences']['customTemplateDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/all/civicrm_custom/custom_templates/';
   // $civicrm_setting['Directory Preferences']['customPHPPathDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/all/civicrm_custom/custom_php/';
@@ -353,7 +358,7 @@ if (!defined('CIVICRM_MAIL_SMARTY')) {
  * The CIVICRM_MAIL_LOG is a debug option which disables MTA (mail transport agent) interaction.
  * You must disable CIVICRM_MAIL_LOG before CiviCRM will talk to your MTA.
  */
- 
+
 // Pantheon: if it's not the live site then send all emails to a log file
 if ($pantheon_conf['pantheon_environment'] != 'live') {
   define('CIVICRM_MAIL_LOG', '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/default/files/private/civicrm/ConfigAndLog/mail.log');
@@ -392,7 +397,7 @@ if (!defined('CIVICRM_DOMAIN_ID')) {
  * To not use any caching (not recommended), use a value of 'NoCache'
  *
  */
- 
+
 if (isset($pantheon_conf['redis_client_host']) && !empty($pantheon_conf['redis_client_host'])) {
   define('CIVICRM_DB_CACHE_CLASS', 'Redis');
   define('CIVICRM_DB_CACHE_HOST', $pantheon_conf['redis_client_host']);
@@ -400,8 +405,8 @@ if (isset($pantheon_conf['redis_client_host']) && !empty($pantheon_conf['redis_c
   define('CIVICRM_DB_CACHE_PASSWORD', $pantheon_conf['redis_client_password']);
   define('CIVICRM_DB_CACHE_TIMEOUT', 3600);
   define('CIVICRM_DB_CACHE_PREFIX', 'pantheon-redis-civicrm:');
-  
-} 
+
+}
 else {
 
   if (!defined('CIVICRM_DB_CACHE_CLASS')) {

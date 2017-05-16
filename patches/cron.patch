@@ -1,8 +1,6 @@
-diff --git a/bin/cron.php b/bin/cron.php
-index 31910ec..a4c30a0 100644
 --- a/bin/cron.php
 +++ b/bin/cron.php
-@@ -25,6 +25,10 @@
+@@ -25,10 +25,17 @@
   +--------------------------------------------------------------------+
   */
 
@@ -13,3 +11,10 @@ index 31910ec..a4c30a0 100644
 
  require_once '../civicrm.config.php';
  require_once 'CRM/Core/Config.php';
+ require_once 'CRM/Utils/Request.php';
++
++drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
++
+ $config = CRM_Core_Config::singleton();
+
+ CRM_Utils_System::authenticateScript(TRUE);
