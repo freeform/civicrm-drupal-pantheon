@@ -481,9 +481,7 @@ AND    u.status = 1
     }
     // load drupal bootstrap
     chdir($cmsPath);
-    if(!DRUPAL_ROOT) {
-      define('DRUPAL_ROOT', $cmsPath);
-    }
+    define('DRUPAL_ROOT', $cmsPath);
 
     // For drupal multi-site CRM-11313
     if ($realPath && strpos($realPath, 'sites/all/modules/') === FALSE) {
