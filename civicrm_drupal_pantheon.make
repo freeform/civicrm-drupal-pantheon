@@ -14,6 +14,7 @@ libraries[civicrm][directory_name] = civicrm
 
 ;PANTHEON RELATED PATCHES
 ; Settings for Pantheon (d.o/node/2082713 originally)
+; https://civicrm.org/advisory/civi-sa-2014-001-risk-information-disclosure
 libraries[civicrm][patch][pantheonsettings] = ./patches/pantheon-settings-47.patch
 
 ; provide modulepath to populate settings
@@ -25,9 +26,9 @@ libraries[civicrm][patch][2063371] = ./patches/2063371-add-modulePath-var-4-4.pa
 libraries[civicrm][patch][cron] = ./patches/cron.patch
 
 ; Patch IPN
-; libraries[civicrm][patch][externbootstrap] = ./patches/extern-cms-bootstrap.patch
-; libraries[civicrm][patch][ipn] = ./patches/ipn.patch
-; libraries[civicrm][patch][ipnstd] = ./patches/ipnStd.patch
+libraries[civicrm][patch][externbootstrap] = ./patches/extern-cms-bootstrap.patch
+libraries[civicrm][patch][ipn] = ./patches/ipn.patch
+libraries[civicrm][patch][ipnstd] = ./patches/ipnStd.patch
 
 ; May be necessary where extension, etc paths are cached but Pantheon changes binding
 ; https://www.drupal.org/node/2347897
@@ -48,6 +49,15 @@ libraries[civicrm][patch][2130213] = ./patches/ignore-timezone-on-install-47-213
 ; Fix Fatal error: Call to undefined function module_exists() in CRM/Utils/System/Drupal.php
 ; https://www.drupal.org/node/1967972
 ; libraries[civicrm][patch][1967972] = ./patches/bootstrap-fix-47-1967972.patch
+
+; CKEditor error
+; https://issues.civicrm.org/jira/browse/CRM-20599
+; Temporary solution is to copy the generated file from files/private/civicrm/persist to files/civicrm/persist.
+
+; Cached Symfony container
+; This is a potential issue but not clear at the moment--like it will just rebuild the php file.
+; If concerned can set it to skip caching the container. In civicrm.settings.php set:
+; define('CIVICRM_CONTAINER_CACHE', 'never');
 
 ; [OPTIONAL IF USING REDIS] Use CiviCRM cache functions to use Redis for storing compiled Smarty templates (Based on github.com/ojkelly commit 85e04b6)
 ; Unconventional but CiviCRM works faster and fewer errors in trying to load templates

@@ -2,6 +2,9 @@ The following patches have been applied to this project:
 - pantheon-settings-47.patch
 - 2063371-add-modulePath-var-4-4.patch
 - cron.patch
+- extern-cms-bootstrap.patch
+- ipn.patch
+- ipnStd.patch
 - binding-extension-47-2347897.patch
 - pre-populate-db-settings-47-1978838.patch
 - ignore-timezone-on-install-47-2130213.patch
