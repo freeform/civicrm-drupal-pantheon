@@ -220,20 +220,21 @@ function civicrm_config(&$config) {
   $params = array(
     'crmRoot' => $crmPath,
     'templateCompileDir' => $compileDir,
+    'publicFilesDir' => $compileDir,
     'frontEnd' => 0,
     'dbUser' => addslashes($config['mysql']['username']),
     'dbPass' => addslashes($config['mysql']['password']),
     'dbHost' => $config['mysql']['server'],
     'dbName' => addslashes($config['mysql']['database']),
   );
-  
+
   // when running on Pantheon, part of $crmPath is set dynamically in civicrm_settings.php
   //if civicrm is in a profile
   if (strpos($crmPath , 'profile')) {
     $modulePathParts = explode('profiles/', $crmPath);
     $params['modulePath'] = 'profiles/' . $modulePathParts[1];
   }
-  // if civicrm is not in profile, it is in sites 
+  // if civicrm is not in profile, it is in sites
   if (!isset($params['modulePath'])) {
     $modulePathParts = explode('sites/', $crmPath);
     $params['modulePath'] = 'sites/' . $modulePathParts[1];

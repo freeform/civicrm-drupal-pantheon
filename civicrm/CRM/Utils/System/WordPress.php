@@ -79,7 +79,7 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
     $config = CRM_Core_Config::singleton();
     $cmsUrl = CRM_Utils_System::languageNegotiationURL($config->userFrameworkBaseURL, FALSE, TRUE);
     $cmsPath = $this->cmsRootPath();
-    $filesPath = CRM_Utils_File::baseFilePath();
+    $filesPath = CRM_Utils_File::basePublicFilePath();
     $filesRelPath = CRM_Utils_File::relativize($filesPath, $cmsPath);
     $filesURL = rtrim($cmsUrl, '/') . '/' . ltrim($filesRelPath, ' /');
     return array(

@@ -16,6 +16,8 @@ libraries[civicrm][directory_name] = civicrm
 ; Settings for Pantheon (d.o/node/2082713 originally)
 ; https://civicrm.org/advisory/civi-sa-2014-001-risk-information-disclosure
 libraries[civicrm][patch][pantheonsettings] = ./patches/pantheon-settings-47.patch
+; Define a public files path since there is no htaccess file to set public/private.
+libraries[civicrm][patch][publicfiledir] = ./patches/public_files_config.patch
 
 ; provide modulepath to populate settings
 ; https://www.drupal.org/node/2063371

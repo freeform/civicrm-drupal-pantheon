@@ -162,6 +162,9 @@ if (!defined('CIVICRM_LOGGING_DSN')) {
  * IMPORTANT: The COMPILEDIR directory must exist,
  * and your web server must have read/write access to these directories.
  *
+ * IMPORTANT FOR NGINX SITES: You may need to define a file system path that is private,
+ * especially if you don't have access to NGINX configuration but you do have a path,
+ * for example, like: sites/default/files/private
  *
  * EXAMPLE - Drupal:
  * If the path to the Drupal home directory is /var/www/htdocs/drupal
@@ -212,6 +215,19 @@ if (!defined('CIVICRM_TEMPLATE_COMPILEDIR')) {
   }
   else {
     define( 'CIVICRM_TEMPLATE_COMPILEDIR', '%%templateCompileDir%%');
+  }
+}
+
+/**
+ * Provide a default public CiviCRM file path on Pantheon.
+ * For files that need to be publicly accessible such as the CKEditor configuration file.
+ */
+if (!defined('CIVICRM_PUBLIC_FILES_DIR')) {
+  if (isset($pantheon_conf)) {
+    define('CIVICRM_PUBLIC_FILES_DIR', '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/civicrm/');
+  }
+  else {
+    define( 'CIVICRM_PUBLIC_FILES_DIR', '%%publicFilesDir%%');
   }
 }
 
