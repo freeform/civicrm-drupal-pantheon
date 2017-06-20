@@ -16,7 +16,11 @@ libraries[civicrm][directory_name] = civicrm
 ; Settings for Pantheon (d.o/node/2082713 originally)
 ; https://civicrm.org/advisory/civi-sa-2014-001-risk-information-disclosure
 libraries[civicrm][patch][pantheonsettings] = ./patches/pantheon-settings-47.patch
+
 ; Define a public files path since there is no htaccess file to set public/private.
+; CIVICRM_PUBLIC_FILES_DIR needs to be manually added and defined in
+; civicrm.settings.php if the CiviCRM is already installed.
+; Check templates/CRM/common/civicrm.settings.php.template for the snippet.
 libraries[civicrm][patch][publicfiledir] = ./patches/public_files_config.patch
 
 ; provide modulepath to populate settings
@@ -47,14 +51,6 @@ libraries[civicrm][patch][2130213] = ./patches/ignore-timezone-on-install-47-213
 ; Necessary if CiviCRM in profiles/*/modules/civicrm
 ; https://www.drupal.org/node/1844558
 ; libraries[civicrm][patch][profiles] = ./patches/settings_location-for-profiles.patch
-
-; Fix Fatal error: Call to undefined function module_exists() in CRM/Utils/System/Drupal.php
-; https://www.drupal.org/node/1967972
-; libraries[civicrm][patch][1967972] = ./patches/bootstrap-fix-47-1967972.patch
-
-; CKEditor error
-; https://issues.civicrm.org/jira/browse/CRM-20599
-; Temporary solution is to copy the generated file from files/private/civicrm/persist to files/civicrm/persist.
 
 ; Cached Symfony container
 ; This is a potential issue but not clear at the moment--like it will just rebuild the php file.
