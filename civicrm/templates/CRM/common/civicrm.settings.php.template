@@ -283,7 +283,7 @@ global $civicrm_setting;
 if (isset($pantheon_conf)) {
   $civicrm_setting['Directory Preferences']['uploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/upload/';
   $civicrm_setting['Directory Preferences']['customFileUploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/custom/';
-  $civicrm_setting['Directory Preferences']['imageUploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/persist/contribute/';
+  $civicrm_setting['Directory Preferences']['imageUploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/civicrm/persist/contribute/';
   $civicrm_setting['Directory Preferences']['extensionsDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/all/civicrm_custom/extensions/';
   $civicrm_setting['URL Preferences']['extensionsURL'] = CIVICRM_UF_BASEURL . 'sites/all/civicrm_custom/extensions';
   $civicrm_setting['URL Preferences']['userFrameworkResourceURL'] = CIVICRM_UF_BASEURL . 'sites/all/modules/civicrm/';
@@ -376,11 +376,11 @@ if (!defined('CIVICRM_MAIL_SMARTY')) {
  */
 
 // Pantheon: if it's not the live site then send all emails to a log file
-if ($pantheon_conf['pantheon_environment'] != 'live') {
+if (isset($pantheon_conf) && $pantheon_conf['pantheon_environment'] != 'live') {
   define('CIVICRM_MAIL_LOG', '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/code/sites/default/files/private/civicrm/ConfigAndLog/mail.log');
 }
 
-// if (!defined('CIVICRM_MAIL_LOG')) {
+// if (!isset($pantheon_conf) && !defined('CIVICRM_MAIL_LOG')) {
 // define( 'CIVICRM_MAIL_LOG', '%%templateCompileDir%%/mail.log');
 // }
 
