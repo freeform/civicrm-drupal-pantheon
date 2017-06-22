@@ -63,4 +63,4 @@ libraries[civicrm][patch][2130213] = ./patches/ignore-timezone-on-install-47-213
 
 ; [OPTIONAL] SMTP patch for PHP 5.6+
 ; https://civicrm.stackexchange.com/questions/16628/outgoing-mail-settings-civismtp-php-5-6-x-problem
-;libraries[civicrm][patch][] = ./patches/smtp-disable-peer-verification.patch
+;libraries[civicrm][patch][smtpverify] = ./patches/smtp-disable-peer-verification.patch
