@@ -566,10 +566,29 @@ HTACCESS;
   }
 
   /**
-   * Create the base file path from which all our internal directories are
-   * offset. This is derived from the template compile directory set
+   * Create the base public file path from which all our public internal
+   * directories are offset. CIVICRM_PUBLIC_FILES_DIR is set in civicrm.settings.php.
    */
   public static function baseFilePath() {
+    static $_path = NULL;
+    if (!$_path) {
+      // Note: Don't rely on $config; that creates a dependency loop.
+      if (!defined('CIVICRM_PUBLIC_FILES_DIR')) {
+        throw new RuntimeException("Undefined constant: CIVICRM_PUBLIC_FILES_DIR");
+      }
+
+      $path = CIVICRM_PUBLIC_FILES_DIR;
+
+      $_path = CRM_Utils_File::addTrailingSlash($path);
+    }
+    return $_path;
+  }
+
+  /**
+   * Create the base private file path from which all our internal directories are
+   * offset. This is derived from the template compile directory set
+   */
+  public static function basePrivateFilePath() {
     static $_path = NULL;
     if (!$_path) {
       // Note: Don't rely on $config; that creates a dependency loop.
@@ -588,25 +607,6 @@ HTACCESS;
         unset($checkPath[$cnt]);
         $path = implode(DIRECTORY_SEPARATOR, $checkPath);
       }
-
-      $_path = CRM_Utils_File::addTrailingSlash($path);
-    }
-    return $_path;
-  }
-
-  /**
-   * Create the base public file path from which all our public internal
-   * directories are offset. This is set in civicrm.settings.php.
-   */
-  public static function basePublicFilePath() {
-    static $_path = NULL;
-    if (!$_path) {
-      // Note: Don't rely on $config; that creates a dependency loop.
-      if (!defined('CIVICRM_PUBLIC_FILES_DIR')) {
-        throw new RuntimeException("Undefined constant: CIVICRM_PUBLIC_FILES_DIR");
-      }
-
-      $path = CIVICRM_PUBLIC_FILES_DIR;
 
       $_path = CRM_Utils_File::addTrailingSlash($path);
     }
@@ -649,8 +649,8 @@ HTACCESS;
       return $directory;
     }
 
-    // make everything relative from the basePublicFilePath
-    $basePath = self::basePublicFilePath();
+    // make everything relative from the baseFilePath
+    $basePath = self::baseFilePath();
     // check if basePath is a substr of $directory, if so
     // return rest of string
     if (substr($directory, 0, strlen($basePath)) == $basePath) {

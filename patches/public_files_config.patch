@@ -1,18 +1,20 @@
 diff --git a/CRM/Utils/File.php b/CRM/Utils/File.php
-index c69d9c8..2382f18 100644
+index c69d9c8..7c5f7c5 100644
 --- a/CRM/Utils/File.php
 +++ b/CRM/Utils/File.php
-@@ -595,6 +595,25 @@ HTACCESS;
+@@ -566,13 +566,32 @@ HTACCESS;
    }
 
    /**
+-   * Create the base file path from which all our internal directories are
+-   * offset. This is derived from the template compile directory set
 +   * Create the base public file path from which all our public internal
-+   * directories are offset. This is set in civicrm.settings.php.
-+   */
-+  public static function basePublicFilePath() {
-+    static $_path = NULL;
-+    if (!$_path) {
-+      // Note: Don't rely on $config; that creates a dependency loop.
++   * directories are offset. CIVICRM_PUBLIC_FILES_DIR is set in civicrm.settings.php.
+    */
+   public static function baseFilePath() {
+     static $_path = NULL;
+     if (!$_path) {
+       // Note: Don't rely on $config; that creates a dependency loop.
 +      if (!defined('CIVICRM_PUBLIC_FILES_DIR')) {
 +        throw new RuntimeException("Undefined constant: CIVICRM_PUBLIC_FILES_DIR");
 +      }
@@ -25,46 +27,16 @@ index c69d9c8..2382f18 100644
 +  }
 +
 +  /**
-    * Determine if a path is absolute.
-    *
-    * @param string $path
-@@ -630,8 +649,8 @@ HTACCESS;
-       return $directory;
-     }
-
--    // make everything relative from the baseFilePath
--    $basePath = self::baseFilePath();
-+    // make everything relative from the basePublicFilePath
-+    $basePath = self::basePublicFilePath();
-     // check if basePath is a substr of $directory, if so
-     // return rest of string
-     if (substr($directory, 0, strlen($basePath)) == $basePath) {
-diff --git a/CRM/Utils/System/Base.php b/CRM/Utils/System/Base.php
-index a66fba1..5ccfe49 100644
---- a/CRM/Utils/System/Base.php
-+++ b/CRM/Utils/System/Base.php
-@@ -611,7 +611,7 @@ abstract class CRM_Utils_System_Base {
-
-     return array(
-       'url' => $filesURL,
--      'path' => CRM_Utils_File::baseFilePath(),
-+      'path' => CRM_Utils_File::basePublicFilePath(),
-     );
-   }
-
-diff --git a/CRM/Utils/System/WordPress.php b/CRM/Utils/System/WordPress.php
-index d49c7d7..9ba22b1 100644
---- a/CRM/Utils/System/WordPress.php
-+++ b/CRM/Utils/System/WordPress.php
-@@ -79,7 +79,7 @@ class CRM_Utils_System_WordPress extends CRM_Utils_System_Base {
-     $config = CRM_Core_Config::singleton();
-     $cmsUrl = CRM_Utils_System::languageNegotiationURL($config->userFrameworkBaseURL, FALSE, TRUE);
-     $cmsPath = $this->cmsRootPath();
--    $filesPath = CRM_Utils_File::baseFilePath();
-+    $filesPath = CRM_Utils_File::basePublicFilePath();
-     $filesRelPath = CRM_Utils_File::relativize($filesPath, $cmsPath);
-     $filesURL = rtrim($cmsUrl, '/') . '/' . ltrim($filesRelPath, ' /');
-     return array(
++   * Create the base private file path from which all our internal directories are
++   * offset. This is derived from the template compile directory set
++   */
++  public static function basePrivateFilePath() {
++    static $_path = NULL;
++    if (!$_path) {
++      // Note: Don't rely on $config; that creates a dependency loop.
+       if (!defined('CIVICRM_TEMPLATE_COMPILEDIR')) {
+         throw new RuntimeException("Undefined constant: CIVICRM_TEMPLATE_COMPILEDIR");
+       }
 diff --git a/install/civicrm.php b/install/civicrm.php
 index 50e4271..8a7c356 100644
 --- a/install/civicrm.php
@@ -78,7 +50,7 @@ index 50e4271..8a7c356 100644
      'dbUser' => addslashes($config['mysql']['username']),
      'dbPass' => addslashes($config['mysql']['password']),
 diff --git a/templates/CRM/common/civicrm.settings.php.template b/templates/CRM/common/civicrm.settings.php.template
-index 35c83d8..ad56947 100644
+index 8582e59..fa897d5 100644
 --- a/templates/CRM/common/civicrm.settings.php.template
 +++ b/templates/CRM/common/civicrm.settings.php.template
 @@ -162,6 +162,9 @@ if (!defined('CIVICRM_LOGGING_DSN')) {
