@@ -220,7 +220,6 @@ function civicrm_config(&$config) {
   $params = array(
     'crmRoot' => $crmPath,
     'templateCompileDir' => $compileDir,
-    'publicFilesDir' => $compileDir,
     'frontEnd' => 0,
     'dbUser' => addslashes($config['mysql']['username']),
     'dbPass' => addslashes($config['mysql']['password']),

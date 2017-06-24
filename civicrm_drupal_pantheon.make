@@ -17,8 +17,9 @@ libraries[civicrm][directory_name] = civicrm
 ; https://civicrm.org/advisory/civi-sa-2014-001-risk-information-disclosure
 libraries[civicrm][patch][pantheonsettings] = ./patches/pantheon-settings-47.patch
 
-; Define a public files path since there is no htaccess file to set public/private.
-; CIVICRM_PUBLIC_FILES_DIR needs to be manually added and defined in
+; Define [civicrm.files] and [civicrm.private] paths since there is no htaccess file
+; to set public/private folders.
+; [civicrm.files] needs to be manually added and defined in
 ; civicrm.settings.php if the CiviCRM is already installed.
 ; Check templates/CRM/common/civicrm.settings.php.template for the snippet.
 libraries[civicrm][patch][publicfiledir] = ./patches/public_files_config.patch

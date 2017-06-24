@@ -1,85 +1,127 @@
+diff --git a/CRM/Core/Config/Runtime.php b/CRM/Core/Config/Runtime.php
+index 3282de2..c457aaa 100644
+--- a/CRM/Core/Config/Runtime.php
++++ b/CRM/Core/Config/Runtime.php
+@@ -100,7 +100,7 @@ class CRM_Core_Config_Runtime extends CRM_Core_Config_MagicMerge {
+     }
+
+     if (defined('CIVICRM_TEMPLATE_COMPILEDIR')) {
+-      $this->configAndLogDir = CRM_Utils_File::baseFilePath() . 'ConfigAndLog' . DIRECTORY_SEPARATOR;
++      $this->configAndLogDir = CRM_Utils_File::basePrivateFilePath() . 'ConfigAndLog' . DIRECTORY_SEPARATOR;
+       CRM_Utils_File::createDir($this->configAndLogDir);
+       CRM_Utils_File::restrictAccess($this->configAndLogDir);
+
 diff --git a/CRM/Utils/File.php b/CRM/Utils/File.php
-index c69d9c8..7c5f7c5 100644
+index c69d9c8..4a6dcac 100644
 --- a/CRM/Utils/File.php
 +++ b/CRM/Utils/File.php
-@@ -566,13 +566,32 @@ HTACCESS;
+@@ -566,28 +566,68 @@ HTACCESS;
    }
 
    /**
 -   * Create the base file path from which all our internal directories are
 -   * offset. This is derived from the template compile directory set
-+   * Create the base public file path from which all our public internal
-+   * directories are offset. CIVICRM_PUBLIC_FILES_DIR is set in civicrm.settings.php.
++   * Create the base public file path from which all our internal directories are
++   * offset. This is derived from the template compile directory set if [civicrm.files]
++   * isn't set.
     */
    public static function baseFilePath() {
      static $_path = NULL;
      if (!$_path) {
-       // Note: Don't rely on $config; that creates a dependency loop.
-+      if (!defined('CIVICRM_PUBLIC_FILES_DIR')) {
-+        throw new RuntimeException("Undefined constant: CIVICRM_PUBLIC_FILES_DIR");
-+      }
+-      // Note: Don't rely on $config; that creates a dependency loop.
+-      if (!defined('CIVICRM_TEMPLATE_COMPILEDIR')) {
+-        throw new RuntimeException("Undefined constant: CIVICRM_TEMPLATE_COMPILEDIR");
+-      }
+-      $templateCompileDir = CIVICRM_TEMPLATE_COMPILEDIR;
++      if (!empty($GLOBALS['civicrm_paths']['civicrm.files']['path'])) {
++        $path = $GLOBALS['civicrm_paths']['civicrm.files']['path'];
++      } else {
++        // Note: Don't rely on $config; that creates a dependency loop.
++        if (!defined('CIVICRM_TEMPLATE_COMPILEDIR')) {
++          throw new RuntimeException("Undefined constant: CIVICRM_TEMPLATE_COMPILEDIR");
++        }
++        $templateCompileDir = CIVICRM_TEMPLATE_COMPILEDIR;
+
+-      $path = dirname($templateCompileDir);
++        $path = dirname($templateCompileDir);
+
+-      //this fix is to avoid creation of upload dirs inside templates_c directory
+-      $checkPath = explode(DIRECTORY_SEPARATOR, $path);
++        //this fix is to avoid creation of upload dirs inside templates_c directory
++        $checkPath = explode(DIRECTORY_SEPARATOR, $path);
+
+-      $cnt = count($checkPath) - 1;
+-      if ($checkPath[$cnt] == 'templates_c') {
+-        unset($checkPath[$cnt]);
+-        $path = implode(DIRECTORY_SEPARATOR, $checkPath);
+-      }
++        $cnt = count($checkPath) - 1;
++        if ($checkPath[$cnt] == 'templates_c') {
++          unset($checkPath[$cnt]);
++          $path = implode(DIRECTORY_SEPARATOR, $checkPath);
++        }
++       }
 +
-+      $path = CIVICRM_PUBLIC_FILES_DIR;
++       $_path = CRM_Utils_File::addTrailingSlash($path);
++     }
 +
-+      $_path = CRM_Utils_File::addTrailingSlash($path);
-+    }
-+    return $_path;
-+  }
++     return $_path;
++   }
 +
 +  /**
 +   * Create the base private file path from which all our internal directories are
-+   * offset. This is derived from the template compile directory set
++   * offset. This is derived from the template compile directory set if [civicrm.private]
++   * isn't set.
 +   */
 +  public static function basePrivateFilePath() {
 +    static $_path = NULL;
 +    if (!$_path) {
-+      // Note: Don't rely on $config; that creates a dependency loop.
-       if (!defined('CIVICRM_TEMPLATE_COMPILEDIR')) {
-         throw new RuntimeException("Undefined constant: CIVICRM_TEMPLATE_COMPILEDIR");
-       }
-diff --git a/install/civicrm.php b/install/civicrm.php
-index 50e4271..8a7c356 100644
---- a/install/civicrm.php
-+++ b/install/civicrm.php
-@@ -220,6 +220,7 @@ function civicrm_config(&$config) {
-   $params = array(
-     'crmRoot' => $crmPath,
-     'templateCompileDir' => $compileDir,
-+    'publicFilesDir' => $compileDir,
-     'frontEnd' => 0,
-     'dbUser' => addslashes($config['mysql']['username']),
-     'dbPass' => addslashes($config['mysql']['password']),
++      if (!empty($GLOBALS['civicrm_paths']['civicrm.private']['path'])) {
++        $path = $GLOBALS['civicrm_paths']['civicrm.private']['path'];
++      } else {
++        // Note: Don't rely on $config; that creates a dependency loop.
++        if (!defined('CIVICRM_TEMPLATE_COMPILEDIR')) {
++          throw new RuntimeException("Undefined constant: CIVICRM_TEMPLATE_COMPILEDIR");
++        }
++        $templateCompileDir = CIVICRM_TEMPLATE_COMPILEDIR;
++
++        $path = dirname($templateCompileDir);
++
++        //this fix is to avoid creation of upload dirs inside templates_c directory
++        $checkPath = explode(DIRECTORY_SEPARATOR, $path);
++
++        $cnt = count($checkPath) - 1;
++        if ($checkPath[$cnt] == 'templates_c') {
++          unset($checkPath[$cnt]);
++          $path = implode(DIRECTORY_SEPARATOR, $checkPath);
++        }
++       }
+
+       $_path = CRM_Utils_File::addTrailingSlash($path);
+     }
 diff --git a/templates/CRM/common/civicrm.settings.php.template b/templates/CRM/common/civicrm.settings.php.template
-index 8582e59..fa897d5 100644
+index 8582e59..f5c755c 100644
 --- a/templates/CRM/common/civicrm.settings.php.template
 +++ b/templates/CRM/common/civicrm.settings.php.template
-@@ -162,6 +162,9 @@ if (!defined('CIVICRM_LOGGING_DSN')) {
-  * IMPORTANT: The COMPILEDIR directory must exist,
-  * and your web server must have read/write access to these directories.
-  *
-+ * IMPORTANT FOR NGINX SITES: You may need to define a file system path that is private,
-+ * especially if you don't have access to NGINX configuration but you do have a path,
-+ * for example, like: sites/default/files/private
-  *
-  * EXAMPLE - Drupal:
-  * If the path to the Drupal home directory is /var/www/htdocs/drupal
-@@ -216,6 +219,19 @@ if (!defined('CIVICRM_TEMPLATE_COMPILEDIR')) {
+@@ -257,6 +257,21 @@ if (!defined('CIVICRM_UF_BASEURL')) {
  }
 
  /**
-+ * Provide a default public CiviCRM file path on Pantheon.
-+ * For files that need to be publicly accessible such as the CKEditor configuration file.
++ * Provide a default public and private CiviCRM file path on Pantheon.
++ *
++ * Set [civicrm.files] and [civicrm.private] since Pantheon provides a files/private
++ * directory instead of using Apache to set permissions on directories.
 + */
-+if (!defined('CIVICRM_PUBLIC_FILES_DIR')) {
-+  if (isset($pantheon_conf)) {
-+    define('CIVICRM_PUBLIC_FILES_DIR', '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/civicrm/');
-+  }
-+  else {
-+    define( 'CIVICRM_PUBLIC_FILES_DIR', '%%publicFilesDir%%');
-+  }
++global $civicrm_paths;
++if (isset($pantheon_conf)) {
++  $civicrm_paths['civicrm.files']['path'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/civicrm';
++  $civicrm_paths['civicrm.files']['url'] = CIVICRM_UF_BASEURL . 'sites/default/files/civicrm';
++
++  $civicrm_paths['civicrm.private']['path'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm';
++  $civicrm_paths['civicrm.private']['url'] = CIVICRM_UF_BASEURL . 'sites/default/files/civicrm';
 +}
 +
 +/**
-  * Site URLs:
+  * Define any CiviCRM Settings Overrides per http://wiki.civicrm.org/confluence/display/CRMDOC/Override+CiviCRM+Settings
   *
-  * This section defines absolute and relative URLs to access the host CMS (Backdrop, Drupal, or Joomla) resources.
+  * Uncomment and edit the below as appropriate.
