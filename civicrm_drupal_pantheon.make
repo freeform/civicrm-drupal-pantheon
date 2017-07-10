@@ -1,6 +1,8 @@
-; This make file is based on civicrm_starterkit but can be used for
-; CiviCRM in sites/all/modules
-; drush make --no-core civicrm_drupal_pantheon.make
+; Drush make file for running CiviCRM on Pantheon.
+; Steps:
+; Go to the webroot: cd {webroot}
+; Delete old civicrm folder: rm -r sites/all/modules/civicrm
+; Run drush make: drush make --no-core sites/all/civicrm-drupal-pantheon/civicrm_drupal_pantheon.make
 
 api = 2
 core = 7.50
