@@ -62,6 +62,16 @@ class CRM_Upgrade_Incremental_php_FourSeven extends CRM_Upgrade_Incremental_Base
     if ($rev == '4.7.13') {
       $preUpgradeMessage .= '<p>' . ts('A new permission has been added called %1 This Permission is now used to control access to the Manage Tags screen', array(1 => 'manage tags')) . '</p>';
     }
+    if ($rev == '4.7.22') {
+      // Based on support inquiries for 4.7.21, show message during 4.7.22.
+      // For affected users, this issue prevents loading the regular status screen.
+      if (!$this->checkImageUploadDir()) {
+        $preUpgradeMessage .= '<p>' . ts('There appears to be an inconsistency in the configuration of "Image Upload URL" and "Image Upload Directory".') . '</p>'
+          . '<p>'
+          . ts('Further advice will be displayed at the end of the upgrade.')
+          . '</p>';
+      }
+    }
   }
 
   /**
@@ -120,6 +130,26 @@ class CRM_Upgrade_Incremental_php_FourSeven extends CRM_Upgrade_Incremental_Base
       $smsCheck = CRM_Core_DAO::singleValueQuery("SELECT count(id) FROM civicrm_sms_provider");
       if ($check > 1 && (bool) $smsCheck) {
         $postUpgradeMessage .= '<p>civicrm_sms_provider ' . ts('has now had a domain id column added. As there is more than 1 domains in this install you need to manually set the domain id for the providers in this install') . '</p>';
+      }
+    }
+    if ($rev == '4.7.22') {
+      // Based on support inquiries for 4.7.21, show message during 4.7.22.
+      // For affected users, this issue prevents loading the regular status screen.
+      if (!$this->checkImageUploadDir()) {
+        $config = CRM_Core_Config::singleton();
+        $postUpgradeMessage .=
+          '<h3>' . ts('Warning') . '</h3>'
+          . '<p>' . ts('There appears to be an inconsistency in the configuration of "Image Upload URL" and "Image Upload Directory".') . '</p>'
+          . sprintf("<ul><li><b>imageUploadDir</b>: <code>%s</code></li><li><b>imageUploadURL</b>: <code>%s</code></li></ul>", htmlentities($config->imageUploadDir), htmlentities($config->imageUploadURL))
+          . '<p>'
+          . ts('You may need to check that: <ul><li>(a) the path and URL match,</li><li> (b) the httpd/htaccess policy allows requests for files inside this folder,</li><li>and (c) the web domain matches the normal web domain.</ul>')
+          . '</p>'
+          . '<p><em>'
+          . ts('(Note: Although files should be readable, it is best if they are not listable or browseable.)')
+          . '</em></p>'
+          . '<p>'
+          . ts('If this remains unresolved, then some important screens may fail to load.')
+          . '</p>';
       }
     }
   }
@@ -331,11 +361,13 @@ class CRM_Upgrade_Incremental_php_FourSeven extends CRM_Upgrade_Incremental_Base
    * @param string $rev
    */
   public function upgrade_4_7_19($rev) {
-    $query = "SELECT id FROM civicrm_financial_account WHERE opening_balance <> 0 OR current_period_opening_balance <> 0";
-    $result = CRM_Core_DAO::executeQuery($query);
-    if (!$result->N) {
-      $this->addTask('Drop Column current_period_opening_balance From civicrm_financial_account table.', 'dropColumn', 'civicrm_financial_account', 'current_period_opening_balance');
-      $this->addTask('Drop Column opening_balance From civicrm_financial_account table.', 'dropColumn', 'civicrm_financial_account', 'opening_balance');
+    if (CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_financial_account', 'opening_balance')) {
+      $query = "SELECT id FROM civicrm_financial_account WHERE opening_balance <> 0 OR current_period_opening_balance <> 0";
+      $result = CRM_Core_DAO::executeQuery($query);
+      if (!$result->N) {
+        $this->addTask('Drop Column current_period_opening_balance From civicrm_financial_account table.', 'dropColumn', 'civicrm_financial_account', 'current_period_opening_balance');
+        $this->addTask('Drop Column opening_balance From civicrm_financial_account table.', 'dropColumn', 'civicrm_financial_account', 'opening_balance');
+      }
     }
     $this->addTask('CRM-19961 - Add domain_id column to civicrm_sms_provider', 'addColumn',
       'civicrm_sms_provider', 'domain_id', 'int(10) unsigned', "Which Domain is this sms provier for");
@@ -344,6 +376,18 @@ class CRM_Upgrade_Incremental_php_FourSeven extends CRM_Upgrade_Incremental_Base
     $this->addTask('CRM-16633 - Add "Change Case Subject" activity', 'addChangeCaseSubjectActivityType');
     $this->addTask('Add is_public column to civicrm_custom_group', 'addColumn',
       'civicrm_custom_group', 'is_public', "boolean DEFAULT '1' COMMENT 'Is this property public?'");
+  }
+
+  /**
+   * Upgrade function.
+   *
+   * @param string $rev
+   */
+  public function upgrade_4_7_20($rev) {
+    $this->addtask('Fix Schema on civicrm_action_schedule', 'fixSchemaOnCiviCRMActionSchedule');
+    $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => $rev)), 'runSql', $rev);
+    $this->addTask('Add activity_status column to civicrm_mail_settings', 'addColumn',
+      'civicrm_mail_settings', 'activity_status', "varchar (255) DEFAULT NULL COMMENT 'Name of status to use when creating email to activity.'");
   }
 
   /*
@@ -1080,16 +1124,18 @@ FROM `civicrm_dashboard_contact` JOIN `civicrm_contact` WHERE civicrm_dashboard_
    */
   public static function populateSMSProviderDomainId() {
     $count = CRM_Core_DAO::singleValueQuery("SELECT count(id) FROM civicrm_domain");
-    if ($count = 1) {
+    if ($count == 1) {
       CRM_Core_DAO::executeQuery("UPDATE civicrm_sms_provider SET domain_id = (SELECT id FROM civicrm_domain)");
     }
-    CRM_Core_DAO::executeQuery("SET FOREIGN_KEY_CHECKS = 0;");
-    CRM_Core_DAO::executeQuery("ALTER TABLE `civicrm_sms_provider`
-      ADD CONSTRAINT FK_civicrm_sms_provider_domain_id
-      FOREIGN KEY (`domain_id`) REFERENCES `civicrm_domain`(`id`)
-      ON DELETE SET NULL");
+    if (!parent::checkFKExists('civicrm_sms_provider', 'FK_civicrm_sms_provider_domain_id')) {
+      CRM_Core_DAO::executeQuery("SET FOREIGN_KEY_CHECKS = 0;");
+      CRM_Core_DAO::executeQuery("ALTER TABLE `civicrm_sms_provider`
+        ADD CONSTRAINT FK_civicrm_sms_provider_domain_id
+        FOREIGN KEY (`domain_id`) REFERENCES `civicrm_domain`(`id`)
+        ON DELETE SET NULL");
 
-    CRM_Core_DAO::executeQuery("SET FOREIGN_KEY_CHECKS = 1;");
+      CRM_Core_DAO::executeQuery("SET FOREIGN_KEY_CHECKS = 1;");
+    }
     return TRUE;
   }
 
@@ -1110,6 +1156,31 @@ FROM `civicrm_dashboard_contact` JOIN `civicrm_contact` WHERE civicrm_dashboard_
       'icon' => 'fa-pencil-square-o',
     ));
     return TRUE;
+  }
+
+  /**
+   * CRM-19986 fix schema differnces in civicrm_action_schedule
+   */
+  public static function fixSchemaOnCiviCRMActionSchedule() {
+    if (!parent::checkFKExists('civicrm_action_schedule', 'FK_civicrm_action_schedule_sms_template_id')) {
+      CRM_Core_DAO::executeQuery("ALTER TABLE `civicrm_action_schedule`
+        ADD CONSTRAINT FK_civicrm_action_schedule_sms_template_id
+        FOREIGN KEY (`sms_template_id`)  REFERENCES `civicrm_msg_template`(`id`)
+        ON DELETE SET NULL");
+    }
+    CRM_Core_DAO::executeQuery("ALTER TABLE `civicrm_action_schedule`
+      CHANGE `mapping_id` `mapping_id` varchar(64) COLLATE
+      utf8_unicode_ci DEFAULT NULL COMMENT 'Name/ID of the mapping to use on this table'");
+    return TRUE;
+  }
+
+  /**
+   * @return bool
+   */
+  protected function checkImageUploadDir() {
+    $config = CRM_Core_Config::singleton();
+    $check = new CRM_Utils_Check_Component_Security();
+    return $config->imageUploadDir && $config->imageUploadURL && $check->isDirAccessible($config->imageUploadDir, $config->imageUploadURL);
   }
 
 }
