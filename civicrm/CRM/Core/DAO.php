@@ -1033,6 +1033,22 @@ FROM   civicrm_domain
   }
 
   /**
+   * Returns a singular value.
+   *
+   * @return mixed|NULL
+   */
+  public function fetchValue() {
+    $result = $this->getDatabaseResult();
+    $row = $result->fetchRow();
+    $ret = NULL;
+    if ($row) {
+      $ret = $row[0];
+    }
+    $this->free();
+    return $ret;
+  }
+
+  /**
    * Get all the result records as mapping between columns.
    *
    * @param string $keyColumn
@@ -2209,7 +2225,7 @@ SELECT contact_id
   public static function buildOptions($fieldName, $context = NULL, $props = array()) {
     // If a given bao does not override this function
     $baoName = get_called_class();
-    return CRM_Core_PseudoConstant::get($baoName, $fieldName, array(), $context);
+    return CRM_Core_PseudoConstant::get($baoName, $fieldName, $props, $context);
   }
 
   /**
@@ -2527,7 +2543,7 @@ SELECT contact_id
     foreach ((array) $bao->addSelectWhereClause() as $field => $vals) {
       $clauses[$field] = NULL;
       if ($vals) {
-        $clauses[$field] = "`$tableAlias`.`$field` " . implode(" AND `$tableAlias`.`$field` ", (array) $vals);
+        $clauses[$field] = "(`$tableAlias`.`$field` IS NULL OR (`$tableAlias`.`$field` " . implode(" AND `$tableAlias`.`$field` ", (array) $vals) . '))';
       }
     }
     return $clauses;

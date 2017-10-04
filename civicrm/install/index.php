@@ -209,7 +209,7 @@ foreach ($langs as $locale => $_) {
   }
 }
 
-// Set the locale (required by CRM_Core_Config)
+// Set the CMS
 // This is mostly sympbolic, since nothing we do during the install
 // really requires CIVICRM_UF to be defined.
 $installTypeToUF = array(
@@ -221,6 +221,7 @@ $installTypeToUF = array(
 $uf = (isset($installTypeToUF[$installType]) ? $installTypeToUF[$installType] : 'Drupal');
 define('CIVICRM_UF', $uf);
 
+// Set the Locale (required by CRM_Core_Config)
 global $tsLocale;
 
 $tsLocale = 'en_US';
@@ -1545,6 +1546,13 @@ class Installer extends InstallRequirements {
         // now enable civicrm module.
         module_enable(array('civicrm', 'civicrmtheme'));
 
+        // SystemInstallEvent will be called from here with the first call of CRM_Core_Config,
+        // which calls Core_BAO_ConfigSetting::applyLocale(), who will default to calling
+        // Civi::settings()->get('lcMessages');
+        // Therefore, we need to pass the seedLanguage before that.
+        global $civicrm_setting;
+        $civicrm_setting['domain']['lcMessages'] = $config['seedLanguage'];
+
         // clear block, page, theme, and hook caches
         drupal_flush_all_caches();
 
@@ -1554,15 +1562,6 @@ class Installer extends InstallRequirements {
         // restore the user.
         $GLOBALS['user'] = $original_user;
         drupal_save_session(TRUE);
-
-        //change the default language to one chosen
-        if (isset($config['seedLanguage']) && $config['seedLanguage'] != 'en_US') {
-          civicrm_api3('Setting', 'create', array(
-              'domain_id' => 'current_domain',
-              'lcMessages' => $config['seedLanguage'],
-            )
-          );
-        }
 
         $output .= '</ul>';
         $output .= '</div>';
