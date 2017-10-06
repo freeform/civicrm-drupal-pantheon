@@ -1,8 +1,6 @@
-diff --git a/templates/CRM/common/civicrm.settings.php.template b/templates/CRM/common/civicrm.settings.php.template
-index 9f0f6bb..8582e59 100644
 --- a/templates/CRM/common/civicrm.settings.php.template
 +++ b/templates/CRM/common/civicrm.settings.php.template
-@@ -63,6 +63,28 @@ if (!defined('CIVICRM_UF')) {
+@@ -64,6 +64,28 @@
  }
 
  /**
@@ -30,8 +28,8 @@ index 9f0f6bb..8582e59 100644
 +/**
   * Content Management System (CMS) Datasource:
   *
-  * Update this setting with your CMS (Drupal, Backdrop CMS, or Joomla) database username, server and DB name.
-@@ -70,7 +92,11 @@ if (!defined('CIVICRM_UF')) {
+  * Update this setting with your CMS (Drupal, Backdrop CMS, or Joomla) database username, password, server and DB name.
+@@ -73,7 +95,11 @@
   *      define( 'CIVICRM_UF_DSN', 'mysql://cms_db_username:cms_db_password@db_server/cms_database?new_link=true');
   */
  if (!defined('CIVICRM_UF_DSN') && CIVICRM_UF !== 'UnitTests') {
@@ -44,7 +42,7 @@ index 9f0f6bb..8582e59 100644
  }
 
  /**
-@@ -97,6 +123,9 @@ if (!defined('CIVICRM_DSN')) {
+@@ -103,6 +129,9 @@
    if (CIVICRM_UF === 'UnitTests' && isset($GLOBALS['_CV']['TEST_DB_DSN'])) {
      define('CIVICRM_DSN', $GLOBALS['_CV']['TEST_DB_DSN']);
    }
@@ -54,7 +52,7 @@ index 9f0f6bb..8582e59 100644
    else {
      define('CIVICRM_DSN', 'mysql://%%dbUser%%:%%dbPass%%@%%dbHost%%/%%dbName%%?new_link=true');
    }
-@@ -170,9 +199,20 @@ if (!defined('CIVICRM_LOGGING_DSN')) {
+@@ -176,9 +205,20 @@
 
  global $civicrm_root;
 
@@ -77,7 +75,7 @@ index 9f0f6bb..8582e59 100644
  }
 
  /**
-@@ -208,7 +248,12 @@ if (!defined('CIVICRM_TEMPLATE_COMPILEDIR')) {
+@@ -214,7 +254,12 @@
   *
   */
  if (!defined('CIVICRM_UF_BASEURL')) {
@@ -91,14 +89,10 @@ index 9f0f6bb..8582e59 100644
  }
 
  /**
-@@ -216,8 +261,27 @@ if (!defined('CIVICRM_UF_BASEURL')) {
+@@ -222,6 +267,25 @@
   *
   * Uncomment and edit the below as appropriate.
   */
-- // Add this line only once above any settings overrides.
-- //  global $civicrm_setting;
-+
-+global $civicrm_setting;
 +
 +if (isset($pantheon_conf)) {
 +  $civicrm_setting['Directory Preferences']['uploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/upload/';
@@ -121,7 +115,7 @@ index 9f0f6bb..8582e59 100644
 
   // Override the Temporary Files directory.
   // $civicrm_setting['Directory Preferences']['uploadDir'] = '/path/to/upload-dir' ;
-@@ -294,7 +358,13 @@ if (!defined('CIVICRM_MAIL_SMARTY')) {
+@@ -298,7 +362,13 @@
   * The CIVICRM_MAIL_LOG is a debug option which disables MTA (mail transport agent) interaction.
   * You must disable CIVICRM_MAIL_LOG before CiviCRM will talk to your MTA.
   */
@@ -136,7 +130,7 @@ index 9f0f6bb..8582e59 100644
  // define( 'CIVICRM_MAIL_LOG', '%%templateCompileDir%%/mail.log');
  // }
 
-@@ -327,54 +397,68 @@ if (!defined('CIVICRM_DOMAIN_ID')) {
+@@ -341,54 +411,67 @@
   * To not use any caching (not recommended), use a value of 'NoCache'
   *
   */
@@ -188,7 +182,6 @@ index 9f0f6bb..8582e59 100644
 -if (!defined('CIVICRM_DB_CACHE_PREFIX')) {
 -  define('CIVICRM_DB_CACHE_PREFIX', '');
 -}
-+
 +if (isset($pantheon_conf['redis_client_host']) && !empty($pantheon_conf['redis_client_host'])) {
 +  define('CIVICRM_DB_CACHE_CLASS', 'Redis');
 +  define('CIVICRM_DB_CACHE_HOST', $pantheon_conf['redis_client_host']);

@@ -28,6 +28,7 @@
 /**
  * CiviCRM Configuration File.
  */
+global $civicrm_setting;
 
 /**
  * Content Management System (CMS) Host:
@@ -282,8 +283,6 @@ if (isset($pantheon_conf)) {
  * Uncomment and edit the below as appropriate.
  */
 
-global $civicrm_setting;
-
 if (isset($pantheon_conf)) {
   $civicrm_setting['Directory Preferences']['uploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/upload/';
   $civicrm_setting['Directory Preferences']['customFileUploadDir'] = '/srv/bindings/' . $pantheon_conf['pantheon_binding'] . '/files/private/civicrm/custom/';
@@ -394,6 +393,16 @@ if (!defined('CIVICRM_DOMAIN_ID')) {
 }
 
 /**
+ * Setting to define the environment in which this CiviCRM instance is running.
+ * Note the setting here must be value from the option group 'Environment',
+ * (see Administration > System Settings > Option Groups, Options beside Environment)
+ * which by default has three option values: 'Production', 'Staging', 'Development'.
+ * NB: defining a value for environment here prevents it from being set
+ * via the browser.
+ */
+// $civicrm_setting['domain']['environment'] = 'Production';
+
+/**
  * Settings to enable external caching using a cache server.  This is an
  * advanced feature, and you should read and understand the documentation
  * before you turn it on. We cannot store these settings in the DB since the
@@ -417,7 +426,6 @@ if (!defined('CIVICRM_DOMAIN_ID')) {
  * To not use any caching (not recommended), use a value of 'NoCache'
  *
  */
-
 if (isset($pantheon_conf['redis_client_host']) && !empty($pantheon_conf['redis_client_host'])) {
   define('CIVICRM_DB_CACHE_CLASS', 'Redis');
   define('CIVICRM_DB_CACHE_HOST', $pantheon_conf['redis_client_host']);

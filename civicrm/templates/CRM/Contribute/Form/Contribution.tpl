@@ -104,7 +104,7 @@
             <div id="priceset" class="hiddenElement"></div>
           {/if}
 
-          {if $ppID}{ts}<a href='#' onclick='adjustPayment();'>adjust payment amount</a>{/ts}{help id="adjust-payment-amount"}{/if}
+          {if $ppID}{ts}<a class='action-item crm-hover-button' onclick='adjustPayment();'>adjust payment amount</a>{/ts}{help id="adjust-payment-amount"}{/if}
           <div id="totalAmountBlock">
             {if $hasPriceSets}<span class="description">{ts}Alternatively, you can use a price set.{/ts}</span>{/if}
             <div id="totalTaxAmount" class="label"></div>
@@ -572,7 +572,9 @@ function buildAmount( priceSetId, financialtypeIds ) {
   cj("#price_set_id option[value='']").html( manual );
 
   cj('label[for="total_amount"]').text('{/literal}{ts}Price Sets{/ts}{literal}');
-  cj("#financial_type_id option[value="+financialtypeIds[priceSetId]+"]").prop('selected', true);
+  if (financialtypeIds) {
+    cj("#financial_type_id option[value="+financialtypeIds[priceSetId]+"]").prop('selected', true);
+  }
   cj(".crm-contribution-form-block-financial_type_id").css("display", "none");
 }
 

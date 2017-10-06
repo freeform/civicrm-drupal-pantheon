@@ -37,27 +37,20 @@ class CRM_Utils_Check_Component_Schema extends CRM_Utils_Check_Component {
    */
   public function checkIndices() {
     $messages = array();
-    list($missingIndices, $existingKeyIndices) = CRM_Core_BAO_SchemaHandler::getMissingIndices();
-    if ($existingKeyIndices) {
+    $missingIndices = CRM_Core_BAO_SchemaHandler::getMissingIndices();
+    if ($missingIndices) {
       $html = '';
-      foreach ($existingKeyIndices as $tableName => $indices) {
+      foreach ($missingIndices as $tableName => $indices) {
         foreach ($indices as $index) {
           $fields = implode(', ', $index['field']);
           $html .= "<tr><td>{$tableName}</td><td>{$index['name']}</td><td>$fields</td>";
         }
       }
-      $keyMessage = "<p>The following tables have an index key with a mismatch in value. Please delete the key indices listed from the below table and then click on 'Update Indices' button. <p>
-        <p><table><thead><tr><th>Table Name</th><th>Key Name</th><th>Fields</th>
+      $message = "<p>The following tables have missing indices. Click 'Update Indices' button to create them.<p>
+        <p><table><thead><tr><th>Table Name</th><th>Key Name</th><th>Expected Indices</th>
         </tr></thead><tbody>
         $html
         </tbody></table></p>";
-    }
-    if ($missingIndices || $existingKeyIndices) {
-      $message = "You have missing indices on some tables. This may cause poor performance.";
-      if (!empty($keyMessage)) {
-        $message = $keyMessage;
-        $message .= ts("If you are unsure how to perform this action or do not know what to do please contact your system administrator for assistance");
-      }
       $msg = new CRM_Utils_Check_Message(
         __FUNCTION__,
         ts($message),
@@ -70,6 +63,33 @@ class CRM_Utils_Check_Component_Schema extends CRM_Utils_Check_Component {
         ts('Update all database indices now? This may take a few minutes and cause a noticeable performance lag for all users while running.'),
         'api3',
         array('System', 'updateindexes')
+      );
+      $messages[] = $msg;
+    }
+    return $messages;
+  }
+
+  /**
+   * @return array
+   */
+  public function checkMissingLogTables() {
+    $messages = array();
+    $logging = new CRM_Logging_Schema();
+    $missingLogTables = $logging->getMissingLogTables();
+
+    if ($missingLogTables) {
+      $msg = new CRM_Utils_Check_Message(
+        __FUNCTION__,
+        ts("You don't have logging enabled on some tables. This may cause errors on performing insert/update operation on them."),
+        ts('Missing Log Tables'),
+        \Psr\Log\LogLevel::WARNING,
+        'fa-server'
+      );
+      $msg->addAction(
+        ts('Create Missing Log Tables'),
+        ts('Create missing log tables now? This may take few minutes.'),
+        'api3',
+        array('System', 'createmissinglogtables')
       );
       $messages[] = $msg;
     }

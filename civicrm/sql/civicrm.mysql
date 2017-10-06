@@ -2213,7 +2213,8 @@ CREATE TABLE `civicrm_menu` (
      `weight` int NOT NULL  DEFAULT 1 COMMENT 'Ordering of the menu items in various blocks.',
      `type` int NOT NULL  DEFAULT 1 COMMENT 'Drupal menu type.',
      `page_type` int NOT NULL  DEFAULT 1 COMMENT 'CiviCRM menu type.',
-     `skipBreadcrumb` tinyint    COMMENT 'skip this url being exposed to breadcrumb' 
+     `skipBreadcrumb` tinyint    COMMENT 'skip this url being exposed to breadcrumb',
+     `module_data` text    COMMENT 'All other menu metadata not stored in other fields' 
 ,
         PRIMARY KEY (`id`)
  
@@ -3186,7 +3187,9 @@ CREATE TABLE `civicrm_case` (
      `end_date` date    COMMENT 'Date on which given case ends.',
      `details` text    COMMENT 'Details about the meeting (agenda, notes, etc).',
      `status_id` int unsigned NOT NULL   COMMENT 'Id of case status.',
-     `is_deleted` tinyint   DEFAULT 0  
+     `is_deleted` tinyint   DEFAULT 0 ,
+     `created_date` timestamp NULL  DEFAULT NULL COMMENT 'When was the case was created.',
+     `modified_date` timestamp NULL  DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When was the case (or closely related entity) was created or modified or deleted.' 
 ,
         PRIMARY KEY (`id`)
  
@@ -3278,7 +3281,7 @@ CREATE TABLE `civicrm_report_instance` (
      `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Report Instance ID',
      `domain_id` int unsigned NOT NULL   COMMENT 'Which Domain is this instance for',
      `title` varchar(255)    COMMENT 'Report Instance Title.',
-     `report_id` varchar(64) NOT NULL   COMMENT 'FK to civicrm_option_value for the report template',
+     `report_id` varchar(512) NOT NULL   COMMENT 'FK to civicrm_option_value for the report template',
      `name` varchar(255)    COMMENT 'when combined with report_id/template uniquely identifies the instance',
      `args` varchar(255)    COMMENT 'arguments that are passed in the url when invoking the instance',
      `description` varchar(255)    COMMENT 'Report Instance description.',
@@ -3498,7 +3501,9 @@ CREATE TABLE `civicrm_uf_group` (
      `name` varchar(64)    COMMENT 'Name of the UF group for directly addressing it in the codebase',
      `created_id` int unsigned    COMMENT 'FK to civicrm_contact, who created this UF group',
      `created_date` datetime    COMMENT 'Date and time this UF group was created.',
-     `is_proximity_search` tinyint   DEFAULT 0 COMMENT 'Should we include proximity search feature in this profile search form?' 
+     `is_proximity_search` tinyint   DEFAULT 0 COMMENT 'Should we include proximity search feature in this profile search form?',
+     `cancel_button_text` varchar(64)   DEFAULT NULL COMMENT 'Custom Text to display on the Cancel button when used in create or edit mode',
+     `submit_button_text` varchar(64)   DEFAULT NULL COMMENT 'Custom Text to display on the submit button on profile edit/create screens' 
 ,
         PRIMARY KEY (`id`)
  
@@ -4256,7 +4261,9 @@ CREATE TABLE `civicrm_activity` (
      `campaign_id` int unsigned    COMMENT 'The campaign for which this activity has been triggered.',
      `engagement_level` int unsigned    COMMENT 'Assign a specific level of engagement to this activity. Used for tracking constituents in ladder of engagement.',
      `weight` int    ,
-     `is_star` tinyint   DEFAULT 0 COMMENT 'Activity marked as favorite.' 
+     `is_star` tinyint   DEFAULT 0 COMMENT 'Activity marked as favorite.',
+     `created_date` timestamp NULL  DEFAULT NULL COMMENT 'When was the activity was created.',
+     `modified_date` timestamp NULL  DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When was the activity (or closely related entity) was created or modified or deleted.' 
 ,
         PRIMARY KEY (`id`)
  

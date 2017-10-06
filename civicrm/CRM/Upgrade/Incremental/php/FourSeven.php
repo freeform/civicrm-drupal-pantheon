@@ -404,6 +404,33 @@ class CRM_Upgrade_Incremental_php_FourSeven extends CRM_Upgrade_Incremental_Base
     $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => $rev)), 'runSql', $rev);
   }
 
+  /**
+   * Upgrade function.
+   *
+   * @param string $rev
+   */
+  public function upgrade_4_7_25($rev) {
+    $this->addTask("CRM-20927 - Add column to 'civicrm_menu' for additional metadata", 'addColumn',
+      'civicrm_menu', 'module_data', "text COMMENT 'All other menu metadata not stored in other fields'");
+    $this->addTask('CRM-21052 - Determine activity revision policy', 'pickActivityRevisionPolicy');
+    $this->addTask(ts('Upgrade DB to %1: SQL', array(1 => $rev)), 'runSql', $rev);
+    $this->addTask('Add cancel button text column to civicrm_uf_group', 'addColumn',
+      'civicrm_uf_group', 'cancel_button_text', "varchar(64) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT 'Custom Text to display on the cancel button when used in create or edit mode'", TRUE);
+    $this->addTask('Add Submit button text column to civicrm_uf_group', 'addColumn',
+      'civicrm_uf_group', 'submit_button_text', "varchar(64) COLLATE utf8_unicode_ci DEFAULT NULL COMMENT 'Custom Text to display on the submit button on profile edit/create screens'", TRUE);
+
+    $this->addTask('CRM-20958 - Add created_date to civicrm_activity', 'addColumn',
+      'civicrm_activity', 'created_date', "timestamp NULL  DEFAULT NULL COMMENT 'When was the activity was created.'");
+    $this->addTask('CRM-20958 - Add modified_date to civicrm_activity', 'addColumn',
+      'civicrm_activity', 'modified_date', "timestamp NULL  DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When was the activity (or closely related entity) was created or modified or deleted.'");
+    $this->addTask('CRM-20958 - Add created_date to civicrm_case', 'addColumn',
+      'civicrm_case', 'created_date', "timestamp NULL  DEFAULT NULL COMMENT 'When was the case was created.'");
+    $this->addTask('CRM-20958 - Add modified_date to civicrm_case', 'addColumn',
+      'civicrm_case', 'modified_date', "timestamp NULL  DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When was the case (or closely related entity) was created or modified or deleted.'");
+    $this->addTask('Rebuild Multilingual Schema', 'rebuildMultilingalSchema');
+  }
+
+
   /*
    * Important! All upgrade functions MUST add a 'runSql' task.
    * Uncomment and use the following template for a new upgrade version
@@ -866,7 +893,7 @@ FROM `civicrm_dashboard_contact` JOIN `civicrm_contact` WHERE civicrm_dashboard_
             ADD COLUMN `help_post_{$locale}` text COLLATE utf8_unicode_ci COMMENT 'Price field option post help text.'", array(), TRUE, NULL, FALSE, FALSE);
         }
       }
-      CRM_Core_I18n_Schema::rebuildMultilingualSchema($locales, NULL);
+      CRM_Core_I18n_Schema::rebuildMultilingualSchema($locales, NULL, TRUE);
     }
     else {
       if (!CRM_Core_BAO_SchemaHandler::checkIfFieldExists('civicrm_price_field_value', 'help_pre')) {
@@ -968,14 +995,14 @@ FROM `civicrm_dashboard_contact` JOIN `civicrm_contact` WHERE civicrm_dashboard_
     }
     $domain = new CRM_Core_DAO_Domain();
     $domain->find(TRUE);
-    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard_contact', 'content');
-    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard_contact', 'is_minimized');
-    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard_contact', 'is_fullscreen');
-    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard_contact', 'created_date');
-    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard', 'is_fullscreen');
-    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard', 'is_minimized');
-    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard', 'column_no');
-    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard', 'weight');
+    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard_contact', 'content', FALSE, TRUE);
+    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard_contact', 'is_minimized', FALSE, TRUE);
+    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard_contact', 'is_fullscreen', FALSE, TRUE);
+    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard_contact', 'created_date', FALSE, TRUE);
+    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard', 'is_fullscreen', FALSE, TRUE);
+    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard', 'is_minimized', FALSE, TRUE);
+    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard', 'column_no', FALSE, TRUE);
+    CRM_Core_BAO_SchemaHandler::dropColumn('civicrm_dashboard', 'weight', FALSE, TRUE);
 
     CRM_Core_DAO::executeQuery('UPDATE civicrm_dashboard SET url = REPLACE(url, "&snippet=5", ""), fullscreen_url = REPLACE(fullscreen_url, "&snippet=5", "")');
 
@@ -985,7 +1012,7 @@ FROM `civicrm_dashboard_contact` JOIN `civicrm_contact` WHERE civicrm_dashboard_
     }
     if ($domain->locales) {
       $locales = explode(CRM_Core_DAO::VALUE_SEPARATOR, $domain->locales);
-      CRM_Core_I18n_Schema::rebuildMultilingualSchema($locales, NULL);
+      CRM_Core_I18n_Schema::rebuildMultilingualSchema($locales, NULL, TRUE);
     }
 
     CRM_Core_DAO::executeQuery('UPDATE civicrm_dashboard SET cache_minutes = 1440 WHERE name = "blog"');
@@ -1037,7 +1064,7 @@ FROM `civicrm_dashboard_contact` JOIN `civicrm_contact` WHERE civicrm_dashboard_
     $domain->find(TRUE);
     if ($domain->locales) {
       $locales = explode(CRM_Core_DAO::VALUE_SEPARATOR, $domain->locales);
-      CRM_Core_I18n_Schema::rebuildMultilingualSchema($locales, NULL);
+      CRM_Core_I18n_Schema::rebuildMultilingualSchema($locales, NULL, TRUE);
     }
 
     CRM_Core_DAO::executeQuery("UPDATE `civicrm_option_group` SET `data_type` = 'Integer'
@@ -1185,6 +1212,13 @@ FROM `civicrm_dashboard_contact` JOIN `civicrm_contact` WHERE civicrm_dashboard_
     CRM_Core_DAO::executeQuery("ALTER TABLE `civicrm_action_schedule`
       CHANGE `mapping_id` `mapping_id` varchar(64) COLLATE
       utf8_unicode_ci DEFAULT NULL COMMENT 'Name/ID of the mapping to use on this table'");
+    return TRUE;
+  }
+
+  public static function pickActivityRevisionPolicy(CRM_Queue_TaskContext $ctx) {
+    // CRM-21052 - If site is using activity revisions, continue doing so. Otherwise, switch out.
+    $count = CRM_Core_DAO::singleValueQuery('SELECT count(*) FROM civicrm_activity WHERE is_current_revision = 0 OR original_id IS NOT NULL');
+    Civi::settings()->set('civicaseActivityRevisions', $count > 0);
     return TRUE;
   }
 

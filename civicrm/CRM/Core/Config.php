@@ -261,6 +261,28 @@ class CRM_Core_Config extends CRM_Core_Config_MagicMerge {
   }
 
   /**
+   * Function to get environment.
+   *
+   * @param string $env
+   * @param bool $reset
+   *
+   * @return string
+   */
+  public static function environment($env = NULL, $reset = FALSE) {
+    static $environment;
+    if ($env) {
+      $environment = $env;
+    }
+    if ($reset || empty($environment)) {
+      $environment = Civi::settings()->get('environment');
+    }
+    if (!$environment) {
+      $environment = 'Production';
+    }
+    return $environment;
+  }
+
+  /**
    * Do general cleanup of caches, temp directories and temp tables
    * CRM-8739
    *
