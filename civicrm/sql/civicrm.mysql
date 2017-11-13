@@ -2241,6 +2241,7 @@ CREATE TABLE `civicrm_navigation` (
      `label` varchar(255)    COMMENT 'Navigation Title',
      `name` varchar(255)    COMMENT 'Internal Name',
      `url` varchar(255)    COMMENT 'url in case of custom navigation link',
+     `icon` varchar(255) NULL  DEFAULT NULL COMMENT 'CSS class name for an icon',
      `permission` varchar(255)    COMMENT 'Permission for menu item',
      `permission_operator` varchar(3)    COMMENT 'Permission Operator',
      `parent_id` int unsigned    COMMENT 'Parent navigation item, used for grouping',
@@ -2724,7 +2725,7 @@ CREATE TABLE `civicrm_subscription_history` (
      `id` int unsigned NOT NULL AUTO_INCREMENT  COMMENT 'Internal Id',
      `contact_id` int unsigned NOT NULL   COMMENT 'Contact Id',
      `group_id` int unsigned    COMMENT 'Group Id',
-     `date` datetime NOT NULL   COMMENT 'Date of the (un)subscription',
+     `date` timestamp NOT NULL  DEFAULT CURRENT_TIMESTAMP COMMENT 'Date of the (un)subscription',
      `method` varchar(8)    COMMENT 'How the (un)subscription was triggered',
      `status` varchar(8)    COMMENT 'The state of the contact within the group',
      `tracking` varchar(255)    COMMENT 'IP address or other tracking info' 
@@ -3755,7 +3756,8 @@ CREATE TABLE `civicrm_mailing` (
      `msg_template_id` int unsigned    COMMENT 'FK to the message template.',
      `override_verp` tinyint   DEFAULT 0 COMMENT 'Should we overrite VERP address in Reply-To',
      `created_id` int unsigned    COMMENT 'FK to Contact ID who first created this mailing',
-     `created_date` timestamp NULL  DEFAULT CURRENT_TIMESTAMP COMMENT 'Date and time this mailing was created.',
+     `created_date` timestamp NULL  DEFAULT NULL COMMENT 'Date and time this mailing was created.',
+     `modified_date` timestamp NULL  DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT 'When the mailing (or closely related entity) was created or modified or deleted.',
      `scheduled_id` int unsigned    COMMENT 'FK to Contact ID who scheduled this mailing',
      `scheduled_date` timestamp NULL  DEFAULT NULL COMMENT 'Date and time this mailing was scheduled.',
      `approver_id` int unsigned    COMMENT 'FK to Contact ID who approved this mailing',
@@ -4405,7 +4407,8 @@ CREATE TABLE `civicrm_price_field_value` (
      `is_default` tinyint   DEFAULT 0 COMMENT 'Is this default price field option',
      `is_active` tinyint   DEFAULT 1 COMMENT 'Is this price field value active',
      `financial_type_id` int unsigned   DEFAULT NULL COMMENT 'FK to Financial Type.',
-     `non_deductible_amount` decimal(20,2) NOT NULL  DEFAULT 0.0 COMMENT 'Portion of total amount which is NOT tax deductible.' 
+     `non_deductible_amount` decimal(20,2) NOT NULL  DEFAULT 0.0 COMMENT 'Portion of total amount which is NOT tax deductible.',
+     `visibility_id` int unsigned   DEFAULT 1 COMMENT 'Implicit FK to civicrm_option_group with name = \'visibility\'' 
 ,
         PRIMARY KEY (`id`)
  

@@ -239,7 +239,7 @@
         <span class="description">{ts}Date that a receipt was sent to the contributor.{/ts}</span>
       </td>
     </tr>
-    {if $contributionMode}
+    {if $form.payment_processor_id}
       <tr class="crm-contribution-form-block-payment_processor_id"><td class="label nowrap">{$form.payment_processor_id.label}<span class="crm-marker"> * </span></td><td>{$form.payment_processor_id.html}</td></tr>
     {/if}
   </table>
@@ -255,12 +255,6 @@
             <td {$valueStyle}>{$form.payment_instrument_id.html} {help id="payment_instrument_id"}</td>
             </td>
           </tr>
-          {if $showCheckNumber || !$isOnline}
-            <tr id="checkNumber" class="crm-contribution-form-block-check_number">
-              <td class="label">{$form.check_number.label}</td>
-              <td>{$form.check_number.html}</td>
-            </tr>
-          {/if}
           <tr class="crm-contribution-form-block-trxn_id">
             <td class="label">{$form.trxn_id.label}</td>
             <td {$valueStyle}>{$form.trxn_id.html} {help id="id-trans_id"}</td>
@@ -497,17 +491,6 @@
         {/literal}{/if}
       });
     </script>
-      {if !$contributionMode}
-        {crmAPI var="checkVal" entity="OptionValue" action="getvalue" version="3" option_group_id="payment_instrument" name="Check" return="value"}
-        {include file="CRM/common/showHideByFieldValue.tpl"
-        trigger_field_id    ="payment_instrument_id"
-        trigger_value       = $checkVal
-        target_element_id   ="checkNumber"
-        target_element_type ="table-row"
-        field_type          ="select"
-        invert              = 0
-        }
-    {/if}
   {/if} {* not delete mode if*}
 
 {/if} {* closing of main custom data if *}
@@ -629,6 +612,7 @@ CRM.$(function($) {
       if (!freezeFinancialType) {
         var financialType = $('#financial_type_id').val();
         var taxRates = '{/literal}{$taxRates}{literal}';
+        var taxTerm = '{/literal}{$taxTerm}{literal}';
         taxRates = JSON.parse(taxRates);
         var currencies = '{/literal}{$currencies}{literal}';
         currencies = JSON.parse(currencies);
@@ -654,8 +638,7 @@ CRM.$(function($) {
         taxAmount = isNaN (taxAmount) ? 0:taxAmount;
         var totalTaxAmount = taxAmount + Number(totalAmount);
         totalTaxAmount = formatMoney( totalTaxAmount, 2, separator, thousandMarker );
-
-        $("#totalTaxAmount" ).html('Amount with tax : <span id="currencySymbolShow">' + currencySymbol + '</span> '+ totalTaxAmount);
+        $("#totalTaxAmount" ).html('{/literal}{ts 1=$taxTerm}Amount with %1 :{/ts}{literal} <span id="currencySymbolShow">' + currencySymbol + '</span> '+ totalTaxAmount);
       }
       event.handled = true;
     }

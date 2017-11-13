@@ -29,28 +29,27 @@
  *
  * @package CRM
  * @copyright CiviCRM LLC (c) 2004-2017
- * $Id$
- *
  */
-class CRM_Report_Form_Contribute_LoggingDetail extends CRM_Logging_ReportDetail {
-  /**
-   */
-  public function __construct() {
-    $logging = new CRM_Logging_Schema();
-    $this->tables[] = 'civicrm_contribution';
-    $this->tables = array_merge($this->tables, array_keys($logging->customDataLogTables()));
+class CRM_Utils_Check_Component_FinancialTypeAcls extends CRM_Utils_Check_Component {
 
-    $this->detail = 'logging/contribute/detail';
-    $this->summary = 'logging/contribute/summary';
+  public static function checkFinancialAclReport() {
+    $messages = array();
+    $ftAclSetting = Civi::settings()->get('acl_financial_type');
+    $financialAclExtension = civicrm_api3('extension', 'get', array('key' => 'biz.jmaconsulting.financialaclreport'));
+    if ($ftAclSetting && (($financialAclExtension['count'] == 1 && $financialAclExtension['status'] != 'Installed') || $financialAclExtension['count'] !== 1)) {
+      $messages[] = new CRM_Utils_Check_Message(
+        __FUNCTION__,
+        ts('CiviCRM will in the future require the extension %1 for CiviCRM Reports to work correctly with the Financial Type ACLs. The extension can be downloaded <a href="%2">here</a>', array(
+          1 => 'biz.jmaconsulting.financialaclreport',
+          2 => 'https://github.com/JMAConsulting/biz.jmaconsulting.financialaclreport',
+        )),
+        ts('Extension Missing'),
+        \Psr\Log\LogLevel::WARNING,
+        'fa-server'
+      );
+    }
 
-    parent::__construct();
-  }
-
-  public function buildQuickForm() {
-    parent::buildQuickForm();
-
-    // link back to summary report
-    $this->assign('backURL', CRM_Report_Utils_Report::getNextUrl('logging/contribute/summary', 'reset=1', FALSE, TRUE));
+    return $messages;
   }
 
 }

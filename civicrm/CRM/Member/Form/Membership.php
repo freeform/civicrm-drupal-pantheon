@@ -280,19 +280,6 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
       $defaults['receive_date_time'] = $currentTime;
     }
 
-    if (is_numeric($this->_memType)) {
-      $defaults['membership_type_id'] = array();
-      $defaults['membership_type_id'][0] = CRM_Core_DAO::getFieldValue('CRM_Member_DAO_MembershipType',
-        $this->_memType,
-        'member_of_contact_id',
-        'id'
-      );
-      $defaults['membership_type_id'][1] = $this->_memType;
-    }
-    else {
-      $defaults['membership_type_id'] = $this->_memType;
-    }
-
     $defaults['num_terms'] = 1;
 
     if (!empty($defaults['id'])) {
@@ -1099,7 +1086,7 @@ class CRM_Member_Form_Membership extends CRM_Member_Form {
     $params = $softParams = $ids = array();
 
     $allMemberStatus = CRM_Member_PseudoConstant::membershipStatus();
-    $allContributionStatus = CRM_Contribute_PseudoConstant::contributionStatus();
+    $allContributionStatus = CRM_Contribute_PseudoConstant::contributionStatus(NULL, 'name');
     $this->processBillingAddress();
 
     if ($this->_id) {
