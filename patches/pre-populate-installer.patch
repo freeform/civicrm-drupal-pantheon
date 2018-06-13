@@ -1,0 +1,203 @@
+--- a/install/index.php
++++ b/install/index.php
+@@ -257,21 +257,6 @@
+     }
+   }
+ 
+-  // Bootstrap Drupal to get settings and user
+-  $base_root = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] == 'on') ? 'https' : 'http';
+-  $base_root .= '://' . $_SERVER['HTTP_HOST'];
+-  $base_url = $base_root;
+-  drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
+-
+-  // Check that user is logged in and has administrative permissions
+-  // This is necessary because the script exposes the database settings in the form and these could be viewed by unauthorised users
+-  if ((!function_exists('user_access')) || (!user_access('administer site configuration'))) {
+-    $errorTitle = ts("You don't have permission to access this page");
+-    $errorMsg = ts("The installer can only be run by a user with the permission to administer site configuration.");
+-    errorDisplayPage($errorTitle, $errorMsg);
+-    exit();
+-  }
+-
+   if (!defined('VERSION') or version_compare(VERSION, '6.0') < 0) {
+     $errorTitle = ts("Oops! Incorrect Drupal version");
+     $errorMsg = ts("This version of CiviCRM can only be used with Drupal 6.x or 7.x. Please ensure that '%1' exists if you are running Drupal 7.0 and over.", array(1 => implode("' or '", $drupalVersionFiles)));
+@@ -315,67 +300,31 @@
+   }
+ }
+ 
+-// Load CiviCRM database config
+-if (isset($_POST['mysql'])) {
+-  $databaseConfig = $_POST['mysql'];
+-}
+-
+-if ($installType == 'wordpress') {
+-  // Load WP database config
+-  if (isset($_POST['mysql'])) {
+-    $databaseConfig = $_POST['mysql'];
+-  }
+-  else {
++/**
++ * Pantheon database credentials
++ */
++if (!empty($_SERVER['PRESSFLOW_SETTINGS'])) {
++  $env = json_decode($_SERVER['PRESSFLOW_SETTINGS'], TRUE);
++  if (!empty($env['conf']['pantheon_binding'])) {
++    $pantheon_db = $env['databases']['default']['default'];
++    $pantheon_conf = $env['conf'];
++
++    //server w/ port
++    $server = 'dbserver.' . $pantheon_conf['pantheon_environment'] . '.' . $pantheon_conf['pantheon_site_uuid'] . '.drush.in' . ':' . $pantheon_db['port'];
++
+     $databaseConfig = array(
+-      "server" => DB_HOST,
+-      "username" => DB_USER,
+-      "password" => DB_PASSWORD,
+-      "database" => DB_NAME,
++      "server" => $server,
++      "username" => $pantheon_db['username'],
++      "password" => $pantheon_db['password'],
++      "database" => $pantheon_db['database'],
+     );
+-  }
+-}
+-
+-if ($installType == 'drupal') {
+-  // Load drupal database config
+-  if (isset($_POST['drupal'])) {
+-    $drupalConfig = $_POST['drupal'];
+-  }
+-  else {
+-    $dbServer = $databases['default']['default']['host'];
+-    if (!empty($databases['default']['default']['port'])) {
+-      $dbServer .= ':' . $databases['default']['default']['port'];
+-    }
++
+     $drupalConfig = array(
+-      "server" => $dbServer,
+-      "username" => $databases['default']['default']['username'],
+-      "password" => $databases['default']['default']['password'],
+-      "database" => $databases['default']['default']['database'],
++      "server" => $server,
++      "username" => $pantheon_db['username'],
++      "password" => $pantheon_db['password'],
++      "database" => $pantheon_db['database'],
+     );
+-  }
+-}
+-
+-if ($installType == 'backdrop') {
+-  // Load backdrop database config
+-  if (isset($_POST['backdrop'])) {
+-    $backdropConfig = $_POST['backdrop'];
+-  }
+-  else {
+-    $backdropConfig = array(
+-      "server" => "localhost",
+-      "username" => "backdrop",
+-      "password" => "",
+-      "database" => "backdrop",
+-    );
+-  }
+-}
+-
+-// By default set CiviCRM database to be same as CMS database
+-if (!isset($databaseConfig)) {
+-  if (($installType == 'drupal') && (isset($drupalConfig))) {
+-    $databaseConfig = $drupalConfig;
+-  }
+-  if (($installType == 'backdrop') && (isset($backdropConfig))) {
+-    $databaseConfig = $backdropConfig;
+   }
+ }
+ 
+@@ -1467,84 +1416,10 @@
+         $installType == 'drupal' &&
+         version_compare(VERSION, '7.0-rc1') >= 0
+       ) {
+-
+-        // clean output
+-        @ob_clean();
+-
+-        $output .= '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">';
+-        $output .= '<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">';
+-        $output .= '<head>';
+-        $output .= '<title>' . ts('CiviCRM Installed') . '</title>';
+-        $output .= '<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />';
+-        $output .= '<link rel="stylesheet" type="text/css" href="template.css" />';
+-        $output .= '</head>';
+-        $output .= '<body>';
+-        $output .= '<div style="padding: 1em;"><p class="good">' . ts('CiviCRM has been successfully installed') . '</p>';
+-        $output .= '<ul>';
+-
+-        $drupalURL = civicrm_cms_base();
+-        $drupalPermissionsURL = "{$drupalURL}index.php?q=admin/people/permissions";
+-        $drupalURL .= "index.php?q=civicrm/admin/configtask&reset=1";
+-
+-        $output .= "<li>" . ts("Drupal user permissions have been automatically set - giving anonymous and authenticated users access to public CiviCRM forms and features. We recommend that you <a %1>review these permissions</a> to ensure that they are appropriate for your requirements (<a %2>learn more...</a>)", array(1 => "target='_blank' href='{$drupalPermissionsURL}'", 2 => "target='_blank' href='http://wiki.civicrm.org/confluence/display/CRMDOC/Default+Permissions+and+Roles'")) . "</li>";
+-        $output .= "<li>" . ts("Use the <a %1>Configuration Checklist</a> to review and configure settings for your new site", array(1 => "target='_blank' href='$drupalURL'")) . "</li>";
+-        $output .= $commonOutputMessage;
+-
+-        // automatically enable CiviCRM module once it is installed successfully.
+-        // so we need to Bootstrap Drupal, so that we can call drupal hooks.
+-        global $cmsPath, $crmPath;
+-
+-        // relative / abosolute paths are not working for drupal, hence using chdir()
+-        chdir($cmsPath);
+-
+-        // Force the re-initialisation of the config singleton on the next call
+-        // since so far, we had used the Config object without loading the DB.
+-        $c = CRM_Core_Config::singleton(FALSE);
+-        $c->free();
+-
+-        include_once "./includes/bootstrap.inc";
+-        include_once "./includes/unicode.inc";
+-
+-        drupal_bootstrap(DRUPAL_BOOTSTRAP_FULL);
+-
+-        // prevent session information from being saved.
+-        drupal_save_session(FALSE);
+-
+-        // Force the current user to anonymous.
+-        $original_user = $GLOBALS['user'];
+-        $GLOBALS['user'] = drupal_anonymous_user();
+-
+-        // explicitly setting error reporting, since we cannot handle drupal related notices
+-        error_reporting(1);
+-
+-        // rebuild modules, so that civicrm is added
+-        system_rebuild_module_data();
+-
+-        // now enable civicrm module.
+-        module_enable(array('civicrm', 'civicrmtheme'));
+-
+-        // SystemInstallEvent will be called from here with the first call of CRM_Core_Config,
+-        // which calls Core_BAO_ConfigSetting::applyLocale(), who will default to calling
+-        // Civi::settings()->get('lcMessages');
+-        // Therefore, we need to pass the seedLanguage before that.
+-        global $civicrm_setting;
+-        $civicrm_setting['domain']['lcMessages'] = $config['seedLanguage'];
+-
+-        // clear block, page, theme, and hook caches
+-        drupal_flush_all_caches();
+-
+-        //add basic drupal permissions
+-        civicrm_install_set_drupal_perms();
+-
+-        // restore the user.
+-        $GLOBALS['user'] = $original_user;
+-        drupal_save_session(TRUE);
+-
+-        $output .= '</ul>';
+-        $output .= '</div>';
+-        $output .= '</body>';
+-        $output .= '</html>';
+-        echo $output;
++        // Send back to the install with profile and locale variables.
++        // This allows the user to pick up where they left off in the install.
++        $URL_to_continue_Drupal_install = civicrm_cms_base() . 'install.php?profile=' . $_GET['profile'] . '&locale=' . $_GET['locale'];
++        header('Location: '. $URL_to_continue_Drupal_install);
+       }
+       elseif (
+         $installType == 'backdrop'
+
